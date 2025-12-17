@@ -18,7 +18,7 @@ No database. No auth. No persistence.
 ---
 
 ## Status Legend
-⏳ planned | 🚧 in_progress | ✅ done | 🧪 mocked | 🔒 blocked
+planned | in_progress | done | mocked | blocked
 
 ---
 
@@ -28,12 +28,12 @@ No database. No auth. No persistence.
 
 | Schema | Status |
 |---|---|
-| Org | ⏳ planned |
-| Profile | ⏳ planned |
-| Membership | ⏳ planned |
+| Org | planned |
+| Profile | planned |
+| Membership | planned |
 | Dog | in_progress |
-| Transport | ⏳ planned |
-| ActivityEvent | ⏳ planned |
+| Transport | planned |
+| ActivityEvent | planned |
 
 Rules:
 - These schemas are the frontend source of truth
@@ -47,10 +47,10 @@ Rules:
 
 | Dataset | Status |
 |---|---|
-| Orgs | ⏳ planned |
+| Orgs | planned |
 | Dogs | in_progress |
-| Transports | ⏳ planned |
-| Activity timeline | ⏳ planned |
+| Transports | planned |
+| Activity timeline | planned |
 
 ---
 
@@ -58,9 +58,9 @@ Rules:
 
 | Hook | Status |
 |---|---|
-| useDogs() | ⏳ planned |
-| useDogDetail(id) | ⏳ planned |
-| useTransports() | ⏳ planned |
+| useDogs() | planned |
+| useDogDetail(id) | planned |
+| useTransports() | planned |
 
 Requirements:
 - Simulated latency (300–800ms)
@@ -85,9 +85,9 @@ Requirements:
 
 | Component | Status |
 |---|---|
-| Mock auth guard | ⏳ planned |
-| Org guard (org selector redirect) | ⏳ planned |
-| Responsive sidebar / tabs | ГШ done |
+| Mock auth guard | planned |
+| Org guard (org selector redirect) | planned |
+| Responsive sidebar / tabs | done |
 
 ---
 
@@ -97,12 +97,12 @@ Requirements:
 
 | Screen | Status |
 |---|---|
-| Dog list (search/filters + cards; nav to detail) | in_progress |
-| Dog detail shell | ГШ done |
-| Overview tab | ГШ done |
-| Medical tab (mock) | ⏳ planned |
-| Timeline tab | ⏳ planned |
-| Files tab (UI only) | ⏳ planned |
+| Dog list (search/filters + cards; nav to detail) | done |
+| Dog detail shell | done |
+| Overview tab | done |
+| Medical tab (mock) | planned |
+| Timeline tab | planned |
+| Files tab (UI only) | planned |
 | Create dog form | in_progress |
 | Edit dog form | in_progress |
 Note: Dog list must include filters (stage/status) and search; selecting a dog opens its detail view.
@@ -113,8 +113,8 @@ Note: Dog list must include filters (stage/status) and search; selecting a dog o
 
 | Screen | Status |
 |---|---|
-| Transport list | mocked (route scaffolded) |
-| Transport detail | mocked (route scaffolded) |
+| Transport list | mocked |
+| Transport detail | mocked |
 
 ---
 
@@ -134,7 +134,7 @@ Goal: replace mocks with Supabase without touching UI components.
 ---
 
 ## Status Legend
-⏳ planned | 🚧 in_progress | ✅ done | 🔒 blocked
+planned | in_progress | done | mocked | blocked
 
 ---
 
@@ -142,10 +142,10 @@ Goal: replace mocks with Supabase without touching UI components.
 
 | Task | Status |
 |---|---|
-| Apply schema.md | ⏳ planned |
-| Apply rls.md | ⏳ planned |
-| org_id enforced everywhere | ⏳ planned |
-| Seed org.settings defaults | ⏳ planned |
+| Apply schema.md | planned |
+| Apply rls.md | planned |
+| org_id enforced everywhere | planned |
+| Seed org.settings defaults | planned |
 
 ---
 
@@ -153,9 +153,9 @@ Goal: replace mocks with Supabase without touching UI components.
 
 | Task | Status |
 |---|---|
-| Generate database.types.ts | ⏳ planned |
-| Compare DB vs Zod schemas | ⏳ planned |
-| Resolve mismatches explicitly | ⏳ planned |
+| Generate database.types.ts | planned |
+| Compare DB vs Zod schemas | planned |
+| Resolve mismatches explicitly | planned |
 
 ---
 
@@ -169,9 +169,9 @@ Goal: replace mocks with Supabase without touching UI components.
 
 | Task | Status |
 |---|---|
-| Supabase auth integration | ⏳ planned |
-| Replace sessionStore mocks | ⏳ planned |
-| Persist last_org_id | ⏳ planned |
+| Supabase auth integration | planned |
+| Replace sessionStore mocks | planned |
+| Persist last_org_id | planned |
 
 ---
 
@@ -179,9 +179,9 @@ Goal: replace mocks with Supabase without touching UI components.
 
 | Hook | Status |
 |---|---|
-| useDogs → Supabase | ⏳ planned |
-| useDogDetail → Supabase | ⏳ planned |
-| useTransports → Supabase | ⏳ planned |
+| useDogs → Supabase | planned |
+| useDogDetail → Supabase | planned |
+| useTransports → Supabase | planned |
 
 Rule:
 - UI code must not change
@@ -193,8 +193,8 @@ Rule:
 | Entity | Mechanism | Status |
 |---|---|---|
 | Dogs | in_progress |
-| Transports | Trigger / RPC | ⏳ planned |
-| Photos | Trigger | ⏳ planned |
+| Transports | Trigger / RPC | planned |
+| Photos | Trigger | planned |
 
 Client-side audit inserts are forbidden.
 
@@ -214,7 +214,7 @@ Goal: enable real-world NGO operations and harden the app.
 ---
 
 ## Status Legend
-⏳ planned | 🚧 in_progress | ✅ done
+planned | in_progress | done | mocked | blocked
 
 ---
 
@@ -222,9 +222,9 @@ Goal: enable real-world NGO operations and harden the app.
 
 | Task | Status |
 |---|---|
-| dog-photos bucket | ⏳ planned |
-| Upload integration | ⏳ planned |
-| Optimistic updates | ⏳ planned |
+| dog-photos bucket | planned |
+| Upload integration | planned |
+| Optimistic updates | planned |
 
 ---
 
@@ -232,10 +232,10 @@ Goal: enable real-world NGO operations and harden the app.
 
 | Feature | Status |
 |---|---|
-| Medical events | ⏳ planned |
-| Transport assignment | ⏳ planned |
-| Expenses | ⏳ planned |
-| Documents | ⏳ planned |
+| Medical events | planned |
+| Transport assignment | planned |
+| Expenses | planned |
+| Documents | planned |
 
 ---
 
@@ -243,9 +243,9 @@ Goal: enable real-world NGO operations and harden the app.
 
 | Task | Status |
 |---|---|
-| Empty states | ⏳ planned |
-| Error boundaries | ⏳ planned |
-| Offline indicators | ⏳ planned |
+| Empty states | planned |
+| Error boundaries | planned |
+| Offline indicators | planned |
 
 ---
 
@@ -254,3 +254,9 @@ Goal: enable real-world NGO operations and harden the app.
 - Full dog lifecycle supported
 - Storage works on web + mobile
 - App is production-ready
+
+---
+
+## Progress Log
+- 2025-12-17: Implemented sidebar-first navigation shell and wired routes for Dashboard, Dogs, Transports, People & Homes, Finance, and Settings; aligned dog detail tabs with shared UI state.
+- 2025-12-17: Rebuilt Dogs list into tablet-first grid with status badges, alerts, debounced search and filters, and drawer-style dog detail modal; added shared list/detail components and normalized status legends.

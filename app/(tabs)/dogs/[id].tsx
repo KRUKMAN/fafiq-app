@@ -11,11 +11,10 @@ import {
   MapPin,
   MoreHorizontal,
   Search,
-  Truck,
   User,
-  Users,
+  X,
 } from 'lucide-react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
 import { Dog } from '@/schemas/dog';
@@ -75,9 +74,17 @@ const toDogProfileView = (dog: Dog): DogProfileView => {
   };
 };
 
+const renderDrawer = (content: React.ReactNode, onClose: () => void) => (
+  <View className="flex-1 bg-black/30">
+    <Pressable accessibilityRole="button" className="absolute inset-0" onPress={onClose} />
+    <View className="ml-auto h-full w-full max-w-5xl bg-white shadow-2xl">{content}</View>
+  </View>
+);
+
 export default function DogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dogId = Array.isArray(id) ? id[0] : id;
+  const router = useRouter();
 
   const { activeOrgId, ready, bootstrap, memberships, switchOrg } = useSessionStore();
   const { activeTab, setActiveTab } = useUIStore();
@@ -96,58 +103,61 @@ export default function DogDetailScreen() {
   const dog = data ? toDogProfileView(data) : null;
 
   if (!ready) {
-    return (
-      <View className="flex-1 items-center justify-center bg-surface">
+    return renderDrawer(
+      <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator />
         <Text className="mt-2 text-sm text-gray-600">Loading dog profile...</Text>
-      </View>
+      </View>,
+      () => router.back()
     );
   }
 
   if (!activeOrgId) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface px-6">
+    return renderDrawer(
+      <View className="flex-1 items-center justify-center bg-white px-6">
         <Text className="text-base font-semibold text-gray-900">No active organization</Text>
         <Text className="mt-2 text-sm text-gray-600 text-center">
           Select an organization to view dog details. If you do not see any, create or join an org.
         </Text>
-      </SafeAreaView>
+      </View>,
+      () => router.back()
     );
   }
 
   if (isLoading || !dog) {
-    return (
-      <View className="flex-1 items-center justify-center bg-surface">
+    return renderDrawer(
+      <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator />
         <Text className="mt-2 text-sm text-gray-600">Loading dog profile...</Text>
-      </View>
+      </View>,
+      () => router.back()
     );
   }
 
-  return (
-    <View className="flex-1 bg-surface">
-      <View className="flex-1 bg-white">
-        <TopBar
-          dog={dog}
-          activeOrgId={activeOrgId}
-          memberships={memberships}
-          switchOrg={switchOrg}
-          ready={ready}
-        />
+  return renderDrawer(
+    <View className="flex-1 bg-white">
+      <TopBar
+        dog={dog}
+        activeOrgId={activeOrgId}
+        memberships={memberships}
+        switchOrg={switchOrg}
+        ready={ready}
+        onClose={() => router.back()}
+      />
 
-        <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ paddingBottom: 32 }}>
-          <View className="w-full max-w-5xl self-center px-4 md:px-8">
-            <DogHeader dog={dog} />
+      <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ paddingBottom: 32 }}>
+        <View className="w-full max-w-5xl self-center px-4 md:px-8">
+          <DogHeader dog={dog} />
 
-            <KeyMetrics dog={dog} />
+          <KeyMetrics dog={dog} />
 
-            <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
+          <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-            {renderTab(activeTab, dog)}
-          </View>
-        </ScrollView>
-      </View>
-    </View>
+          {renderTab(activeTab, dog)}
+        </View>
+      </ScrollView>
+    </View>,
+    () => router.back()
   );
 }
 
@@ -166,12 +176,14 @@ const TopBar = ({
   memberships,
   switchOrg,
   ready,
+  onClose,
 }: {
   dog: DogProfileView;
   activeOrgId: string | null;
   memberships: { org_id: string; org_name: string }[];
   switchOrg: (orgId: string) => void;
   ready: boolean;
+  onClose: () => void;
 }) => (
   <View className="bg-white border-b border-border px-4 md:px-8 py-3 gap-3">
     <View className="flex-row items-center justify-between">
@@ -194,6 +206,12 @@ const TopBar = ({
         <View className="w-9 h-9 rounded-full bg-gray-200 items-center justify-center border border-gray-300">
           <Text className="text-[11px] font-bold text-gray-600">AD</Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onClose}
+          className="w-9 h-9 items-center justify-center border border-border rounded-md bg-white">
+          <X size={18} color="#4B5563" />
+        </Pressable>
       </View>
     </View>
 
