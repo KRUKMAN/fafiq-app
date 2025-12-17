@@ -9,102 +9,247 @@ This plan is aligned to `Fafik_System_Context.md` and cross-checked against the 
 - NativeWind v4 is configured in Tailwind + Babel, but `metro.config.js` was missing.
 - UI prototype lives largely in one screen (`app/(tabs)/index.tsx`) with many inline components (prototype OK; not scalable).
 
-## Phase 1 — Foundation (Auth, Tenant Context, RLS, Layout)
 
-### Goals
-- Establish tenant-safe, RLS-safe foundations before building features.
-- Make audit logging atomic from day one.
+# Phase 1 — Visual MVP (Frontend-First, Mocked)
 
-### Deliverables
-- Canonical context files:
-  - Keep `Fafik_System_Context.md` as the source of truth.
-  - Add `project_context.md` (required by System Context).
-- Database foundation:
-  - Implement schema per `docs/schema.md`.
-  - Implement RLS per `docs/rls.md` on every business table.
-- Org settings:
-  - Use `orgs.settings` for NGO-configurable values (`dog_stages`, `transport_statuses`).
-  - Seed default `orgs.settings` values on org creation/migration so the app can populate dropdowns.
-- Tenant resolution strategy (strict boot sequence):
-  1) Authenticate.
-  2) Fetch the user’s active memberships.
-  3) Read `last_org_id` from local storage.
-  4) If `last_org_id` is present in memberships: select it.
-  5) If not: fall back to the first active membership org and overwrite `last_org_id`.
-  6) If user has no memberships: route to “Create/Join Org” flow (do not crash on RLS errors).
-- Type safety:
-  - Generate `database.types.ts` from Supabase and use it in the Supabase client.
-  - Require Zod schemas to parse into (or explicitly map to) DB-generated types to prevent drift.
-- Web readiness:
-  - Add `metro.config.js` using `withNativeWind` with input `./global.css` (P0).
-  - Validate expo-router deep linking (web URLs) via manual checks.
+Goal: fully clickable app validating UX, navigation, and data density.
+No database. No auth. No persistence.
 
-### Audit logging decision (Phase 1 hard rule)
-- Reject client-side “two-step” audit logging.
-- Require atomic write + audit event via:
-  - Postgres triggers for simple CRUD; and/or
-  - Supabase RPCs (stored procedures) for complex domain mutations (e.g., assign foster, stage transitions).
+---
 
-### Definition of Done
-- A signed-in user can select an org and all queries are scoped by `org_id`.
-- RLS blocks cross-org access even if a client attempts it.
-- Web build boots with styling and routing functional.
-- Every mutation path has an atomic audit mechanism selected (trigger/RPC) and documented.
+## Status Legend
+⏳ planned | 🚧 in_progress | ✅ done | 🧪 mocked | 🔒 blocked
 
-## Phase 2 — Core Domain (Dogs + Photos)
+---
 
-### Goals
-- Implement Dogs as the first full vertical slice, including audit trail.
+## 1.1 Frontend Data Contracts (Authoritative)
 
-### Deliverables
-- Feature module `features/dogs`:
-  - Zod schemas for DB rows and view models (aligned to `database.types.ts`).
-  - Queries/mutations via TanStack Query (scoped by active `org_id`).
-  - Dog list + dog detail (split current monolithic screen into components).
-  - Dog create/edit flows (progressive form UX).
-- Storage:
-  - Implement uploads to `dog-photos` bucket.
-  - `dog_photos` table as the authoritative reference.
-- Activity logging (atomic):
-  - `activity_events` for dog CRUD, stage changes, assignment changes, photo upload.
-  - Implement via triggers/RPCs (not client-side inserts).
+### Zod Schemas (schemas/*.ts)
 
-### Definition of Done
-- Dog CRUD works end-to-end under RLS.
-- Photo upload works and is tenant-scoped.
-- Dog timeline shows activity events.
+| Schema | Status |
+|---|---|
+| Org | ⏳ planned |
+| Profile | ⏳ planned |
+| Membership | ⏳ planned |
+| Dog | ⏳ planned |
+| Transport | ⏳ planned |
+| ActivityEvent | ⏳ planned |
 
-## Phase 3 — Operations (Transports, Expenses, Medical, Documents)
+Rules:
+- These schemas are the frontend source of truth
+- Backend must conform or explicitly map later
 
-### Goals
-- Support real operational workflows while keeping the system coherent.
+---
 
-### Deliverables
-- Feature modules:
-  - `features/transports`: CRUD, assignment, status workflow.
-  - `features/medical`: medical record CRUD.
-  - `features/finance`: expenses CRUD and rollups.
-  - `features/documents`: upload and attach to entities.
-- Activity logging coverage (atomic):
-  - transport lifecycle
-  - medical events
-  - expenses created/edited
-  - document uploaded/deleted
+## 1.2 Mock Data Layer
 
-### Definition of Done
-- A coordinator can run day-to-day operations without leaving the system.
-- Activity stream provides a trustworthy audit trail.
+### Mock datasets (lib/mocks)
 
-## UX Plan
+| Dataset | Status |
+|---|---|
+| Orgs | ⏳ planned |
+| Dogs | ⏳ planned |
+| Transports | ⏳ planned |
+| Activity timeline | ⏳ planned |
 
-### Screen map (web-first, mobile-later)
-- Auth
-- Org Picker (if multiple memberships)
-- Dogs: List -> Detail (Overview / Timeline / Medical / Documents / Financial / People & Housing)
-- Transports: List -> Detail
-- People & Homes (deferred detail, but reserve nav slot)
-- Settings (org settings, membership management for admins)
+---
 
-### Navigation
-- Desktop: sidebar + top search; deep links to dog/transports.
-- Mobile: tabs for primary areas + stacked detail screens; org switcher in profile sheet.
+### Mock Hooks
+
+| Hook | Status |
+|---|---|
+| useDogs() | ⏳ planned |
+| useDogDetail(id) | ⏳ planned |
+| useTransports() | ⏳ planned |
+
+Requirements:
+- Simulated latency (300–800ms)
+- Loading + error states visible
+
+---
+
+## 1.3 Client Session & Tenant Context (Mocked)
+
+### Zustand store (stores/sessionStore.ts)
+
+| Feature | Status |
+|---|---|
+| currentUser | ⏳ planned |
+| memberships[] | ⏳ planned |
+| activeOrgId | ⏳ planned |
+| switchOrg(orgId) | ⏳ planned |
+
+---
+
+## 1.4 Navigation & Guards
+
+| Component | Status |
+|---|---|
+| Mock auth guard | ⏳ planned |
+| Org guard (org selector redirect) | ⏳ planned |
+| Responsive sidebar / tabs | ⏳ planned |
+
+---
+
+## 1.5 Feature Modules (UI Only)
+
+### Dogs
+
+| Screen | Status |
+|---|---|
+| Dog list (search + cards) | ⏳ planned |
+| Dog detail shell | ⏳ planned |
+| Overview tab | ⏳ planned |
+| Medical tab (mock) | ⏳ planned |
+| Timeline tab | ⏳ planned |
+| Files tab (UI only) | ⏳ planned |
+| Create dog form | ⏳ planned |
+| Edit dog form | ⏳ planned |
+
+---
+
+### Transports
+
+| Screen | Status |
+|---|---|
+| Transport list | ⏳ planned |
+| Transport detail | ⏳ planned |
+
+---
+
+## Phase 1 Definition of Done
+
+- Mock login works
+- Org switching updates visible data
+- Forms validate via Zod
+- Timeline renders mock activity
+- Deep links work on web
+
+# Phase 2 — Backend Integration (Zero UI Rewrite)
+
+Goal: replace mocks with Supabase without touching UI components.
+
+---
+
+## Status Legend
+⏳ planned | 🚧 in_progress | ✅ done | 🔒 blocked
+
+---
+
+## 2.1 Database & Security Foundation
+
+| Task | Status |
+|---|---|
+| Apply schema.md | ⏳ planned |
+| Apply rls.md | ⏳ planned |
+| org_id enforced everywhere | ⏳ planned |
+| Seed org.settings defaults | ⏳ planned |
+
+---
+
+## 2.2 Type Alignment
+
+| Task | Status |
+|---|---|
+| Generate database.types.ts | ⏳ planned |
+| Compare DB vs Zod schemas | ⏳ planned |
+| Resolve mismatches explicitly | ⏳ planned |
+
+---
+
+## 2.3 Real Tenant Resolution (Strict Boot Sequence)
+
+1. Authenticate
+2. Fetch memberships
+3. Load last_org_id
+4. Validate membership
+5. Select org or prompt
+
+| Task | Status |
+|---|---|
+| Supabase auth integration | ⏳ planned |
+| Replace sessionStore mocks | ⏳ planned |
+| Persist last_org_id | ⏳ planned |
+
+---
+
+## 2.4 Hook Swap (Critical)
+
+| Hook | Status |
+|---|---|
+| useDogs → Supabase | ⏳ planned |
+| useDogDetail → Supabase | ⏳ planned |
+| useTransports → Supabase | ⏳ planned |
+
+Rule:
+- UI code must not change
+
+---
+
+## 2.5 Atomic Audit Logging (Hard Rule)
+
+| Entity | Mechanism | Status |
+|---|---|---|
+| Dogs | Trigger / RPC | ⏳ planned |
+| Transports | Trigger / RPC | ⏳ planned |
+| Photos | Trigger | ⏳ planned |
+
+Client-side audit inserts are forbidden.
+
+---
+
+## Phase 2 Definition of Done
+
+- Auth persists across reloads
+- RLS blocks cross-org access
+- Timeline shows real audit events
+- Phase 1 UI unchanged
+
+# Phase 3 — Operations & Production Readiness
+
+Goal: enable real-world NGO operations and harden the app.
+
+---
+
+## Status Legend
+⏳ planned | 🚧 in_progress | ✅ done
+
+---
+
+## 3.1 Storage & Media
+
+| Task | Status |
+|---|---|
+| dog-photos bucket | ⏳ planned |
+| Upload integration | ⏳ planned |
+| Optimistic updates | ⏳ planned |
+
+---
+
+## 3.2 Advanced Domains
+
+| Feature | Status |
+|---|---|
+| Medical events | ⏳ planned |
+| Transport assignment | ⏳ planned |
+| Expenses | ⏳ planned |
+| Documents | ⏳ planned |
+
+---
+
+## 3.3 Polish & Hardening
+
+| Task | Status |
+|---|---|
+| Empty states | ⏳ planned |
+| Error boundaries | ⏳ planned |
+| Offline indicators | ⏳ planned |
+
+---
+
+## Phase 3 Definition of Done
+
+- Full dog lifecycle supported
+- Storage works on web + mobile
+- App is production-ready
+
