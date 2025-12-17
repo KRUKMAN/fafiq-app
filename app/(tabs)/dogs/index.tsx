@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Href, useRouter } from 'expo-router';
-import { Filter, Plus, Search } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { DogRow, DogListItem } from '@/components/dogs/DogRow';
 import { DOG_TABLE_COLUMNS, TABLE_MIN_WIDTH } from '@/components/dogs/TableConfig';
 import { DataTable } from '@/components/table/DataTable';
+import { TableToolbar } from '@/components/table/TableToolbar';
+import { AdvancedFilterDrawer } from '@/components/table/AdvancedFilterDrawer';
 import { useDogs } from '@/hooks/useDogs';
 import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -78,81 +81,43 @@ export default function DogsListScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <View className="flex-row justify-between items-start px-6 py-4 border-b border-border">
-        <View className="flex-1">
-          <Text className="text-2xl font-bold text-gray-900 tracking-tight">Dogs</Text>
-          <Text className="text-sm text-gray-500 mt-1" numberOfLines={1} ellipsizeMode="tail">
-            Manage intake, medical status, transport, and adoption flow.
-          </Text>
-        </View>
-
-        <View className="flex-row items-center gap-3">
+      <PageHeader
+        title="Dogs"
+        subtitle="Manage intake, medical status, transport, and adoption flow."
+        actions={[
           <Pressable
-            accessibilityRole="button"
-            onPress={() => {}}
-            className="flex-row items-center gap-2 px-3 py-2 bg-white border border-border rounded-lg shadow-sm hover:bg-gray-50">
-            <Filter size={16} color="#374151" />
-            <Text className="text-sm font-medium text-gray-700">Filter</Text>
-          </Pressable>
-          <Pressable
+            key="add-dog"
             accessibilityRole="button"
             className="flex-row items-center gap-2 px-4 py-2 bg-gray-900 rounded-lg shadow-sm hover:bg-gray-800"
             onPress={() => router.push('/dogs/create' as Href)}>
             <Plus size={16} color="#fff" />
             <Text className="text-sm font-semibold text-white">Add Dog</Text>
-          </Pressable>
+          </Pressable>,
           <OrgSelector
+            key="org"
             activeOrgId={activeOrgId}
             memberships={memberships}
             switchOrg={switchOrg}
             ready={ready}
-          />
-        </View>
-      </View>
+          />,
+        ]}
+      />
 
-      <View className="px-6 py-4 bg-white border-b border-border">
-        <View className="flex-row items-center gap-4">
-          <View className="flex-1 flex-row items-center h-11 px-4 rounded-md border border-border bg-white">
-            <Search size={16} color="#9CA3AF" />
-            <TextInput
-              placeholder="Search by name, ID, or foster..."
-              placeholderTextColor="#9CA3AF"
-              className="flex-1 ml-2 text-sm text-gray-900"
-              value={searchInput}
-              onChangeText={setSearchInput}
-              returnKeyType="search"
-              clearButtonMode="while-editing"
-            />
-          </View>
-          <Text className="text-sm text-gray-500">
-            Showing <Text className="font-medium text-gray-900">{list.length}</Text> active records
-          </Text>
-        </View>
-
-        <View className="flex-row flex-wrap gap-2 mt-3">
-          {STATUS_FILTERS.map((item) => {
-            const isActive = dogList.status === item;
-            return (
-              <Pressable
-                key={item}
-                onPress={() => {
-                  setDogList({ status: item, page: 1 });
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-full border ${
-                  isActive
-                    ? 'bg-gray-900 border-gray-900 shadow-sm'
-                    : 'bg-white border-border hover:bg-gray-50'
-                }`}>
-                <Text
-                  className={`text-sm ${isActive ? 'text-white font-semibold' : 'text-gray-700'}`}>
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      <TableToolbar
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        recordCount={list.length}
+        onOpenAdvancedFilters={() => setDogList({ advancedOpen: true })}
+        filters={STATUS_FILTERS.map((label) => ({
+          label,
+          value: label,
+          active: dogList.status === label,
+          onPress: () => {
+            setDogList({ status: label, page: 1 });
+            setCurrentPage(1);
+          },
+        }))}
+      />
 
       <View className="flex-1">
         {isLoading ? (
@@ -238,6 +203,12 @@ export default function DogsListScreen() {
           </Pressable>
         </View>
       </View>
+
+      <AdvancedFilterDrawer
+        visible={dogList.advancedOpen}
+        onClose={() => setDogList({ advancedOpen: false })}>
+        <Text className="text-sm text-gray-600">Advanced filters coming soon.</Text>
+      </AdvancedFilterDrawer>
     </View>
   );
 }
