@@ -119,7 +119,7 @@ export default function DogsListScreen() {
         }))}
       />
 
-      <View className="flex-1">
+      <View className="flex-1 relative">
         {isLoading ? (
           <View className="flex-1 items-center justify-center bg-surface">
             <ActivityIndicator />
