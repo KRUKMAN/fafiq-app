@@ -12,13 +12,13 @@ import { Href, useRouter } from 'expo-router';
 import { Filter, Plus, Search } from 'lucide-react-native';
 
 import { DogRow, DogListItem } from '@/components/dogs/DogRow';
+import { DOG_TABLE_COLUMNS, TABLE_MIN_WIDTH } from '@/components/dogs/TableConfig';
 import { useDogs } from '@/hooks/useDogs';
 import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUIStore } from '@/stores/uiStore';
 
 const STATUS_FILTERS = ['All', 'In Foster', 'Medical', 'Medical Hold', 'Transport', 'Available'];
-const TABLE_MIN_WIDTH = 980;
 
 export default function DogsListScreen() {
   const { setActiveTab } = useUIStore();
@@ -26,6 +26,8 @@ export default function DogsListScreen() {
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState<string>('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { activeOrgId, ready, bootstrap, memberships, switchOrg } = useSessionStore();
 
   useEffect(() => {
@@ -39,12 +41,21 @@ export default function DogsListScreen() {
     return () => clearTimeout(handle);
   }, [searchInput]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, status]);
+
   const { data, isLoading, error } = useDogs(activeOrgId ?? undefined, {
     search: debouncedSearch || undefined,
     status: status === 'All' ? undefined : status,
   });
 
   const list = useMemo<DogListItem[]>(() => (data ?? []).map(toDogListItem), [data]);
+  const totalItems = list.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const pageSafe = Math.min(currentPage, totalPages);
+  const start = (pageSafe - 1) * itemsPerPage;
+  const paginatedList = list.slice(start, start + itemsPerPage);
 
   const handlePressRow = useCallback(
     (id: string) => {
@@ -79,7 +90,7 @@ export default function DogsListScreen() {
       <View className="flex-row justify-between items-start px-6 py-4 border-b border-border">
         <View className="flex-1">
           <Text className="text-2xl font-bold text-gray-900 tracking-tight">Dogs</Text>
-          <Text className="text-sm text-gray-500 mt-1">
+          <Text className="text-sm text-gray-500 mt-1" numberOfLines={1} ellipsizeMode="tail">
             Manage intake, medical status, transport, and adoption flow.
           </Text>
         </View>
@@ -177,10 +188,10 @@ export default function DogsListScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             className="flex-1 bg-white"
-            contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH }}>
+            contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH, flexGrow: 1 }}>
             <FlatList
               style={{ flex: 1 }}
-              data={list}
+              data={paginatedList}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <DogRow item={item} onPress={() => handlePressRow(item.id)} />
@@ -196,13 +207,50 @@ export default function DogsListScreen() {
       </View>
 
       <View className="border-t border-border px-6 py-3 bg-gray-50 flex-row items-center justify-between">
-        <Text className="text-sm text-gray-500">Page 1 of 1</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-sm text-gray-500">Rows per page:</Text>
+          {[10, 25, 50].map((size) => {
+            const active = itemsPerPage === size;
+            return (
+              <Pressable
+                key={size}
+                accessibilityRole="button"
+                onPress={() => {
+                  setItemsPerPage(size);
+                  setCurrentPage(1);
+                }}
+                className={`px-2 py-1 rounded-md border ${
+                  active ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                }`}>
+                <Text className={`text-sm ${active ? 'text-white font-semibold' : 'text-gray-700'}`}>
+                  {size}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text className="text-sm text-gray-500">
+          Page {pageSafe} of {totalPages}
+        </Text>
         <View className="flex-row gap-2">
-          <Pressable className="px-3 py-1 border border-border bg-white rounded text-sm text-gray-600 opacity-60">
-            <Text className="text-sm text-gray-500">Previous</Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={pageSafe <= 1}
+            onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className={`px-3 py-1 border border-border bg-white rounded text-sm ${
+              pageSafe <= 1 ? 'text-gray-400 opacity-60' : 'text-gray-600'
+            }`}>
+            <Text className="text-sm">Previous</Text>
           </Pressable>
-          <Pressable className="px-3 py-1 border border-border bg-white rounded text-sm text-gray-600">
-            <Text className="text-sm text-gray-600">Next</Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={pageSafe >= totalPages}
+            onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className={`px-3 py-1 border border-border bg-white rounded text-sm ${
+              pageSafe >= totalPages ? 'text-gray-400 opacity-60' : 'text-gray-600'
+            }`}>
+            <Text className="text-sm">Next</Text>
           </Pressable>
         </View>
       </View>
@@ -254,9 +302,20 @@ const OrgSelector = ({ activeOrgId, memberships, switchOrg, ready }: OrgSelector
   );
 };
 
-const HeaderCell = ({ label, width, align }: { label: string; width: number; align?: 'right' }) => (
-  <View style={{ width }} className="px-6 py-3">
+const HeaderCell = ({
+  label,
+  flex,
+  minWidth,
+  align,
+}: {
+  label: string;
+  flex: number;
+  minWidth: number;
+  align?: 'right';
+}) => (
+  <View style={{ flex, minWidth }} className="px-6 py-3">
     <Text
+      numberOfLines={1}
       className={`text-xs font-semibold text-gray-500 uppercase tracking-wider ${
         align === 'right' ? 'text-right' : ''
       }`}>
@@ -267,12 +326,15 @@ const HeaderCell = ({ label, width, align }: { label: string; width: number; ali
 
 const TableHeader = () => (
   <View className="flex-row bg-gray-50 border-b border-border">
-    <HeaderCell label="Dog Details" width={320} />
-    <HeaderCell label="Status" width={150} />
-    <HeaderCell label="Location / Responsible" width={240} />
-    <HeaderCell label="Time in Care" width={180} />
-    <HeaderCell label="Alerts" width={120} />
-    <HeaderCell label="Actions" width={70} align="right" />
+    {DOG_TABLE_COLUMNS.map((col) => (
+      <HeaderCell
+        key={col.key}
+        label={col.label}
+        flex={col.flex}
+        minWidth={col.minWidth}
+        align={col.key === 'actions' ? 'right' : undefined}
+      />
+    ))}
   </View>
 );
 

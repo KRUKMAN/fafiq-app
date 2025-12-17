@@ -4,6 +4,7 @@ import { MapPin, MoreHorizontal, User } from 'lucide-react-native';
 
 import { AlertIcons } from './AlertIcons';
 import { StatusBadge } from './StatusBadge';
+import { DOG_TABLE_COLUMNS } from './TableConfig';
 
 export type DogListItem = {
   id: string;
@@ -27,14 +28,7 @@ type DogRowProps = {
   onActionPress?: () => void;
 };
 
-const columnWidths = {
-  details: 320,
-  status: 150,
-  location: 240,
-  metrics: 180,
-  alerts: 120,
-  actions: 70,
-};
+const getCol = (key: string) => DOG_TABLE_COLUMNS.find((c) => c.key === key);
 
 export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps) => {
   const budget = item.budgetSpent ?? 0;
@@ -44,8 +38,15 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      style={{ minWidth: '100%' }}
       className="flex-row items-center bg-white hover:bg-gray-50">
-      <View style={{ width: columnWidths.details }} className="px-6 py-4">
+      <View
+        style={{
+          flex: getCol('details')?.flex,
+          minWidth: getCol('details')?.minWidth,
+          paddingHorizontal: 12,
+        }}
+        className="py-4">
         <View className="flex-row items-center gap-4">
           {item.photoUrl ? (
             <Image
@@ -73,11 +74,23 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
         </View>
       </View>
 
-      <View style={{ width: columnWidths.status }} className="px-6 py-4">
+      <View
+        style={{
+          flex: getCol('status')?.flex,
+          minWidth: getCol('status')?.minWidth,
+          paddingHorizontal: 12,
+        }}
+        className="py-4">
         <StatusBadge status={item.status} />
       </View>
 
-      <View style={{ width: columnWidths.location }} className="px-6 py-4">
+      <View
+        style={{
+          flex: getCol('location')?.flex,
+          minWidth: getCol('location')?.minWidth,
+          paddingHorizontal: 12,
+        }}
+        className="py-4">
         <View className="flex-row items-center gap-1.5">
           <MapPin size={14} color="#9CA3AF" />
           <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
@@ -92,7 +105,13 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
         </View>
       </View>
 
-      <View style={{ width: columnWidths.metrics }} className="px-6 py-4">
+      <View
+        style={{
+          flex: getCol('metrics')?.flex,
+          minWidth: getCol('metrics')?.minWidth,
+          paddingHorizontal: 12,
+        }}
+        className="py-4">
         <Text className="text-sm font-semibold text-gray-900">
           {item.daysInCare != null ? `${item.daysInCare} days` : '—'}
         </Text>
@@ -105,11 +124,23 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
         <Text className="text-[10px] text-gray-400 mt-1">${budget} spent</Text>
       </View>
 
-      <View style={{ width: columnWidths.alerts }} className="px-6 py-4">
+      <View
+        style={{
+          flex: getCol('alerts')?.flex,
+          minWidth: getCol('alerts')?.minWidth,
+          paddingHorizontal: 12,
+        }}
+        className="py-4">
         <AlertIcons alerts={item.alerts} />
       </View>
 
-      <View style={{ width: columnWidths.actions }} className="px-6 py-4 items-end justify-center">
+      <View
+        style={{
+          flex: getCol('actions')?.flex,
+          minWidth: getCol('actions')?.minWidth,
+          paddingHorizontal: 12,
+        }}
+        className="py-4 items-end justify-center">
         <Pressable
           accessibilityRole="button"
           onPress={(event) => {
