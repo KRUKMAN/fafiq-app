@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Home } from 'lucide-react-native';
+import { Dog, Home } from 'lucide-react-native';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,6 +19,13 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <Home size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="dogs"
+        options={{
+          title: 'Dogs',
+          tabBarIcon: ({ color }) => <Dog size={20} color={color} />,
         }}
       />
     </Tabs>

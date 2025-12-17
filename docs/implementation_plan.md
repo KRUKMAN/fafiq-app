@@ -31,7 +31,7 @@ No database. No auth. No persistence.
 | Org | ⏳ planned |
 | Profile | ⏳ planned |
 | Membership | ⏳ planned |
-| Dog | ⏳ planned |
+| Dog | in_progress |
 | Transport | ⏳ planned |
 | ActivityEvent | ⏳ planned |
 
@@ -48,7 +48,7 @@ Rules:
 | Dataset | Status |
 |---|---|
 | Orgs | ⏳ planned |
-| Dogs | ⏳ planned |
+| Dogs | in_progress |
 | Transports | ⏳ planned |
 | Activity timeline | ⏳ planned |
 
@@ -74,10 +74,10 @@ Requirements:
 
 | Feature | Status |
 |---|---|
-| currentUser | ⏳ planned |
-| memberships[] | ⏳ planned |
-| activeOrgId | ⏳ planned |
-| switchOrg(orgId) | ⏳ planned |
+| currentUser | in_progress |
+| memberships[] | in_progress |
+| activeOrgId | in_progress |
+| switchOrg(orgId) | in_progress |
 
 ---
 
@@ -87,7 +87,7 @@ Requirements:
 |---|---|
 | Mock auth guard | ⏳ planned |
 | Org guard (org selector redirect) | ⏳ planned |
-| Responsive sidebar / tabs | ⏳ planned |
+| Responsive sidebar / tabs | in_progress |
 
 ---
 
@@ -97,14 +97,15 @@ Requirements:
 
 | Screen | Status |
 |---|---|
-| Dog list (search + cards) | ⏳ planned |
-| Dog detail shell | ⏳ planned |
-| Overview tab | ⏳ planned |
+| Dog list (search/filters + cards; nav to detail) | in_progress |
+| Dog detail shell | in_progress |
+| Overview tab | in_progress |
 | Medical tab (mock) | ⏳ planned |
 | Timeline tab | ⏳ planned |
 | Files tab (UI only) | ⏳ planned |
-| Create dog form | ⏳ planned |
-| Edit dog form | ⏳ planned |
+| Create dog form | in_progress |
+| Edit dog form | in_progress |
+Note: Dog list must include filters (stage/status) and search; selecting a dog opens its detail view.
 
 ---
 
@@ -121,6 +122,7 @@ Requirements:
 
 - Mock login works
 - Org switching updates visible data
+- Dogs list supports filters/search and opens dog detail
 - Forms validate via Zod
 - Timeline renders mock activity
 - Deep links work on web
@@ -190,7 +192,7 @@ Rule:
 
 | Entity | Mechanism | Status |
 |---|---|---|
-| Dogs | Trigger / RPC | ⏳ planned |
+| Dogs | in_progress |
 | Transports | Trigger / RPC | ⏳ planned |
 | Photos | Trigger | ⏳ planned |
 
@@ -252,4 +254,3 @@ Goal: enable real-world NGO operations and harden the app.
 - Full dog lifecycle supported
 - Storage works on web + mobile
 - App is production-ready
-
