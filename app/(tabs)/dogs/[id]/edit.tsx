@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import { Pressable } from 'react-native';
 import { z } from 'zod';
 
 import { useDog } from '@/hooks/useDog';

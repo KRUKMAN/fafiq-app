@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import {
   AlertCircle,
@@ -15,7 +15,6 @@ import {
   X,
 } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
 
 import { Dog } from '@/schemas/dog';
 import { TABS, useUIStore } from '@/stores/uiStore';

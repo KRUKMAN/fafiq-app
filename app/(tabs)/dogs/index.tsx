@@ -76,20 +76,25 @@ export default function DogsListScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <View className="flex-row justify-between items-start lg:items-center px-4 md:px-6 py-4 border-b border-border gap-3">
-        <View className="gap-1">
+      <View className="flex-row justify-between items-start px-6 py-4 border-b border-border">
+        <View className="flex-1">
           <Text className="text-2xl font-bold text-gray-900 tracking-tight">Dogs</Text>
-          <Text className="text-sm text-gray-500">
+          <Text className="text-sm text-gray-500 mt-1">
             Manage intake, medical status, transport, and adoption flow.
           </Text>
         </View>
-        <View className="flex-row items-center gap-2">
-          <Pressable className="flex-row items-center gap-2 px-3 py-2 bg-white border border-border rounded-lg shadow-sm">
+
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {}}
+            className="flex-row items-center gap-2 px-3 py-2 bg-white border border-border rounded-lg shadow-sm hover:bg-gray-50">
             <Filter size={16} color="#374151" />
             <Text className="text-sm font-medium text-gray-700">Filter</Text>
           </Pressable>
           <Pressable
-            className="flex-row items-center gap-2 px-4 py-2 bg-gray-900 rounded-lg shadow-sm"
+            accessibilityRole="button"
+            className="flex-row items-center gap-2 px-4 py-2 bg-gray-900 rounded-lg shadow-sm hover:bg-gray-800"
             onPress={() => router.push('/dogs/create' as Href)}>
             <Plus size={16} color="#fff" />
             <Text className="text-sm font-semibold text-white">Add Dog</Text>
@@ -103,9 +108,9 @@ export default function DogsListScreen() {
         </View>
       </View>
 
-      <View className="px-4 md:px-6 py-3 bg-gray-50 border-b border-border">
-        <View className="flex-row items-center gap-3">
-          <View className="flex-1 flex-row items-center h-11 px-3 rounded-md border border-border bg-white">
+      <View className="px-6 py-4 bg-white border-b border-border">
+        <View className="flex-row items-center gap-4">
+          <View className="flex-1 flex-row items-center h-11 px-4 rounded-md border border-border bg-white">
             <Search size={16} color="#9CA3AF" />
             <TextInput
               placeholder="Search by name, ID, or foster..."
@@ -117,12 +122,12 @@ export default function DogsListScreen() {
               clearButtonMode="while-editing"
             />
           </View>
-          <Text className="text-sm text-gray-500 hidden md:block">
-            Showing{' '}
-            <Text className="font-semibold text-gray-900">{list.length}</Text> active records
+          <Text className="text-sm text-gray-500">
+            Showing <Text className="font-medium text-gray-900">{list.length}</Text> active records
           </Text>
           <Pressable
-            className="px-3 py-2 border border-border rounded-md bg-white"
+            accessibilityRole="button"
+            className="px-3 py-2 border border-border rounded-md bg-white hover:bg-gray-50"
             onPress={() => setActiveTab('Overview')}>
             <Text className="text-sm font-medium text-gray-700">Go to Detail (Overview)</Text>
           </Pressable>
@@ -136,7 +141,9 @@ export default function DogsListScreen() {
                 key={item}
                 onPress={() => setStatus(item)}
                 className={`px-3 py-1.5 rounded-full border ${
-                  isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                  isActive
+                    ? 'bg-gray-900 border-gray-900 shadow-sm'
+                    : 'bg-white border-border hover:bg-gray-50'
                 }`}>
                 <Text
                   className={`text-sm ${isActive ? 'text-white font-semibold' : 'text-gray-700'}`}>
@@ -171,32 +178,24 @@ export default function DogsListScreen() {
             showsHorizontalScrollIndicator={false}
             className="flex-1 bg-white"
             contentContainerStyle={{ minWidth: TABLE_MIN_WIDTH }}>
-            <View className="flex-1">
-              <View className="flex-row bg-gray-50 border-b border-border">
-                <HeaderCell label="Dog Details" width={320} />
-                <HeaderCell label="Status" width={150} />
-                <HeaderCell label="Location / Responsible" width={240} />
-                <HeaderCell label="Time in Care" width={180} />
-                <HeaderCell label="Alerts" width={120} />
-                <HeaderCell label="Actions" width={70} align="right" />
-              </View>
-
-              <FlatList
-                data={list}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <DogRow item={item} onPress={() => handlePressRow(item.id)} />
-                )}
-                ItemSeparatorComponent={() => <View className="h-px bg-border" />}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              />
-            </View>
+            <FlatList
+              style={{ flex: 1 }}
+              data={list}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <DogRow item={item} onPress={() => handlePressRow(item.id)} />
+              )}
+              ListHeaderComponent={<TableHeader />}
+              stickyHeaderIndices={[0]}
+              ItemSeparatorComponent={() => <View className="h-px bg-border" />}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            />
           </ScrollView>
         )}
       </View>
 
-      <View className="border-t border-border px-4 md:px-6 py-3 bg-gray-50 flex-row items-center justify-between">
+      <View className="border-t border-border px-6 py-3 bg-gray-50 flex-row items-center justify-between">
         <Text className="text-sm text-gray-500">Page 1 of 1</Text>
         <View className="flex-row gap-2">
           <Pressable className="px-3 py-1 border border-border bg-white rounded text-sm text-gray-600 opacity-60">
@@ -229,7 +228,7 @@ const OrgSelector = ({ activeOrgId, memberships, switchOrg, ready }: OrgSelector
   }
 
   return (
-    <View className="px-3 py-2 border border-border rounded-md bg-white">
+    <View className="w-[320px] px-3 py-2 border border-border rounded-lg bg-white">
       <Text className="text-xs text-gray-500 mb-1">Active org</Text>
       <View className="flex-row flex-wrap gap-2">
         {memberships.map((m) => {
@@ -256,13 +255,24 @@ const OrgSelector = ({ activeOrgId, memberships, switchOrg, ready }: OrgSelector
 };
 
 const HeaderCell = ({ label, width, align }: { label: string; width: number; align?: 'right' }) => (
-  <View style={{ width }} className="px-4 py-3">
+  <View style={{ width }} className="px-6 py-3">
     <Text
       className={`text-xs font-semibold text-gray-500 uppercase tracking-wider ${
         align === 'right' ? 'text-right' : ''
       }`}>
       {label}
     </Text>
+  </View>
+);
+
+const TableHeader = () => (
+  <View className="flex-row bg-gray-50 border-b border-border">
+    <HeaderCell label="Dog Details" width={320} />
+    <HeaderCell label="Status" width={150} />
+    <HeaderCell label="Location / Responsible" width={240} />
+    <HeaderCell label="Time in Care" width={180} />
+    <HeaderCell label="Alerts" width={120} />
+    <HeaderCell label="Actions" width={70} align="right" />
   </View>
 );
 

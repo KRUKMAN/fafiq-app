@@ -44,41 +44,43 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="flex-row items-center px-4 py-3 bg-white">
-      <View style={{ width: columnWidths.details }} className="flex-row items-center gap-3">
-        {item.photoUrl ? (
-          <Image
-            source={{ uri: item.photoUrl }}
-            className="w-12 h-12 rounded-lg bg-gray-200 border border-border"
-          />
-        ) : (
-          <View className="w-12 h-12 rounded-lg bg-gray-100 border border-border items-center justify-center">
-            <Text className="text-xs text-gray-500">No photo</Text>
-          </View>
-        )}
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-sm font-bold text-gray-900" numberOfLines={1}>
-              {item.name}
+      className="flex-row items-center bg-white hover:bg-gray-50">
+      <View style={{ width: columnWidths.details }} className="px-6 py-4">
+        <View className="flex-row items-center gap-4">
+          {item.photoUrl ? (
+            <Image
+              source={{ uri: item.photoUrl }}
+              className="w-12 h-12 rounded-lg bg-gray-200 border border-border"
+            />
+          ) : (
+            <View className="w-12 h-12 rounded-lg bg-gray-100 border border-border items-center justify-center">
+              <Text className="text-xs text-gray-500">No photo</Text>
+            </View>
+          )}
+          <View className="flex-1">
+            <View className="flex-row items-center gap-2">
+              <Text className="text-sm font-bold text-gray-900" numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text className="text-xs font-mono text-gray-400" numberOfLines={1}>
+                {item.internalId || '-'}
+              </Text>
+            </View>
+            <Text className="text-xs text-gray-500" numberOfLines={1}>
+              {[item.breed, item.sex, item.age].filter(Boolean).join(' • ') || 'No details'}
             </Text>
-            <Text className="text-xs font-mono text-gray-400" numberOfLines={1}>
-              {item.internalId || '-'}
-            </Text>
           </View>
-          <Text className="text-xs text-gray-500" numberOfLines={1}>
-            {[item.breed, item.sex, item.age].filter(Boolean).join(' • ') || 'No details'}
-          </Text>
         </View>
       </View>
 
-      <View style={{ width: columnWidths.status }}>
+      <View style={{ width: columnWidths.status }} className="px-6 py-4">
         <StatusBadge status={item.status} />
       </View>
 
-      <View style={{ width: columnWidths.location }}>
+      <View style={{ width: columnWidths.location }} className="px-6 py-4">
         <View className="flex-row items-center gap-1.5">
           <MapPin size={14} color="#9CA3AF" />
-          <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+          <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
             {item.location || 'Unknown location'}
           </Text>
         </View>
@@ -90,11 +92,11 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
         </View>
       </View>
 
-      <View style={{ width: columnWidths.metrics }}>
+      <View style={{ width: columnWidths.metrics }} className="px-6 py-4">
         <Text className="text-sm font-semibold text-gray-900">
           {item.daysInCare != null ? `${item.daysInCare} days` : '—'}
         </Text>
-        <View className="w-24 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+        <View className="w-28 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
           <View
             style={{ width: `${budgetPct}%` }}
             className={`h-full rounded-full ${budgetPct > 50 ? 'bg-orange-400' : 'bg-green-400'}`}
@@ -103,13 +105,11 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
         <Text className="text-[10px] text-gray-400 mt-1">${budget} spent</Text>
       </View>
 
-      <View style={{ width: columnWidths.alerts }}>
+      <View style={{ width: columnWidths.alerts }} className="px-6 py-4">
         <AlertIcons alerts={item.alerts} />
       </View>
 
-      <View
-        style={{ width: columnWidths.actions }}
-        className="items-end justify-center">
+      <View style={{ width: columnWidths.actions }} className="px-6 py-4 items-end justify-center">
         <Pressable
           accessibilityRole="button"
           onPress={(event) => {

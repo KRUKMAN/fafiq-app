@@ -12,13 +12,12 @@ export const AlertIcons = React.memo(({ alerts }: AlertIconsProps) => {
   if (!alerts || alerts.length === 0) return null;
 
   return (
-    <View className="flex-row items-center">
+    <View className="flex-row items-center gap-2">
       {alerts.slice(0, 3).map((alert, idx) => {
         const isError = alert.type === 'error';
         return (
           <View
             key={`${alert.type}-${idx}`}
-            style={{ marginLeft: idx === 0 ? 0 : -6 }}
             className={`w-7 h-7 rounded-full border-2 border-white items-center justify-center ${
               isError ? 'bg-red-100' : 'bg-amber-100'
             }`}>
