@@ -5,6 +5,7 @@ import { MapPin, MoreHorizontal, User } from 'lucide-react-native';
 import { AlertIcons } from './AlertIcons';
 import { StatusBadge } from './StatusBadge';
 import { DOG_TABLE_COLUMNS } from './TableConfig';
+import { formatLastUpdate } from '@/lib/formatters';
 
 export type DogListItem = {
   id: string;
@@ -17,9 +18,9 @@ export type DogListItem = {
   photoUrl?: string;
   location?: string;
   responsiblePerson?: string;
-  daysInCare?: number | null;
   budgetSpent?: number | null;
   alerts?: { type: 'warning' | 'error'; message: string }[];
+  lastUpdate?: string;
 };
 
 type DogRowProps = {
@@ -28,11 +29,18 @@ type DogRowProps = {
   onActionPress?: () => void;
 };
 
-const getCol = (key: string) => DOG_TABLE_COLUMNS.find((c) => c.key === key);
+const COL_BY_KEY = DOG_TABLE_COLUMNS.reduce<Record<string, (typeof DOG_TABLE_COLUMNS)[number]>>(
+  (acc, col) => {
+    acc[col.key] = col;
+    return acc;
+  },
+  {}
+);
 
 export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps) => {
   const budget = item.budgetSpent ?? 0;
   const budgetPct = Math.min(Math.max((budget / 2000) * 100, 0), 100);
+  const lastUpdate = formatLastUpdate(item.lastUpdate);
 
   return (
     <Pressable
@@ -42,8 +50,8 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
       className="flex-row items-center bg-white hover:bg-gray-50">
       <View
         style={{
-          flex: getCol('details')?.flex,
-          minWidth: getCol('details')?.minWidth,
+          flex: COL_BY_KEY.details.flex,
+          minWidth: COL_BY_KEY.details.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4">
@@ -76,8 +84,8 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
 
       <View
         style={{
-          flex: getCol('status')?.flex,
-          minWidth: getCol('status')?.minWidth,
+          flex: COL_BY_KEY.status.flex,
+          minWidth: COL_BY_KEY.status.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4">
@@ -86,8 +94,8 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
 
       <View
         style={{
-          flex: getCol('location')?.flex,
-          minWidth: getCol('location')?.minWidth,
+          flex: COL_BY_KEY.location.flex,
+          minWidth: COL_BY_KEY.location.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4">
@@ -107,13 +115,13 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
 
       <View
         style={{
-          flex: getCol('metrics')?.flex,
-          minWidth: getCol('metrics')?.minWidth,
+          flex: COL_BY_KEY.metrics.flex,
+          minWidth: COL_BY_KEY.metrics.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4">
         <Text className="text-sm font-semibold text-gray-900">
-          {item.daysInCare != null ? `${item.daysInCare} days` : '—'}
+          {lastUpdate}
         </Text>
         <View className="w-28 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
           <View
@@ -126,8 +134,8 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
 
       <View
         style={{
-          flex: getCol('alerts')?.flex,
-          minWidth: getCol('alerts')?.minWidth,
+          flex: COL_BY_KEY.alerts.flex,
+          minWidth: COL_BY_KEY.alerts.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4">
@@ -136,8 +144,8 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
 
       <View
         style={{
-          flex: getCol('actions')?.flex,
-          minWidth: getCol('actions')?.minWidth,
+          flex: COL_BY_KEY.actions.flex,
+          minWidth: COL_BY_KEY.actions.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4 items-end justify-center">

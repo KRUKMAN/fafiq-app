@@ -261,3 +261,4 @@ planned | in_progress | done | mocked | blocked
 - 2025-12-17: Implemented sidebar-first navigation shell and wired routes for Dashboard, Dogs, Transports, People & Homes, Finance, and Settings; aligned dog detail tabs with shared UI state.
 - 2025-12-17: Rebuilt Dogs list into tablet-first grid with status badges, alerts, debounced search and filters, and drawer-style dog detail modal; added shared list/detail components and normalized status legends.
 - 2025-12-17: Polished Dogs list UI to match product screenshots (table cell padding/alignment, header/toolbars, button styles, and visual density) and cleaned up lint warnings in dogs create/edit screens.
+- 2025-12-17: Added responsive/persisted Dogs table (pagination, horizontal scroll), simplified org picker pill, and persisted list filters/page in UI store; time-in-care metric left as placeholder pending schema support.

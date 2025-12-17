@@ -14,6 +14,13 @@ interface UIState {
   setActiveTab: (tab: Tab) => void;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
+  dogList: {
+    search: string;
+    status: string;
+    page: number;
+    pageSize: number;
+  };
+  setDogList: (patch: Partial<UIState['dogList']>) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -21,6 +28,19 @@ export const useUIStore = create<UIState>((set) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   isSidebarOpen: true,
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+  dogList: {
+    search: '',
+    status: 'All',
+    page: 1,
+    pageSize: 10,
+  },
+  setDogList: (patch) =>
+    set((state) => ({
+      dogList: {
+        ...state.dogList,
+        ...patch,
+      },
+    })),
 }));
 
 export const TABS: Tab[] = [
