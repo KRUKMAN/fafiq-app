@@ -28,50 +28,69 @@ import {
   User,
   Users,
 } from 'lucide-react-native';
-import { useQuery } from '@tanstack/react-query';
 
-import { dogSchema, Dog } from '@/schemas/dog';
+import { Dog } from '@/schemas/dog';
 import { TABS, useUIStore } from '@/stores/uiStore';
+import { useDog } from '@/hooks/useDog';
 
-const mockDog: Dog = {
-  id: '1',
-  internalId: 'DOG-1234',
-  name: 'Buddy',
-  status: 'In Foster',
-  photoUrl:
-    'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=400&q=80',
-  location: 'Vet: Clinic XYZ',
-  responsiblePerson: 'Maria Garcia',
-  fosterName: 'Sarah Johnson',
-  budgetSpent: 1500,
-  lastUpdate: 'Today, 10:45 AM',
+const TENANT_ID = 'tenant_123';
+const DOG_ID = '1';
+
+type DogProfileView = {
+  id: string;
+  tenantId: string;
+  name: string;
+  status: string;
+  medicalStatus: string;
+  location: string;
+  description: string;
+  internalId: string;
+  photoUrl?: string;
+  responsiblePerson: string;
+  fosterName: string | null;
+  budgetSpent: number;
+  lastUpdate: string;
   attributes: {
-    age: '2 years',
-    sex: 'Male',
-    size: 'Medium',
-    breed: 'Labrador Mix',
-    intakeDate: 'Oct 15, 2023',
-  },
-  alerts: [
-    { type: 'error', message: 'No foster assigned' },
-    { type: 'warning', message: 'Vaccination overdue' },
-  ],
+    age?: string;
+    sex?: 'Male' | 'Female';
+    size?: string;
+    breed?: string;
+    intakeDate?: string;
+  };
+  alerts: { type: 'warning' | 'error'; message: string }[];
 };
 
-const fetchDog = async (dogId: string): Promise<Dog> => {
-  // Placeholder for Supabase fetch; keeps schema validation in place.
-  return dogSchema.parse({ ...mockDog, id: dogId });
-};
+const toDogProfileView = (dog: Dog): DogProfileView => {
+  const attributes = dog.extra_fields.attributes ?? {};
 
-const useDogQuery = (dogId: string) =>
-  useQuery({
-    queryKey: ['dog', dogId],
-    queryFn: () => fetchDog(dogId),
-    staleTime: 1000 * 60 * 5,
-  });
+  return {
+    id: dog.id,
+    tenantId: dog.tenant_id,
+    name: dog.name,
+    status: dog.status,
+    medicalStatus: dog.medical_status,
+    location: dog.location,
+    description: dog.description,
+    internalId: dog.extra_fields.internal_id ?? '',
+    photoUrl: dog.extra_fields.photo_url,
+    responsiblePerson: dog.extra_fields.responsible_person ?? '',
+    fosterName: dog.extra_fields.foster_name ?? null,
+    budgetSpent: dog.extra_fields.budget_spent ?? 0,
+    lastUpdate: dog.extra_fields.last_update ?? '',
+    attributes: {
+      age: attributes.age,
+      sex: attributes.sex,
+      size: attributes.size,
+      breed: attributes.breed,
+      intakeDate: attributes.intake_date,
+    },
+    alerts: dog.extra_fields.alerts ?? [],
+  };
+};
 
 export default function HomeScreen() {
-  const { data: dog, isLoading } = useDogQuery('1');
+  const { data, isLoading } = useDog(TENANT_ID, DOG_ID);
+  const dog = data ? toDogProfileView(data) : null;
   const { activeTab, setActiveTab } = useUIStore();
   const { width } = useWindowDimensions();
   const showSidebar = width >= 1024;
@@ -80,7 +99,7 @@ export default function HomeScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator />
-        <Text className="mt-2 text-sm text-gray-600">Loading dog profile…</Text>
+        <Text className="mt-2 text-sm text-gray-600">Loading dog profile...</Text>
       </View>
     );
   }
@@ -166,12 +185,12 @@ const SidebarItem = ({
   </Pressable>
 );
 
-const TopBar = ({ dog }: { dog: Dog }) => (
+const TopBar = ({ dog }: { dog: DogProfileView }) => (
   <View className="h-16 bg-white border-b border-border flex-row items-center justify-between px-4 md:px-8">
     <Text className="text-sm font-medium text-gray-500">
       Dog Detail:{' '}
       <Text className="text-gray-900 font-semibold">
-        {dog.name.toUpperCase()} ({dog.internalId})
+        {dog.name.toUpperCase()} {dog.internalId ? `(${dog.internalId})` : ''}
       </Text>
     </Text>
 
@@ -191,16 +210,24 @@ const TopBar = ({ dog }: { dog: Dog }) => (
   </View>
 );
 
-const DogHeader = ({ dog }: { dog: Dog }) => (
+const DogHeader = ({ dog }: { dog: DogProfileView }) => (
   <View className="flex-col md:flex-row justify-between gap-6 mb-8">
     <View className="flex-row gap-4">
-      <Image
-        source={{ uri: dog.photoUrl }}
-        className="w-24 h-24 rounded-lg bg-gray-200 border border-border"
-      />
+      {dog.photoUrl ? (
+        <Image
+          source={{ uri: dog.photoUrl }}
+          className="w-24 h-24 rounded-lg bg-gray-200 border border-border"
+        />
+      ) : (
+        <View className="w-24 h-24 rounded-lg bg-gray-200 border border-border items-center justify-center">
+          <Text className="text-xs text-gray-500">No photo</Text>
+        </View>
+      )}
       <View className="justify-center">
         <Text className="text-3xl font-bold text-gray-900 tracking-tight mb-1">{dog.name}</Text>
-        <Text className="text-sm text-gray-500 font-mono mb-3">Internal ID: {dog.internalId}</Text>
+        <Text className="text-sm text-gray-500 font-mono mb-3">
+          Internal ID: {dog.internalId || '-'}
+        </Text>
         <Pressable className="flex-row items-center gap-2 bg-white border border-border py-1.5 px-3 rounded-full self-start">
           <Home size={14} color="#111827" />
           <Text className="text-[13px] font-semibold text-gray-900">{dog.status}</Text>
@@ -227,13 +254,14 @@ const ActionButton = ({ label }: { label: string }) => (
   </Pressable>
 );
 
-const KeyMetrics = ({ dog }: { dog: Dog }) => (
+const KeyMetrics = ({ dog }: { dog: DogProfileView }) => (
   <View className="flex-row flex-wrap gap-4 mb-8">
     <KeyMetric icon={MapPin} label="LOCATION" value={dog.location} />
-    <KeyMetric icon={User} label="RESPONSIBLE" value={dog.responsiblePerson} />
+    <KeyMetric icon={AlertCircle} label="MEDICAL" value={dog.medicalStatus || '-'} />
+    <KeyMetric icon={User} label="RESPONSIBLE" value={dog.responsiblePerson || '-'} />
     <KeyMetric icon={Home} label="FOSTER" value={dog.fosterName || '-'} />
     <KeyMetric icon={DollarSign} label="SPENT" value={`$${dog.budgetSpent}`} />
-    <KeyMetric icon={Clock} label="UPDATED" value={dog.lastUpdate} />
+    <KeyMetric icon={Clock} label="UPDATED" value={dog.lastUpdate || '-'} />
   </View>
 );
 
@@ -284,73 +312,83 @@ const TabsBar = ({
   </ScrollView>
 );
 
-const OverviewTab = ({ dog }: { dog: Dog }) => (
-  <View className="flex-col lg:flex-row gap-6">
-    <View className="flex-[2] gap-6">
-      <Card title="Character & Temperament">
-        <Text className="text-sm leading-relaxed text-gray-600">
-          Energetic, friendly with people, gets along with other dogs. Needs some training on leash
-          walking but very food motivated. Does not like cats.
-        </Text>
-      </Card>
+const OverviewTab = ({ dog }: { dog: DogProfileView }) => {
+  const alerts = dog.alerts;
+  const attributes = dog.attributes;
+  const needsFoster = !dog.fosterName;
+  const needsMedical = !!dog.medicalStatus && dog.medicalStatus.toLowerCase() !== 'healthy';
+  const needsTransport = dog.status.toLowerCase().includes('transport');
+  const needsDocuments = false;
 
-      <Card title="Adoption Description">
-        <Text className="text-sm leading-relaxed text-gray-600">
-          Buddy is a playful dog who loves outdoor activities. He would be a great fit for an active
-          family. He is fully vaccinated and neutered. He loves playing fetch and is very affectionate
-          once he gets to know you.
-        </Text>
-      </Card>
+  return (
+    <View className="flex-col lg:flex-row gap-6">
+      <View className="flex-[2] gap-6">
+        <Card title="Profile Summary">
+          <Text className="text-sm leading-relaxed text-gray-600">
+            {dog.description || 'No description provided yet.'}
+          </Text>
+        </Card>
 
-      <Card title="Current Needs">
-        <View className="gap-3">
-          <CheckRow label="Needs foster" checked={false} />
-          <CheckRow label="Needs transport" checked />
-          <CheckRow label="Needs medical care" checked={false} />
-          <CheckRow label="Needs documents" checked={false} />
-        </View>
-      </Card>
+        <Card title="Medical Status">
+          <Text className="text-sm leading-relaxed text-gray-600">
+            {dog.medicalStatus || 'Not captured'}
+          </Text>
+        </Card>
+
+        <Card title="Current Needs">
+          <View className="gap-3">
+            <CheckRow label="Needs foster" checked={needsFoster} />
+            <CheckRow label="Needs transport" checked={needsTransport} />
+            <CheckRow label="Needs medical care" checked={needsMedical} />
+            <CheckRow label="Needs documents" checked={needsDocuments} />
+          </View>
+        </Card>
+      </View>
+
+      <View className="flex-1 gap-6">
+        <Card title="Quick Summary">
+          <View className="flex-col divide-y divide-gray-50">
+            <SummaryRow label="Age" value={attributes.age ?? '-'} />
+            <SummaryRow label="Sex" value={attributes.sex ?? '-'} />
+            <SummaryRow label="Size" value={attributes.size ?? '-'} />
+            <SummaryRow label="Breed" value={attributes.breed ?? '-'} />
+            <SummaryRow label="Intake" value={attributes.intakeDate ?? '-'} />
+          </View>
+        </Card>
+
+        <Card title="Alerts">
+          <View className="gap-2">
+            {alerts.length === 0 ? (
+              <Text className="text-sm text-gray-500">No alerts</Text>
+            ) : (
+              alerts.map((alert, idx) => (
+                <View
+                  key={idx}
+                  className={`flex-row gap-3 p-3 rounded-md items-center border ${
+                    alert.type === 'error'
+                      ? 'bg-red-50 border-red-100'
+                      : 'bg-amber-50 border-amber-100'
+                  }`}>
+                  {alert.type === 'error' ? (
+                    <AlertCircle size={16} color="#b91c1c" />
+                  ) : (
+                    <AlertTriangle size={16} color="#b45309" />
+                  )}
+                  <Text
+                    className={`text-[13px] font-medium ${
+                      alert.type === 'error' ? 'text-red-700' : 'text-amber-700'
+                    }`}>
+                    {alert.message}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        </Card>
+      </View>
     </View>
-
-    <View className="flex-1 gap-6">
-      <Card title="Quick Summary">
-        <View className="flex-col divide-y divide-gray-50">
-          <SummaryRow label="Age" value={dog.attributes.age} />
-          <SummaryRow label="Sex" value={dog.attributes.sex} />
-          <SummaryRow label="Size" value={dog.attributes.size} />
-          <SummaryRow label="Breed" value={dog.attributes.breed} />
-          <SummaryRow label="Intake" value={dog.attributes.intakeDate} />
-        </View>
-      </Card>
-
-      <Card title="Alerts">
-        <View className="gap-2">
-          {dog.alerts.map((alert, idx) => (
-            <View
-              key={idx}
-              className={`flex-row gap-3 p-3 rounded-md items-center border ${
-                alert.type === 'error'
-                  ? 'bg-red-50 border-red-100'
-                  : 'bg-amber-50 border-amber-100'
-              }`}>
-              {alert.type === 'error' ? (
-                <AlertCircle size={16} color="#b91c1c" />
-              ) : (
-                <AlertTriangle size={16} color="#b45309" />
-              )}
-              <Text
-                className={`text-[13px] font-medium ${
-                  alert.type === 'error' ? 'text-red-700' : 'text-amber-700'
-                }`}>
-                {alert.message}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-    </View>
-  </View>
-);
+  );
+};
 
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="bg-white border border-border rounded-lg p-5 shadow-sm">
