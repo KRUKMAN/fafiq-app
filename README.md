@@ -12,6 +12,6 @@ React Native + Expo + React Native for Web client for the FAFIQ (RescueOps) dog 
 2) Start dev server: `npm start` (choose iOS, Android, or Web in the Expo prompt)
 
 ## Notes for contributors
-- Domain schemas live in `schemas/` (see `schemas/dog.ts` for the authoritative dog shape with `tenant_id` and `extra_fields`).
+- Domain schemas live in `schemas/` (see `schemas/dog.ts` for the authoritative dog shape with `org_id` and `extra_fields`).
 - Mock data and data access helpers live in `lib/`.
 - Screens live under `app/`; the dog detail experience is in `app/(tabs)/index.tsx`.

@@ -2,7 +2,7 @@ import { Dog, dogSchema } from '@/schemas/dog';
 
 const mockDog = dogSchema.parse({
   id: '1',
-  tenant_id: 'tenant_123',
+  org_id: 'org_123',
   name: 'Buddy',
   status: 'In Foster',
   medical_status: 'Needs vaccination',
@@ -32,11 +32,11 @@ const mockDog = dogSchema.parse({
 });
 
 const mockDogs: Record<string, Dog> = {
-  [`${mockDog.tenant_id}:${mockDog.id}`]: mockDog,
+  [`${mockDog.org_id}:${mockDog.id}`]: mockDog,
 };
 
-export const getMockDogById = async (tenantId: string, dogId: string): Promise<Dog> => {
-  const key = `${tenantId}:${dogId}`;
+export const getMockDogById = async (orgId: string, dogId: string): Promise<Dog> => {
+  const key = `${orgId}:${dogId}`;
   const dog = mockDogs[key];
 
   if (!dog) {

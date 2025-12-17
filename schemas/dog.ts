@@ -31,7 +31,7 @@ const extraFieldsSchema = z
 
 export const dogSchema = z.object({
   id: z.string(),
-  tenant_id: z.string(),
+  org_id: z.string(),
   name: z.string(),
   status: z.string(),
   medical_status: z.string(),

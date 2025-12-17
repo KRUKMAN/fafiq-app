@@ -3,14 +3,15 @@
 This project has an authoritative system context: `Fafik_System_Context.md`. Do not override it with assumptions.
 
 ## Non-negotiables
-1. **Tenant scoping:** use `org_id` on every business table, query, and mutation (no `tenant_id` naming).
-2. **RLS from day one:** do not build features that bypass RLS.
-3. **Data flow:** UI → hooks → query/mutation → Supabase → Zod parse → UI.
-4. **No direct DB calls from UI:** all access goes through domain data modules (hooks + lib/api).
-5. **Zod is authoritative:** define/validate domain data shapes with Zod and reuse across UI/queries/Edge Functions.
-6. **Activity logging required:** every meaningful mutation inserts into `activity_events` and invalidates relevant queries.
-7. **Modular monolith:** add new work under `features/<domain>`; avoid dumping into `lib/` or giant screens.
-8. **Web-first:** ensure React Native for Web compatibility; do not add native-only libraries without a web plan.
+1. Tenant scoping: use `org_id` on every business table, query, and mutation (no `tenant_id` naming).
+2. RLS from day one: do not build features that bypass RLS.
+3. Data flow: UI -> hooks -> query/mutation -> Supabase -> Zod parse -> UI.
+4. No direct DB calls from UI: all access goes through domain data modules (hooks + lib/api).
+5. Zod is authoritative: define/validate domain data shapes with Zod and reuse across UI/queries/Edge Functions.
+6. Zod + DB types must not drift: Zod schemas must parse into (or explicitly map to) the types generated from Supabase (`database.types.ts`).
+7. Activity logging required (atomic): every meaningful mutation inserts into `activity_events` atomically (trigger/RPC/transactional backend), then invalidates relevant queries.
+8. Modular monolith: add new work under `features/<domain>`; avoid dumping into `lib/` or giant screens.
+9. Web-first: ensure React Native for Web compatibility; do not add native-only libraries without a web plan.
 
 ## Before coding
 - Read `docs/schema.md`, `docs/rls.md`, `docs/roles.md`, `docs/storage.md`.
@@ -25,5 +26,5 @@ This project has an authoritative system context: `Fafik_System_Context.md`. Do 
 ## Before shipping a change
 - Confirm RLS policies cover new table/query paths.
 - Confirm `org_id` is always passed and validated.
-- Confirm activity events are written for new mutations.
+- Confirm activity events are written for new mutations (and are atomic).
 - Confirm web build still works (routing, styling, dependencies).

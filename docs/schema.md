@@ -5,7 +5,7 @@ This schema is a **draft baseline** aligned to `Fafik_System_Context.md` (author
 - **Modular monolith, SaaS-ready**: `org_id` tenant scoping on *all business tables*.
 - **Membership-based authorization**: no global role on `profiles`; roles live on `memberships.roles[]`.
 - **Single source of truth per dog**: one canonical `dogs` row; all related records reference `dogs.id`.
-- **Customization without schema forks**: tenant-specific fields live in `jsonb` (`extra_fields`), not per-tenant tables.
+- **Customization without schema forks**: tenant-specific fields live in `jsonb` (`extra_fields` and `orgs.settings`), not per-tenant tables.
 
 > Naming note: the authoritative context uses `org_id` everywhere. Any existing `tenant_id` usage in code should be migrated to `org_id`.
 
@@ -35,17 +35,33 @@ create table public.profiles (
 );
 ```
 
-### `orgs` (tenants)
+### `orgs` (tenants + settings)
+
+The System Context requires NGO-configurable stages/statuses without schema forks. Store these defaults in
+`orgs.settings` (JSONB) so the app can populate dropdowns without hard-coding.
 
 ```sql
 create table public.orgs (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug citext unique,
+  settings jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 ```
+
+Recommended `orgs.settings` shape (example):
+
+```json
+{
+  "dog_stages": ["Intake", "In Foster", "Medical", "Transport", "Adopted"],
+  "transport_statuses": ["Requested", "Scheduled", "In Progress", "Done", "Canceled"]
+}
+```
+
+Seeding rule (MVP):
+- On org creation (migration, trigger, or service), seed sensible defaults into `orgs.settings`.
 
 ### `memberships` (join table; roles per org)
 
@@ -261,6 +277,10 @@ create table public.activity_events (
 create index activity_events_org_created_idx on public.activity_events(org_id, created_at desc);
 create index activity_events_entity_idx on public.activity_events(org_id, entity_type, entity_id, created_at desc);
 ```
+
+Atomicity rule (MVP):
+- Do not rely on the client to do “write row then insert activity event” as two separate requests.
+- Require atomic write + audit event via Postgres triggers for simple CRUD and/or Supabase RPCs (stored procedures) for complex mutations (e.g., assign foster, stage transition).
 
 ## Notes / Explicitly Deferred (per System Context)
 - Public portals, cross-NGO pooling, heavy automation engines: **not in MVP**.

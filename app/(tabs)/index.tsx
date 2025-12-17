@@ -33,12 +33,12 @@ import { Dog } from '@/schemas/dog';
 import { TABS, useUIStore } from '@/stores/uiStore';
 import { useDog } from '@/hooks/useDog';
 
-const TENANT_ID = 'tenant_123';
+const ORG_ID = 'org_123';
 const DOG_ID = '1';
 
 type DogProfileView = {
   id: string;
-  tenantId: string;
+  orgId: string;
   name: string;
   status: string;
   medicalStatus: string;
@@ -65,7 +65,7 @@ const toDogProfileView = (dog: Dog): DogProfileView => {
 
   return {
     id: dog.id,
-    tenantId: dog.tenant_id,
+    orgId: dog.org_id,
     name: dog.name,
     status: dog.status,
     medicalStatus: dog.medical_status,
@@ -89,7 +89,7 @@ const toDogProfileView = (dog: Dog): DogProfileView => {
 };
 
 export default function HomeScreen() {
-  const { data, isLoading } = useDog(TENANT_ID, DOG_ID);
+  const { data, isLoading } = useDog(ORG_ID, DOG_ID);
   const dog = data ? toDogProfileView(data) : null;
   const { activeTab, setActiveTab } = useUIStore();
   const { width } = useWindowDimensions();
