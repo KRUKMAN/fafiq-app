@@ -1,13 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  SafeAreaView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { Href, useRouter } from 'expo-router';
 import { AlertTriangle, Filter, Plus, Search } from 'lucide-react-native';
 
@@ -40,7 +32,7 @@ export default function DogsListScreen() {
   const list = useMemo(() => data ?? [], [data]);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
+    <View className="flex-1 bg-surface">
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-border bg-white">
         <Text className="text-xl font-bold text-gray-900">Dogs</Text>
         <View className="flex-row items-center gap-2">
@@ -126,7 +118,7 @@ export default function DogsListScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

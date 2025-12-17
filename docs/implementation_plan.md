@@ -87,7 +87,7 @@ Requirements:
 |---|---|
 | Mock auth guard | ⏳ planned |
 | Org guard (org selector redirect) | ⏳ planned |
-| Responsive sidebar / tabs | in_progress |
+| Responsive sidebar / tabs | ГШ done |
 
 ---
 
@@ -98,8 +98,8 @@ Requirements:
 | Screen | Status |
 |---|---|
 | Dog list (search/filters + cards; nav to detail) | in_progress |
-| Dog detail shell | in_progress |
-| Overview tab | in_progress |
+| Dog detail shell | ГШ done |
+| Overview tab | ГШ done |
 | Medical tab (mock) | ⏳ planned |
 | Timeline tab | ⏳ planned |
 | Files tab (UI only) | ⏳ planned |
@@ -113,8 +113,8 @@ Note: Dog list must include filters (stage/status) and search; selecting a dog o
 
 | Screen | Status |
 |---|---|
-| Transport list | ⏳ planned |
-| Transport detail | ⏳ planned |
+| Transport list | mocked (route scaffolded) |
+| Transport detail | mocked (route scaffolded) |
 
 ---
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   AlertCircle,
   AlertTriangle,
@@ -17,10 +16,10 @@ import {
   Users,
 } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { Dog } from '@/schemas/dog';
-import { TABS } from '@/stores/uiStore';
+import { TABS, useUIStore } from '@/stores/uiStore';
 import { useDog } from '@/hooks/useDog';
 import { useSessionStore } from '@/stores/sessionStore';
 
@@ -81,13 +80,17 @@ export default function DogDetailScreen() {
   const dogId = Array.isArray(id) ? id[0] : id;
 
   const { activeOrgId, ready, bootstrap, memberships, switchOrg } = useSessionStore();
-  const [activeViewTab, setActiveViewTab] = useState<(typeof TABS)[number]>('Overview');
+  const { activeTab, setActiveTab } = useUIStore();
 
   useEffect(() => {
     if (!ready) {
       bootstrap();
     }
   }, [ready, bootstrap]);
+
+  useEffect(() => {
+    setActiveTab('Overview');
+  }, [dogId, setActiveTab]);
 
   const { data, isLoading } = useDog(activeOrgId ?? undefined, dogId ?? undefined);
   const dog = data ? toDogProfileView(data) : null;
@@ -122,7 +125,7 @@ export default function DogDetailScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
+    <View className="flex-1 bg-surface">
       <View className="flex-1 bg-white">
         <TopBar
           dog={dog}
@@ -138,13 +141,13 @@ export default function DogDetailScreen() {
 
             <KeyMetrics dog={dog} />
 
-            <TabsBar activeTab={activeViewTab} setActiveTab={setActiveViewTab} />
+            <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-            {renderTab(activeViewTab, dog)}
+            {renderTab(activeTab, dog)}
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
