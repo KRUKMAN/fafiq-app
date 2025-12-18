@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import {
   AlertCircle,
   AlertTriangle,
@@ -43,10 +43,40 @@ type DogProfileView = {
     intakeDate?: string;
   };
   alerts: { type: 'warning' | 'error'; message: string }[];
+  notes: Note[];
+  medicalHistory: MedicalRecord[];
+  files: FileItem[];
+};
+
+type Note = {
+  id: string;
+  author: string;
+  body: string;
+  createdAt: string;
+};
+
+type MedicalRecord = {
+  id: string;
+  title: string;
+  status: string;
+  date: string;
+  doctor?: string;
+  notes?: string;
+};
+
+type FileItem = {
+  id: string;
+  name: string;
+  type: string;
+  uploadedAt: string;
+  uploadedBy?: string;
 };
 
 const toDogProfileView = (dog: Dog): DogProfileView => {
   const attributes = dog.extra_fields.attributes ?? {};
+  const notes = (dog.extra_fields.notes as Note[] | undefined) ?? [];
+  const medicalHistory = (dog.extra_fields.medical_history as MedicalRecord[] | undefined) ?? [];
+  const files = (dog.extra_fields.files as FileItem[] | undefined) ?? [];
 
   return {
     id: dog.id,
@@ -70,6 +100,9 @@ const toDogProfileView = (dog: Dog): DogProfileView => {
       intakeDate: attributes.intake_date,
     },
     alerts: dog.extra_fields.alerts ?? [],
+    notes,
+    medicalHistory,
+    files,
   };
 };
 
@@ -85,7 +118,7 @@ export default function DogDetailScreen() {
   const dogId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
 
-  const { activeOrgId, ready, bootstrap } = useSessionStore();
+  const { activeOrgId, ready, memberships, bootstrap } = useSessionStore();
   const { activeTab, setActiveTab } = useUIStore();
 
   useEffect(() => {
@@ -100,12 +133,46 @@ export default function DogDetailScreen() {
 
   const { data, isLoading } = useDog(activeOrgId ?? undefined, dogId ?? undefined);
   const dog = data ? toDogProfileView(data) : null;
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+
+  useEffect(() => {
+    if (dog) {
+      setNotes(dog.notes ?? []);
+    }
+  }, [dog]);
+
+  const handleAddNote = () => {
+    if (!noteDraft.trim()) return;
+    const newNote: Note = {
+      id: `note_${Date.now()}`,
+      author: 'You',
+      body: noteDraft.trim(),
+      createdAt: new Date().toISOString(),
+    };
+    setNotes((prev) => [newNote, ...prev]);
+    setNoteDraft('');
+    setNoteModalOpen(false);
+  };
 
   if (!ready) {
     return renderDrawer(
       <View className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator />
         <Text className="mt-2 text-sm text-gray-600">Loading dog profile...</Text>
+      </View>,
+      () => router.back()
+    );
+  }
+
+  if (ready && memberships.length === 0) {
+    return renderDrawer(
+      <View className="flex-1 items-center justify-center bg-white px-6">
+        <Text className="text-base font-semibold text-gray-900">No memberships found</Text>
+        <Text className="mt-2 text-sm text-gray-600 text-center">
+          Join or create an organization to view dog details.
+        </Text>
       </View>,
       () => router.back()
     );
@@ -142,26 +209,45 @@ export default function DogDetailScreen() {
 
       <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="w-full max-w-5xl self-center px-4 md:px-8 mt-4">
-          <DogHeader dog={dog} />
+          <DogHeader dog={dog} onAddNote={() => setNoteModalOpen(true)} />
 
           <KeyMetrics dog={dog} />
 
           <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {renderTab(activeTab, dog, activeOrgId)}
+          {renderTab(activeTab, dog, activeOrgId, notes, () => setNoteModalOpen(true))}
         </View>
       </ScrollView>
+
+      {noteModalOpen ? (
+        <NoteModal
+          draft={noteDraft}
+          onChangeDraft={setNoteDraft}
+          onClose={() => setNoteModalOpen(false)}
+          onSave={handleAddNote}
+        />
+      ) : null}
     </View>,
     () => router.back()
   );
 }
 
-const renderTab = (tab: (typeof TABS)[number], dog: DogProfileView, activeOrgId: string | null) => {
+const renderTab = (
+  tab: (typeof TABS)[number],
+  dog: DogProfileView,
+  activeOrgId: string | null,
+  notes: Note[],
+  onAddNote: () => void
+) => {
   switch (tab) {
     case 'Overview':
-      return <OverviewTab dog={dog} />;
+      return <OverviewTab dog={dog} notes={notes} onAddNote={onAddNote} />;
     case 'Timeline':
       return activeOrgId ? <TimelineTab orgId={activeOrgId} dogId={dog.id} /> : null;
+    case 'Medical':
+      return <MedicalTab history={dog.medicalHistory} />;
+    case 'Documents':
+      return <FilesTab files={dog.files} />;
     default:
       return <PlaceholderTab label={tab} />;
   }
@@ -200,7 +286,7 @@ const TopBar = ({
   </View>
 );
 
-const DogHeader = ({ dog }: { dog: DogProfileView }) => (
+const DogHeader = ({ dog, onAddNote }: { dog: DogProfileView; onAddNote: () => void }) => (
   <View className="flex-col md:flex-row justify-between gap-6 mb-8">
     <View className="flex-row gap-4">
       {dog.photoUrl ? (
@@ -229,7 +315,7 @@ const DogHeader = ({ dog }: { dog: DogProfileView }) => (
     <View className="flex-row flex-wrap gap-2">
       <ActionButton label="Assign foster" />
       <ActionButton label="Create transport" />
-      <ActionButton label="Add note" />
+      <ActionButton label="Add note" onPress={onAddNote} />
       <ActionButton label="Upload document" />
       <Pressable className="w-10 h-10 items-center justify-center border border-border rounded-md bg-white">
         <MoreHorizontal size={20} color="#6B7280" />
@@ -238,8 +324,10 @@ const DogHeader = ({ dog }: { dog: DogProfileView }) => (
   </View>
 );
 
-const ActionButton = ({ label }: { label: string }) => (
-  <Pressable className="bg-white border border-border py-2 px-4 rounded-md shadow-sm">
+const ActionButton = ({ label, onPress }: { label: string; onPress?: () => void }) => (
+  <Pressable
+    onPress={onPress}
+    className="bg-white border border-border py-2 px-4 rounded-md shadow-sm">
     <Text className="text-[13px] font-medium text-gray-900">{label}</Text>
   </Pressable>
 );
@@ -302,7 +390,7 @@ const TabsBar = ({
   </ScrollView>
 );
 
-const OverviewTab = ({ dog }: { dog: DogProfileView }) => {
+const OverviewTab = ({ dog, notes, onAddNote }: { dog: DogProfileView; notes: Note[]; onAddNote: () => void }) => {
   const alerts = dog.alerts;
   const attributes = dog.attributes;
   const needsFoster = !dog.fosterName;
@@ -344,6 +432,10 @@ const OverviewTab = ({ dog }: { dog: DogProfileView }) => {
             <SummaryRow label="Breed" value={attributes.breed ?? '-'} />
             <SummaryRow label="Intake" value={attributes.intakeDate ?? '-'} />
           </View>
+        </Card>
+
+        <Card title="Notes">
+          <NotesList notes={notes} onAddNote={onAddNote} />
         </Card>
 
         <Card title="Alerts">
@@ -436,6 +528,60 @@ const TimelineTab = ({ orgId, dogId }: { orgId: string; dogId: string }) => {
   );
 };
 
+const MedicalTab = ({ history }: { history: MedicalRecord[] }) => {
+  if (!history.length) {
+    return (
+      <View className="items-center justify-center py-6">
+        <Text className="text-sm text-gray-600">No medical records yet.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="gap-3">
+      {history.map((record) => (
+        <View key={record.id} className="bg-white border border-border rounded-lg p-4 shadow-sm">
+          <View className="flex-row justify-between items-center mb-1">
+            <Text className="text-sm font-semibold text-gray-900">{record.title}</Text>
+            <Text className="text-xs text-gray-500">{formatDateOnly(record.date)}</Text>
+          </View>
+          <Text className="text-xs font-medium text-gray-600 mb-2">{record.status}</Text>
+          {record.notes ? <Text className="text-sm text-gray-700">{record.notes}</Text> : null}
+          {record.doctor ? (
+            <Text className="text-xs text-gray-500 mt-2">Doctor: {record.doctor}</Text>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const FilesTab = ({ files }: { files: FileItem[] }) => {
+  if (!files.length) {
+    return (
+      <View className="items-center justify-center py-6">
+        <Text className="text-sm text-gray-600">No files uploaded yet.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="gap-3">
+      {files.map((file) => (
+        <View key={file.id} className="flex-row items-center justify-between bg-white border border-border rounded-lg p-3 shadow-sm">
+          <View>
+            <Text className="text-sm font-semibold text-gray-900">{file.name}</Text>
+            <Text className="text-xs text-gray-500">
+              {file.type} • Uploaded {formatTimestamp(file.uploadedAt)}
+            </Text>
+          </View>
+          <Text className="text-xs text-gray-500">{file.uploadedBy ?? 'Unknown uploader'}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="bg-white border border-border rounded-lg p-5 shadow-sm">
     <Text className="text-xs font-bold text-gray-900 tracking-[0.08em] uppercase mb-4">
@@ -466,9 +612,78 @@ const SummaryRow = ({ label, value }: { label: string; value: string }) => (
   </View>
 );
 
+const NotesList = ({ notes, onAddNote }: { notes: Note[]; onAddNote: () => void }) => (
+  <View className="gap-3">
+    <Pressable
+      accessibilityRole="button"
+      onPress={onAddNote}
+      className="self-start px-3 py-2 rounded-md border border-border bg-white shadow-sm">
+      <Text className="text-sm font-semibold text-gray-900">Add note</Text>
+    </Pressable>
+    {notes.length === 0 ? (
+      <Text className="text-sm text-gray-500">No notes yet.</Text>
+    ) : (
+      notes.map((note) => (
+        <View key={note.id} className="border border-border rounded-md p-3 bg-surface">
+          <View className="flex-row justify-between items-center mb-1">
+            <Text className="text-sm font-semibold text-gray-900">{note.author}</Text>
+            <Text className="text-xs text-gray-500">{formatTimestamp(note.createdAt)}</Text>
+          </View>
+          <Text className="text-sm text-gray-700">{note.body}</Text>
+        </View>
+      ))
+    )}
+  </View>
+);
+
 const PlaceholderTab = ({ label }: { label: string }) => (
   <View className="p-10 border-2 border-dashed border-border rounded-lg items-center justify-center">
     <Text className="text-gray-400">Placeholder for {label}</Text>
+  </View>
+);
+
+const NoteModal = ({
+  draft,
+  onChangeDraft,
+  onSave,
+  onClose,
+}: {
+  draft: string;
+  onChangeDraft: (value: string) => void;
+  onSave: () => void;
+  onClose: () => void;
+}) => (
+  <View className="absolute inset-0 bg-black/30 items-center justify-center px-4">
+    <View className="w-full max-w-md bg-white rounded-lg border border-border shadow-2xl p-4 gap-3">
+      <View className="flex-row justify-between items-center">
+        <Text className="text-base font-semibold text-gray-900">Add note</Text>
+        <Pressable accessibilityRole="button" onPress={onClose} className="p-1">
+          <X size={18} color="#4B5563" />
+        </Pressable>
+      </View>
+      <TextInput
+        value={draft}
+        onChangeText={onChangeDraft}
+        placeholder="Write a quick note..."
+        placeholderTextColor="#9CA3AF"
+        multiline
+        className="min-h-[100px] border border-border rounded-md px-3 py-2 text-sm text-gray-900"
+      />
+      <View className="flex-row justify-end gap-2">
+        <Pressable
+          accessibilityRole="button"
+          onPress={onClose}
+          className="px-4 py-2 rounded-md border border-border bg-white">
+          <Text className="text-sm text-gray-700">Cancel</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onSave}
+          className="px-4 py-2 rounded-md bg-gray-900">
+          <Text className="text-sm font-semibold text-white">Save note</Text>
+        </Pressable>
+      </View>
+    </View>
   </View>
 );
 
@@ -495,5 +710,15 @@ const formatTimestamp = (value: string) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+  });
+};
+
+const formatDateOnly = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
 };

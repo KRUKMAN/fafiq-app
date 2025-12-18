@@ -30,6 +30,32 @@ const mockDogsList: Dog[] = [
         { type: 'error', message: 'No foster assigned' },
         { type: 'warning', message: 'Vaccination overdue' },
       ],
+      notes: [
+        {
+          id: 'n1',
+          author: 'Maria Garcia',
+          body: 'Great progress with leash training.',
+          createdAt: '2025-12-16T10:00:00Z',
+        },
+      ],
+      medical_history: [
+        {
+          id: 'med1',
+          title: 'Vaccination scheduled',
+          status: 'Upcoming',
+          date: '2025-12-20',
+          notes: 'Core vaccines to be administered.',
+        },
+      ],
+      files: [
+        {
+          id: 'f1',
+          name: 'Intake form.pdf',
+          type: 'application/pdf',
+          uploadedAt: '2025-12-15T12:00:00Z',
+          uploadedBy: 'Maria Garcia',
+        },
+      ],
     },
   }),
   dogSchema.parse({
@@ -39,25 +65,52 @@ const mockDogsList: Dog[] = [
     status: 'Medical',
     medical_status: 'Post-surgery recovery',
     location: 'Foster: Greenfield',
-    description:
-      'Calm, shy initially but warms up. On medication for recovery, needs quiet environment.',
-      extra_fields: {
-        internal_id: 'DOG-2234',
-        photo_url:
-          'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=400&q=80',
-        responsible_person: 'Daniel Lee',
-        foster_name: 'Alex Morgan',
-        budget_spent: 2100,
-        last_update: 'Today, 09:15 AM',
-        last_update_iso: '2025-12-17T09:15:00Z',
-        attributes: {
-          age: '3 years',
-          sex: 'Female',
-          size: 'Small',
+      description:
+        'Calm, shy initially but warms up. On medication for recovery, needs quiet environment.',
+    extra_fields: {
+      internal_id: 'DOG-2234',
+      photo_url:
+        'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=400&q=80',
+      responsible_person: 'Daniel Lee',
+      foster_name: 'Alex Morgan',
+      budget_spent: 2100,
+      last_update: 'Today, 09:15 AM',
+      last_update_iso: '2025-12-17T09:15:00Z',
+      attributes: {
+        age: '3 years',
+        sex: 'Female',
+        size: 'Small',
         breed: 'Terrier Mix',
         intake_date: 'Nov 02, 2023',
       },
       alerts: [{ type: 'warning', message: 'Medical follow-up in 2 days' }],
+      notes: [
+        {
+          id: 'n2',
+          author: 'Daniel Lee',
+          body: 'Post-surgery meds given at 08:00.',
+          createdAt: '2025-12-17T08:15:00Z',
+        },
+      ],
+      medical_history: [
+        {
+          id: 'med2',
+          title: 'Post-surgery check',
+          status: 'In recovery',
+          date: '2025-12-17',
+          doctor: 'Dr. Chen',
+          notes: 'Recovery looks good; recheck in 2 days.',
+        },
+      ],
+      files: [
+        {
+          id: 'f2',
+          name: 'Surgery discharge.pdf',
+          type: 'application/pdf',
+          uploadedAt: '2025-12-17T07:45:00Z',
+          uploadedBy: 'Dr. Chen',
+        },
+      ],
     },
   }),
   dogSchema.parse({
@@ -77,14 +130,17 @@ const mockDogsList: Dog[] = [
         budget_spent: 950,
         last_update: 'Yesterday, 4:30 PM',
         last_update_iso: '2025-12-16T16:30:00Z',
-        attributes: {
-          age: '1 year',
-          sex: 'Male',
+      attributes: {
+        age: '1 year',
+        sex: 'Male',
         size: 'Medium',
         breed: 'Shepherd Mix',
         intake_date: 'Dec 01, 2023',
       },
       alerts: [{ type: 'warning', message: 'Transport scheduled' }],
+      notes: [],
+      medical_history: [],
+      files: [],
     },
   }),
 ];

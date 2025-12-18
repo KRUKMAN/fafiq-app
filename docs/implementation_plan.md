@@ -100,13 +100,13 @@ Requirements:
 | Dog list (search/filters + cards; nav to detail) | done |
 | Dog detail shell | done |
 | Overview tab | done |
-| Medical tab (mock) | planned |
+| Medical tab (mock) | mocked |
 | Timeline tab | done |
-| Files tab (UI only) | planned |
+| Files tab (UI only) | mocked |
 | Create dog form | in_progress |
 | Edit dog form | in_progress |
-| Table record count below grid | planned |
-| Dog detail top bar cleanup (remove search/org picker, add spacing) | planned |
+| Table record count below grid | done |
+| Dog detail top bar cleanup (remove search/org picker, add spacing) | done |
 Note: Dog list must include filters (stage/status) and search; selecting a dog opens its detail view.
 
 ---

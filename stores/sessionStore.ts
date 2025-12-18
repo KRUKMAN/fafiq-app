@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+import { getMockMemberships } from '@/lib/mocks/memberships';
+import { getMockOrgs } from '@/lib/mocks/orgs';
+import { getMockProfiles } from '@/lib/mocks/profiles';
+
 type User = {
   id: string;
   name: string;
@@ -7,6 +11,7 @@ type User = {
 };
 
 type Membership = {
+  id: string;
   org_id: string;
   org_name: string;
   roles: string[];
@@ -15,10 +20,13 @@ type Membership = {
 
 type SessionState = {
   ready: boolean;
+  isAuthenticated: boolean;
   currentUser: User | null;
   memberships: Membership[];
   activeOrgId: string | null;
   bootstrap: () => Promise<void>;
+  signIn: () => Promise<void>;
+  signOut: () => void;
   switchOrg: (orgId: string) => void;
 };
 
@@ -29,11 +37,6 @@ const mockUser: User = {
   name: 'Alex Demo',
   email: 'alex@example.com',
 };
-
-const mockMemberships: Membership[] = [
-  { org_id: 'org_123', org_name: 'Stray Love Found NGO', roles: ['admin'], active: true },
-  { org_id: 'org_456', org_name: 'Paws & Claws', roles: ['volunteer'], active: true },
-];
 
 const selectActiveOrgId = (memberships: Membership[], lastOrgId: string | null) => {
   if (lastOrgId && memberships.some((m) => m.org_id === lastOrgId && m.active)) {
@@ -69,27 +72,59 @@ const loadLastOrgId = (): string | null => {
   return lastOrgIdMemory;
 };
 
-export const useSessionStore = create<SessionState>((set) => ({
+export const useSessionStore = create<SessionState>((set, get) => ({
   ready: false,
+  isAuthenticated: false,
   currentUser: null,
   memberships: [],
   activeOrgId: null,
   bootstrap: async () => {
+    // For now, bootstrap signs in the mock user automatically.
+    await get().signIn();
+  },
+  signIn: async () => {
     const lastOrgId = loadLastOrgId();
-    const memberships = mockMemberships;
+    const [membershipsRaw, orgs, profiles] = await Promise.all([
+      getMockMemberships(),
+      getMockOrgs(),
+      getMockProfiles(),
+    ]);
+
+    const memberships = membershipsRaw.map((m) => ({
+      ...m,
+      org_name: orgs.find((o) => o.id === m.org_id)?.name ?? 'Unknown org',
+    }));
     const activeOrgId = selectActiveOrgId(memberships, lastOrgId);
     if (activeOrgId) {
       persistLastOrgId(activeOrgId);
     }
+
+    const userProfile = profiles.find((p) => p.user_id === mockUser.id);
+
     set({
       ready: true,
-      currentUser: mockUser,
+      isAuthenticated: true,
+      currentUser: userProfile
+        ? { id: userProfile.user_id, name: userProfile.full_name ?? mockUser.name, email: mockUser.email }
+        : mockUser,
       memberships,
       activeOrgId,
     });
   },
+  signOut: () =>
+    set(() => {
+      persistLastOrgId(null);
+      return {
+        ready: true,
+        isAuthenticated: false,
+        currentUser: null,
+        memberships: [],
+        activeOrgId: null,
+      };
+    }),
   switchOrg: (orgId: string) =>
     set((state) => {
+      if (!state.isAuthenticated) return state;
       const valid = state.memberships.some((m) => m.org_id === orgId && m.active);
       if (!valid) return state;
       persistLastOrgId(orgId);

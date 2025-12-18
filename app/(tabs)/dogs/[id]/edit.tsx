@@ -22,7 +22,7 @@ const STAGES = ['In Foster', 'Medical', 'Transport', 'Adopted'];
 export default function EditDogScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dogId = Array.isArray(id) ? id[0] : id;
-  const { ready, activeOrgId, bootstrap } = useSessionStore();
+  const { ready, activeOrgId, memberships, bootstrap } = useSessionStore();
   const { data, isLoading } = useDog(activeOrgId ?? undefined, dogId ?? undefined);
 
   const [form, setForm] = useState<DogFormState>({
@@ -69,6 +69,17 @@ export default function EditDogScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface">
         <Text className="text-sm text-gray-600">Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (ready && memberships.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface px-6">
+        <Text className="text-base font-semibold text-gray-900">No memberships found</Text>
+        <Text className="mt-2 text-sm text-gray-600 text-center">
+          Join or create an organization to edit dogs.
+        </Text>
       </SafeAreaView>
     );
   }

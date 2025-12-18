@@ -18,7 +18,7 @@ type DogFormState = z.infer<typeof dogFormSchema>;
 const STAGES = ['In Foster', 'Medical', 'Transport', 'Adopted'];
 
 export default function CreateDogScreen() {
-  const { ready, activeOrgId, bootstrap } = useSessionStore();
+  const { ready, activeOrgId, memberships, bootstrap } = useSessionStore();
   const [form, setForm] = useState<DogFormState>({
     name: '',
     stage: STAGES[0],
@@ -54,6 +54,17 @@ export default function CreateDogScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface">
         <Text className="text-sm text-gray-600">Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (ready && memberships.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface px-6">
+        <Text className="text-base font-semibold text-gray-900">No memberships found</Text>
+        <Text className="mt-2 text-sm text-gray-600 text-center">
+          Join or create an organization to add dogs.
+        </Text>
       </SafeAreaView>
     );
   }

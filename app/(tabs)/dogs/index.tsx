@@ -73,6 +73,17 @@ export default function DogsListScreen() {
     );
   }
 
+  if (ready && memberships.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center bg-surface px-6">
+        <Text className="text-base font-semibold text-gray-900">No memberships found</Text>
+        <Text className="mt-2 text-sm text-gray-600 text-center">
+          You are not a member of any organization. Ask an admin to invite you or create a new org.
+        </Text>
+      </View>
+    );
+  }
+
   if (!activeOrgId) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-6">
@@ -138,7 +149,26 @@ export default function DogsListScreen() {
           </View>
         ) : list.length === 0 ? (
           <View className="flex-1 items-center justify-center bg-surface">
-            <Text className="text-sm text-gray-500">No dogs match the current filters.</Text>
+            <Text className="text-sm text-gray-600">No dogs match the current filters.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setDogList({
+                  search: '',
+                  status: 'All',
+                  location: '',
+                  responsible: '',
+                  hasAlerts: false,
+                  updatedAfter: '',
+                  updatedBefore: '',
+                  page: 1,
+                });
+                setSearchInput('');
+                setCurrentPage(1);
+              }}
+              className="mt-3 px-4 py-2 rounded-md border border-border bg-white">
+              <Text className="text-sm font-semibold text-gray-800">Reset filters</Text>
+            </Pressable>
           </View>
         ) : (
           <DataTable

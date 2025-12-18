@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const orgSettingsSchema = z.record(z.any()).default({});
+export const orgSettingsSchema = z.record(z.string(), z.any()).default({});
 
 export const orgSchema = z.object({
   id: z.string(),

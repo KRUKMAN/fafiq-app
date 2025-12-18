@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import {
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react-native';
 
 import { useUIStore } from '@/stores/uiStore';
+import { useSessionStore } from '@/stores/sessionStore';
 
 type NavItem = {
   href: string;
@@ -34,6 +35,39 @@ export default function TabLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
+   const { ready, isAuthenticated, bootstrap, signIn } = useSessionStore();
+
+  useEffect(() => {
+    if (!ready) {
+      bootstrap();
+    }
+  }, [ready, bootstrap]);
+
+  if (!ready) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface">
+        <ActivityIndicator />
+        <Text className="mt-2 text-sm text-gray-600">Preparing your session...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface px-6">
+        <Text className="text-base font-semibold text-gray-900">You are signed out</Text>
+        <Text className="mt-2 text-sm text-gray-600 text-center">
+          Sign in to view your organizations and data.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => signIn()}
+          className="mt-4 px-4 py-2 bg-gray-900 rounded-lg shadow-sm">
+          <Text className="text-sm font-semibold text-white">Sign in (mock)</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
