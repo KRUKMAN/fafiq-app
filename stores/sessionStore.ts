@@ -27,7 +27,9 @@ type SessionState = {
   memberships: Membership[];
   activeOrgId: string | null;
   bootstrap: () => Promise<void>;
-  signIn: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (fullName: string, email: string, password: string) => Promise<void>;
+  signInDemo: () => Promise<void>;
   signOut: () => void;
   switchOrg: (orgId: string) => void;
 };
@@ -83,15 +85,63 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   bootstrap: async () => {
     if (get().ready) return;
 
-    const supabaseBootstrapped = await bootstrapSupabaseSession(set);
-    if (supabaseBootstrapped) {
+    // If Supabase env is present, prefer real session boot. Otherwise, fall back to mocks.
+    if (supabase) {
+      const bootstrapped = await bootstrapSupabaseSession(set);
+      if (bootstrapped) return;
+
+      // No Supabase session: mark ready + signed out (do not auto-mock when Supabase is configured).
+      set({
+        ready: true,
+        isAuthenticated: false,
+        currentUser: null,
+        memberships: [],
+        activeOrgId: null,
+      });
       return;
     }
 
     await bootstrapMockSession(set);
   },
-  signIn: async () => {
-    await bootstrapMockSession(set);
+  signIn: async (email: string, password: string) => {
+    if (!supabase) {
+      await bootstrapMockSession(set);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await bootstrapSupabaseSession(set);
+  },
+  signUp: async (fullName: string, email: string, password: string) => {
+    if (!supabase) {
+      await bootstrapMockSession(set);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const userId = data.user?.id;
+    if (userId) {
+      await supabase.from('profiles').upsert({ user_id: userId, full_name: fullName });
+    }
+
+    await bootstrapSupabaseSession(set);
   },
   signOut: () =>
     set(() => {
@@ -106,6 +156,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         activeOrgId: null,
       };
     }),
+  signInDemo: async () => {
+    await bootstrapMockSession(set);
+  },
   switchOrg: (orgId: string) =>
     set((state) => {
       if (!state.isAuthenticated) return state;
@@ -120,6 +173,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 const bootstrapMockSession = async (
   set: Parameters<ReturnType<typeof create<SessionState>>['setState']>[0]
 ) => {
+  // Mock-only bootstrap is used when Supabase env is absent (or explicitly falling back).
   const lastOrgId = loadLastOrgId();
   const [membershipsRaw, orgs, profiles] = await Promise.all([
     getMockMemberships(),

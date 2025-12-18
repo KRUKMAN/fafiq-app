@@ -35,7 +35,7 @@ export default function TabLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-   const { ready, isAuthenticated, bootstrap, signIn } = useSessionStore();
+  const { ready, isAuthenticated, bootstrap } = useSessionStore();
 
   useEffect(() => {
     if (!ready) {
@@ -43,28 +43,17 @@ export default function TabLayout() {
     }
   }, [ready, bootstrap]);
 
+  useEffect(() => {
+    if (ready && !isAuthenticated) {
+      router.replace('/sign-in');
+    }
+  }, [ready, isAuthenticated, router]);
+
   if (!ready) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator />
         <Text className="mt-2 text-sm text-gray-600">Preparing your session...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface px-6">
-        <Text className="text-base font-semibold text-gray-900">You are signed out</Text>
-        <Text className="mt-2 text-sm text-gray-600 text-center">
-          Sign in to view your organizations and data.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => signIn()}
-          className="mt-4 px-4 py-2 bg-gray-900 rounded-lg shadow-sm">
-          <Text className="text-sm font-semibold text-white">Sign in (mock)</Text>
-        </Pressable>
       </SafeAreaView>
     );
   }

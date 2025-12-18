@@ -11,6 +11,8 @@ Reference: `docs/implementation_plan.md`
 - Added `database.types.ts` aligned to `docs/schema.md` for Supabase typing parity; remaining alignment gaps between Zod/DB are minimal.
 - Added transport detail shell (`app/(tabs)/transports/[id].tsx`) and navigation from list; dog detail now includes Financial, People & Housing, and Chat mock tabs.
 - Cleaned stray encoding artifacts and bad ternaries in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now compiles cleanly on web).
+- Applied Supabase schema + RLS + audit triggers; wired Dogs/Transports/Activity fetchers to Supabase-first with mock fallback and Zod parsing; documented auth/login plan and hook swap status in `docs/implementation_plan.md`.
+- Added Supabase-first auth wiring: new `app/sign-in` screen with email/password sign-in and sign-up, demo/mock fallback button, Supabase-typed client, and auth-aware tab guard redirect to sign-in.
 
 ## Outstanding (Phase 1 items not started)
 - Harden tenant boot/org guard beyond mock bootstrap (invite/create org flows, empty states across tabs).
@@ -23,7 +25,8 @@ Reference: `docs/implementation_plan.md`
 - Use Supabase auth + memberships to replace mock session; keep org-aware cache invalidation.
 
 ## Next Steps (short-term)
+- Implement Supabase login/sign-up screens with session boot + org guard; replace sessionStore mocks.
+- Complete Supabase hook swap (dogs detail timeline, transports) and align Zod vs DB nullability.
 - Harden tenant boot and org guard UX for users with no memberships/orgs.
 - Populate remaining empty states and org guard flows across tabs.
 - Keep dependency audit list in sync; prune only after Phase 2 wiring if still unused.
-- Prepare Supabase migrations for `schema.md` + `rls.md`; add audit triggers/RPC per entity.

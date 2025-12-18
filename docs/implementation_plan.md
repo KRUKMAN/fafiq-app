@@ -3,11 +3,11 @@
 This plan is aligned to `Fafik_System_Context.md` and cross-checked against the current codebase.
 
 ## Current Codebase Reality (Delta to Target)
-- Domain naming is aligned to `org_id` in the app code; database/RLS enforcement still pending.
+- Domain naming is aligned to `org_id` in the app code; Supabase schema + RLS + audit triggers are applied per `docs/schema.md` / `docs/rls.md`.
 - Tenant resolution is **mock-first** with a Supabase bootstrap fallback: sessionStore uses mock memberships/org selection when no Supabase session/env is available.
-- No RLS, schema migrations, or activity logging implementation yet (mock-only).
+- RLS and audit functions/triggers are live in the DB; frontend mutations still pending.
 - NativeWind v4 + metro config are in place; Expo Router shell + sidebar tabs are stable.
-- Dogs module is stage-based with list/detail/create/edit mocks; dog detail drawer has Financial/People & Housing/Chat mock tabs and has been cleaned of prior encoding artifacts; transports include list + detail shells.
+- Dogs/Transports hooks now fetch from Supabase when env/session is present (mock fallback remains); dog detail drawer has Financial/People & Housing/Chat mock tabs; transports include list + detail shells.
 - Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
 
 
@@ -148,10 +148,10 @@ planned | in_progress | done | mocked | blocked
 
 | Task | Status |
 |---|---|
-| Apply schema.md | planned |
-| Apply rls.md | planned |
-| org_id enforced everywhere | planned |
-| Seed org.settings defaults | planned |
+| Apply schema.md | done |
+| Apply rls.md | done |
+| org_id enforced everywhere | done |
+| Seed org.settings defaults | done |
 
 ---
 
@@ -187,16 +187,34 @@ planned | in_progress | done | mocked | blocked
 
 | Hook | Status |
 |---|---|
-| useDogs → Supabase | planned |
-| useDogDetail → Supabase | planned |
-| useTransports → Supabase | planned |
+| useDogs -> Supabase | in_progress |
+| useDogDetail -> Supabase | in_progress |
+| useTransports -> Supabase | in_progress |
 
 Rule:
 - UI code must not change
 
 ---
 
-## 2.5 Atomic Audit Logging (Hard Rule)
+## 2.5 Auth & Onboarding Plan
+
+| Task | Status |
+|---|---|
+| Supabase email/password login screen | in_progress |
+| Create account (sign-up) flow | in_progress |
+| Session boot: Supabase session -> memberships -> org guard | in_progress |
+| Sign-out + cache invalidation | planned |
+| Password reset hook (MVP) | planned |
+
+Flow notes:
+- Use Supabase Auth (`signInWithPassword`, `signUp`) with inline error display; no UI rewrite to tabs.
+- Boot sequence: check existing session, fetch memberships for `auth.uid()`, restore `last_org_id`, validate membership, set active org or prompt; block screens until org set.
+- Keep org selector on list screens (not detail); org switch still invalidates query caches.
+- Ensure every query/mutation includes `org_id`; rely on RLS for enforcement.
+
+---
+
+## 2.6 Atomic Audit Logging (Hard Rule)
 
 | Entity | Mechanism | Status |
 |---|---|---|
@@ -273,3 +291,7 @@ planned | in_progress | done | mocked | blocked
 - 2025-12-18: Realigned Dog Zod schema to `schema.md` (stage + audit fields), refreshed mocks and UI to use stage-based filters/badges, and documented dependency audit for Phase 2 wiring.
 - 2025-12-18: Added transport detail shell + navigation, filled remaining dog mock tabs (Financial/People & Housing/Chat), generated `database.types.ts`, and added org-aware cache invalidation + Supabase bootstrap fallback in session store.
 - 2025-12-18: Cleaned encoding/ternary corruption in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now stable); remaining mocks unchanged.
+
+
+
+
