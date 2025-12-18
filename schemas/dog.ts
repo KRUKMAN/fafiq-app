@@ -23,6 +23,7 @@ const extraFieldsSchema = z
     foster_name: z.string().nullable().optional(),
     budget_spent: z.number().optional(),
     last_update: z.string().optional(),
+    last_update_iso: z.string().optional(),
     attributes: attributesSchema.optional(),
     alerts: z.array(alertSchema).optional(),
   })

@@ -41,6 +41,11 @@ export default function DogsListScreen() {
   const { data, isLoading, error } = useDogs(activeOrgId ?? undefined, {
     search: dogList.search || undefined,
     status: dogList.status === 'All' ? undefined : dogList.status,
+    location: dogList.location || undefined,
+    responsible: dogList.responsible || undefined,
+    hasAlerts: dogList.hasAlerts || undefined,
+    updatedAfter: dogList.updatedAfter || undefined,
+    updatedBefore: dogList.updatedBefore || undefined,
   });
 
   const list = useMemo<DogListItem[]>(() => (data ?? []).map(toDogListItem), [data]);
@@ -206,9 +211,31 @@ export default function DogsListScreen() {
 
       <AdvancedFilterDrawer
         visible={dogList.advancedOpen}
-        onClose={() => setDogList({ advancedOpen: false })}>
-        <Text className="text-sm text-gray-600">Advanced filters coming soon.</Text>
-      </AdvancedFilterDrawer>
+        onClose={() => setDogList({ advancedOpen: false })}
+        filters={{
+          location: dogList.location,
+          responsible: dogList.responsible,
+          hasAlerts: dogList.hasAlerts,
+          updatedAfter: dogList.updatedAfter,
+          updatedBefore: dogList.updatedBefore,
+        }}
+        onChangeFilters={(patch) => setDogList(patch)}
+        onClear={() => {
+          setDogList({
+            location: '',
+            responsible: '',
+            hasAlerts: false,
+            updatedAfter: '',
+            updatedBefore: '',
+            page: 1,
+          });
+          setCurrentPage(1);
+        }}
+        onApply={() => {
+          setDogList({ page: 1, advancedOpen: false });
+          setCurrentPage(1);
+        }}
+      />
     </View>
   );
 }

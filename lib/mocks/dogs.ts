@@ -18,6 +18,7 @@ const mockDogsList: Dog[] = [
       foster_name: 'Sarah Johnson',
       budget_spent: 1500,
       last_update: 'Today, 10:45 AM',
+      last_update_iso: '2025-12-17T10:45:00Z',
       attributes: {
         age: '2 years',
         sex: 'Male',
@@ -40,18 +41,19 @@ const mockDogsList: Dog[] = [
     location: 'Foster: Greenfield',
     description:
       'Calm, shy initially but warms up. On medication for recovery, needs quiet environment.',
-    extra_fields: {
-      internal_id: 'DOG-2234',
-      photo_url:
-        'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=400&q=80',
-      responsible_person: 'Daniel Lee',
-      foster_name: 'Alex Morgan',
-      budget_spent: 2100,
-      last_update: 'Today, 09:15 AM',
-      attributes: {
-        age: '3 years',
-        sex: 'Female',
-        size: 'Small',
+      extra_fields: {
+        internal_id: 'DOG-2234',
+        photo_url:
+          'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=400&q=80',
+        responsible_person: 'Daniel Lee',
+        foster_name: 'Alex Morgan',
+        budget_spent: 2100,
+        last_update: 'Today, 09:15 AM',
+        last_update_iso: '2025-12-17T09:15:00Z',
+        attributes: {
+          age: '3 years',
+          sex: 'Female',
+          size: 'Small',
         breed: 'Terrier Mix',
         intake_date: 'Nov 02, 2023',
       },
@@ -66,17 +68,18 @@ const mockDogsList: Dog[] = [
     medical_status: 'Healthy',
     location: 'Shelter HQ',
     description: 'High energy, loves fetch. Ready for transport to foster tomorrow.',
-    extra_fields: {
-      internal_id: 'DOG-3234',
-      photo_url:
-        'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=400&q=80',
-      responsible_person: 'Maria Garcia',
-      foster_name: null,
-      budget_spent: 950,
-      last_update: 'Yesterday, 4:30 PM',
-      attributes: {
-        age: '1 year',
-        sex: 'Male',
+      extra_fields: {
+        internal_id: 'DOG-3234',
+        photo_url:
+          'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=400&q=80',
+        responsible_person: 'Maria Garcia',
+        foster_name: null,
+        budget_spent: 950,
+        last_update: 'Yesterday, 4:30 PM',
+        last_update_iso: '2025-12-16T16:30:00Z',
+        attributes: {
+          age: '1 year',
+          sex: 'Male',
         size: 'Medium',
         breed: 'Shepherd Mix',
         intake_date: 'Dec 01, 2023',

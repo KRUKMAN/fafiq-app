@@ -28,12 +28,12 @@ planned | in_progress | done | mocked | blocked
 
 | Schema | Status |
 |---|---|
-| Org | planned |
-| Profile | planned |
-| Membership | planned |
+| Org | done |
+| Profile | done |
+| Membership | done |
 | Dog | in_progress |
-| Transport | planned |
-| ActivityEvent | planned |
+| Transport | done |
+| ActivityEvent | done |
 
 Rules:
 - These schemas are the frontend source of truth
@@ -47,10 +47,10 @@ Rules:
 
 | Dataset | Status |
 |---|---|
-| Orgs | planned |
+| Orgs | done |
 | Dogs | in_progress |
-| Transports | planned |
-| Activity timeline | planned |
+| Transports | done |
+| Activity timeline | done |
 
 ---
 
@@ -58,9 +58,9 @@ Rules:
 
 | Hook | Status |
 |---|---|
-| useDogs() | planned |
-| useDogDetail(id) | planned |
-| useTransports() | planned |
+| useDogs() | done |
+| useDogDetail(id) | done |
+| useTransports() | done |
 
 Requirements:
 - Simulated latency (300–800ms)
@@ -101,7 +101,7 @@ Requirements:
 | Dog detail shell | done |
 | Overview tab | done |
 | Medical tab (mock) | planned |
-| Timeline tab | planned |
+| Timeline tab | done |
 | Files tab (UI only) | planned |
 | Create dog form | in_progress |
 | Edit dog form | in_progress |

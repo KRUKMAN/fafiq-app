@@ -19,6 +19,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Dog } from '@/schemas/dog';
 import { TABS, useUIStore } from '@/stores/uiStore';
 import { useDog } from '@/hooks/useDog';
+import { useDogTimeline } from '@/hooks/useDogTimeline';
 import { useSessionStore } from '@/stores/sessionStore';
 
 type DogProfileView = {
@@ -152,7 +153,7 @@ export default function DogDetailScreen() {
 
           <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {renderTab(activeTab, dog)}
+          {renderTab(activeTab, dog, activeOrgId)}
         </View>
       </ScrollView>
     </View>,
@@ -160,10 +161,12 @@ export default function DogDetailScreen() {
   );
 }
 
-const renderTab = (tab: (typeof TABS)[number], dog: DogProfileView) => {
+const renderTab = (tab: (typeof TABS)[number], dog: DogProfileView, activeOrgId: string | null) => {
   switch (tab) {
     case 'Overview':
       return <OverviewTab dog={dog} />;
+    case 'Timeline':
+      return activeOrgId ? <TimelineTab orgId={activeOrgId} dogId={dog.id} /> : null;
     default:
       return <PlaceholderTab label={tab} />;
   }
@@ -441,6 +444,62 @@ const OverviewTab = ({ dog }: { dog: DogProfileView }) => {
   );
 };
 
+const TimelineTab = ({ orgId, dogId }: { orgId: string; dogId: string }) => {
+  const { data, isLoading, error } = useDogTimeline(orgId, dogId);
+
+  if (isLoading) {
+    return (
+      <View className="items-center justify-center py-6">
+        <ActivityIndicator />
+        <Text className="mt-2 text-sm text-gray-600">Loading timeline...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="items-center justify-center py-6">
+        <Text className="text-sm font-semibold text-gray-900">Failed to load timeline</Text>
+        <Text className="text-xs text-gray-600 mt-1">
+          {(error as Error).message || 'Please try again shortly.'}
+        </Text>
+      </View>
+    );
+  }
+
+  if (!data?.length) {
+    return (
+      <View className="items-center justify-center py-6">
+        <Text className="text-sm text-gray-600">No activity yet for this dog.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View className="gap-4">
+      {data.map((event, idx) => {
+        const isLast = idx === data.length - 1;
+        return (
+          <View key={event.id} className="flex-row gap-3">
+            <View className="items-center">
+              <View className="w-3 h-3 rounded-full bg-gray-900 mt-1" />
+              {!isLast ? <View className="flex-1 w-px bg-border mt-1" /> : null}
+            </View>
+            <View className="flex-1 bg-white border border-border rounded-lg p-3 shadow-sm">
+              <Text className="text-xs text-gray-500">{formatTimestamp(event.created_at)}</Text>
+              <Text className="text-sm font-semibold text-gray-900 mt-1">{event.summary}</Text>
+              <Text className="text-[11px] uppercase tracking-wide text-gray-500 mt-1">
+                {event.event_type}
+              </Text>
+              {renderPayload(event.payload)}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="bg-white border border-border rounded-lg p-5 shadow-sm">
     <Text className="text-xs font-bold text-gray-900 tracking-[0.08em] uppercase mb-4">
@@ -476,3 +535,29 @@ const PlaceholderTab = ({ label }: { label: string }) => (
     <Text className="text-gray-400">Placeholder for {label}</Text>
   </View>
 );
+
+const renderPayload = (payload: Record<string, unknown>) => {
+  const entries = Object.entries(payload ?? {});
+  if (!entries.length) return null;
+  return (
+    <View className="mt-3 gap-1">
+      {entries.map(([key, value]) => (
+        <View key={key} className="flex-row justify-between">
+          <Text className="text-xs text-gray-500">{key}</Text>
+          <Text className="text-xs font-medium text-gray-800">{String(value)}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const formatTimestamp = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};

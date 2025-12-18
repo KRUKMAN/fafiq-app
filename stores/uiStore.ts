@@ -20,6 +20,11 @@ interface UIState {
     page: number;
     pageSize: number;
     advancedOpen: boolean;
+    location: string;
+    responsible: string;
+    hasAlerts: boolean;
+    updatedAfter: string;
+    updatedBefore: string;
   };
   setDogList: (patch: Partial<UIState['dogList']>) => void;
 }
@@ -35,6 +40,11 @@ export const useUIStore = create<UIState>((set) => ({
     page: 1,
     pageSize: 10,
     advancedOpen: false,
+    location: '',
+    responsible: '',
+    hasAlerts: false,
+    updatedAfter: '',
+    updatedBefore: '',
   },
   setDogList: (patch) =>
     set((state) => ({
