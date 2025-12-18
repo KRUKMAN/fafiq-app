@@ -23,3 +23,9 @@ Every meaningful mutation must:
 ## Web-first constraints
 - React Native for Web must remain functional.
 - NativeWind must be configured for web + native (`metro.config.js`).
+
+## Current status (handover)
+- Frontend is mock-first with stage-based dog schemas; transport list/detail shells exist; dog detail has mock Financial/People/Chat tabs.
+- Session store boots from mocks but can bootstrap from Supabase when env + session are present; org switch invalidates caches; last_org_id persisted.
+- `database.types.ts` generated from `docs/schema.md`; no migrations/RLS/audit triggers applied yet.
+- Outstanding: apply `schema.md` + `rls.md`, add audit triggers/RPC, swap mocks for Supabase in hooks without UI rewrites, harden org guard/empty states.

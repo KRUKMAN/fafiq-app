@@ -3,11 +3,12 @@
 This plan is aligned to `Fafik_System_Context.md` and cross-checked against the current codebase.
 
 ## Current Codebase Reality (Delta to Target)
-- Domain naming is aligned to `org_id` in the app code; ensure the database schema/RLS uses `org_id` consistently end-to-end.
-- No tenant-resolution strategy exists (hard-coded tenant/org in UI).
-- No RLS, no schema migrations, no activity logging implementation yet (mock-only).
-- NativeWind v4 is configured in Tailwind + Babel, but `metro.config.js` was missing.
-- UI prototype lives largely in one screen (`app/(tabs)/index.tsx`) with many inline components (prototype OK; not scalable).
+- Domain naming is aligned to `org_id` in the app code; database/RLS enforcement still pending.
+- Tenant resolution is **mock-first** with a Supabase bootstrap fallback: sessionStore uses mock memberships/org selection when no Supabase session/env is available.
+- No RLS, schema migrations, or activity logging implementation yet (mock-only).
+- NativeWind v4 + metro config are in place; Expo Router shell + sidebar tabs are stable.
+- Dogs module is stage-based with list/detail/create/edit mocks; dog detail drawer has Financial/People & Housing/Chat mock tabs and has been cleaned of prior encoding artifacts; transports include list + detail shells.
+- Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
 
 
 # Phase 1 — Visual MVP (Frontend-First, Mocked)
@@ -31,7 +32,7 @@ planned | in_progress | done | mocked | blocked
 | Org | done |
 | Profile | done |
 | Membership | done |
-| Dog | in_progress |
+| Dog | done |
 | Transport | done |
 | ActivityEvent | done |
 
@@ -48,7 +49,7 @@ Rules:
 | Dataset | Status |
 |---|---|
 | Orgs | done |
-| Dogs | in_progress |
+| Dogs | done |
 | Transports | done |
 | Activity timeline | done |
 
@@ -74,10 +75,10 @@ Requirements:
 
 | Feature | Status |
 |---|---|
-| currentUser | in_progress |
-| memberships[] | in_progress |
-| activeOrgId | in_progress |
-| switchOrg(orgId) | in_progress |
+| currentUser | done |
+| memberships[] | done |
+| activeOrgId | done |
+| switchOrg(orgId) | done |
 
 ---
 
@@ -85,8 +86,8 @@ Requirements:
 
 | Component | Status |
 |---|---|
-| Mock auth guard | planned |
-| Org guard (org selector redirect) | planned |
+| Mock auth guard | done |
+| Org guard (org selector redirect) | in_progress |
 | Responsive sidebar / tabs | done |
 
 ---
@@ -103,11 +104,14 @@ Requirements:
 | Medical tab (mock) | mocked |
 | Timeline tab | done |
 | Files tab (UI only) | mocked |
-| Create dog form | in_progress |
-| Edit dog form | in_progress |
+| Create dog form | done |
+| Edit dog form | done |
 | Table record count below grid | done |
 | Dog detail top bar cleanup (remove search/org picker, add spacing) | done |
-Note: Dog list must include filters (stage/status) and search; selecting a dog opens its detail view.
+| Financial tab (mock) | mocked |
+| People & Housing tab (mock) | mocked |
+| Chat tab (mock) | mocked |
+Note: Dog list must include filters (stage) and search; selecting a dog opens its detail view.
 
 ---
 
@@ -115,8 +119,8 @@ Note: Dog list must include filters (stage/status) and search; selecting a dog o
 
 | Screen | Status |
 |---|---|
-| Transport list | mocked |
-| Transport detail | mocked |
+| Transport list | done |
+| Transport detail | done |
 
 ---
 
@@ -155,7 +159,8 @@ planned | in_progress | done | mocked | blocked
 
 | Task | Status |
 |---|---|
-| Generate database.types.ts | planned |
+| Align Zod dog schema to schema.md (stage/audit fields) | done |
+| Generate database.types.ts | done |
 | Compare DB vs Zod schemas | planned |
 | Resolve mismatches explicitly | planned |
 
@@ -171,9 +176,10 @@ planned | in_progress | done | mocked | blocked
 
 | Task | Status |
 |---|---|
-| Supabase auth integration | planned |
+| Supabase auth integration | in_progress |
 | Replace sessionStore mocks | planned |
-| Persist last_org_id | planned |
+| Persist last_org_id | done |
+| Org-aware query cache invalidation on org switch | done |
 
 ---
 
@@ -194,7 +200,7 @@ Rule:
 
 | Entity | Mechanism | Status |
 |---|---|---|
-| Dogs | in_progress |
+| Dogs | planned |
 | Transports | Trigger / RPC | planned |
 | Photos | Trigger | planned |
 
@@ -264,3 +270,6 @@ planned | in_progress | done | mocked | blocked
 - 2025-12-17: Rebuilt Dogs list into tablet-first grid with status badges, alerts, debounced search and filters, and drawer-style dog detail modal; added shared list/detail components and normalized status legends.
 - 2025-12-17: Polished Dogs list UI to match product screenshots (table cell padding/alignment, header/toolbars, button styles, and visual density) and cleaned up lint warnings in dogs create/edit screens.
 - 2025-12-17: Added responsive/persisted Dogs table (pagination, horizontal scroll), simplified org picker pill, and persisted list filters/page in UI store; time-in-care metric left as placeholder pending schema support.
+- 2025-12-18: Realigned Dog Zod schema to `schema.md` (stage + audit fields), refreshed mocks and UI to use stage-based filters/badges, and documented dependency audit for Phase 2 wiring.
+- 2025-12-18: Added transport detail shell + navigation, filled remaining dog mock tabs (Financial/People & Housing/Chat), generated `database.types.ts`, and added org-aware cache invalidation + Supabase bootstrap fallback in session store.
+- 2025-12-18: Cleaned encoding/ternary corruption in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now stable); remaining mocks unchanged.

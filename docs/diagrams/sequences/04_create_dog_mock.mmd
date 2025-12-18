@@ -1,0 +1,15 @@
+sequenceDiagram
+  participant User
+  participant Create as CreateDogScreen
+  participant Zod as Zod
+  participant Alert
+  User->>Create: fill form
+  User->>Create: tap Save
+  Create->>Zod: validate(dogFormSchema)
+  Zod-->>Create: success/fail
+  alt validation fails
+    Create-->>User: inline errors
+  else success
+    Create-->>Alert: show mock submit
+    Alert-->>User: acknowledged (no persistence)
+  end

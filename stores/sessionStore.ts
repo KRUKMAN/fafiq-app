@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { getMockMemberships } from '@/lib/mocks/memberships';
 import { getMockOrgs } from '@/lib/mocks/orgs';
 import { getMockProfiles } from '@/lib/mocks/profiles';
+import { supabase } from '@/lib/supabase';
+import { getQueryClient } from '@/lib/queryClient';
 
 type User = {
   id: string;
@@ -79,41 +81,23 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   memberships: [],
   activeOrgId: null,
   bootstrap: async () => {
-    // For now, bootstrap signs in the mock user automatically.
-    await get().signIn();
-  },
-  signIn: async () => {
-    const lastOrgId = loadLastOrgId();
-    const [membershipsRaw, orgs, profiles] = await Promise.all([
-      getMockMemberships(),
-      getMockOrgs(),
-      getMockProfiles(),
-    ]);
+    if (get().ready) return;
 
-    const memberships = membershipsRaw.map((m) => ({
-      ...m,
-      org_name: orgs.find((o) => o.id === m.org_id)?.name ?? 'Unknown org',
-    }));
-    const activeOrgId = selectActiveOrgId(memberships, lastOrgId);
-    if (activeOrgId) {
-      persistLastOrgId(activeOrgId);
+    const supabaseBootstrapped = await bootstrapSupabaseSession(set);
+    if (supabaseBootstrapped) {
+      return;
     }
 
-    const userProfile = profiles.find((p) => p.user_id === mockUser.id);
-
-    set({
-      ready: true,
-      isAuthenticated: true,
-      currentUser: userProfile
-        ? { id: userProfile.user_id, name: userProfile.full_name ?? mockUser.name, email: mockUser.email }
-        : mockUser,
-      memberships,
-      activeOrgId,
-    });
+    await bootstrapMockSession(set);
+  },
+  signIn: async () => {
+    await bootstrapMockSession(set);
   },
   signOut: () =>
     set(() => {
       persistLastOrgId(null);
+      getQueryClient().clear();
+      void supabase?.auth.signOut();
       return {
         ready: true,
         isAuthenticated: false,
@@ -128,6 +112,103 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       const valid = state.memberships.some((m) => m.org_id === orgId && m.active);
       if (!valid) return state;
       persistLastOrgId(orgId);
+      invalidateOrgScopedQueries();
       return { activeOrgId: orgId };
     }),
 }));
+
+const bootstrapMockSession = async (
+  set: Parameters<ReturnType<typeof create<SessionState>>['setState']>[0]
+) => {
+  const lastOrgId = loadLastOrgId();
+  const [membershipsRaw, orgs, profiles] = await Promise.all([
+    getMockMemberships(),
+    getMockOrgs(),
+    getMockProfiles(),
+  ]);
+
+  const memberships = membershipsRaw.map((m) => ({
+    ...m,
+    org_name: orgs.find((o) => o.id === m.org_id)?.name ?? 'Unknown org',
+  }));
+  const activeOrgId = selectActiveOrgId(memberships, lastOrgId);
+  if (activeOrgId) {
+    persistLastOrgId(activeOrgId);
+  }
+
+  const userProfile = profiles.find((p) => p.user_id === mockUser.id);
+
+  set({
+    ready: true,
+    isAuthenticated: true,
+    currentUser: userProfile
+      ? { id: userProfile.user_id, name: userProfile.full_name ?? mockUser.name, email: mockUser.email }
+      : mockUser,
+    memberships,
+    activeOrgId,
+  });
+};
+
+const bootstrapSupabaseSession = async (
+  set: Parameters<ReturnType<typeof create<SessionState>>['setState']>[0]
+) => {
+  if (!supabase) return false;
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session) {
+    return false;
+  }
+
+  const userId = sessionData.session.user.id;
+  const [{ data: membershipsData, error: membershipsError }, { data: profileData }] = await Promise.all([
+    supabase
+      .from('memberships')
+      .select('id, org_id, roles, active, orgs(name)')
+      .eq('user_id', userId)
+      .eq('active', true),
+    supabase.from('profiles').select('user_id, full_name').eq('user_id', userId).maybeSingle(),
+  ]);
+
+  if (membershipsError || !membershipsData) {
+    return false;
+  }
+
+  const memberships: Membership[] = membershipsData.map((m) => ({
+    id: m.id,
+    org_id: m.org_id,
+    org_name: (m.orgs as { name?: string } | null)?.name ?? 'Org',
+    roles: m.roles ?? [],
+    active: m.active,
+  }));
+
+  const lastOrgId = loadLastOrgId();
+  const activeOrgId = selectActiveOrgId(memberships, lastOrgId);
+  if (activeOrgId) {
+    persistLastOrgId(activeOrgId);
+  }
+
+  const currentUser: User = {
+    id: userId,
+    name: profileData?.full_name ?? sessionData.session.user.email ?? 'User',
+    email: sessionData.session.user.email ?? '',
+  };
+
+  set({
+    ready: true,
+    isAuthenticated: true,
+    currentUser,
+    memberships,
+    activeOrgId,
+  });
+
+  invalidateOrgScopedQueries();
+  return true;
+};
+
+const invalidateOrgScopedQueries = () => {
+  const client = getQueryClient();
+  client.invalidateQueries({ queryKey: ['dogs'] });
+  client.invalidateQueries({ queryKey: ['dog'] });
+  client.invalidateQueries({ queryKey: ['dog-timeline'] });
+  client.invalidateQueries({ queryKey: ['transports'] });
+};

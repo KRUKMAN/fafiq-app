@@ -1,0 +1,21 @@
+graph TD
+  User[User] --> App[Expo RN/Web]
+  App --> Router[Expo Router]
+  App --> State[Zustand]
+  App --> Query[TanStack Query]
+  Query --> Data[lib/data]
+  State --> Session[SessionStore]
+  State --> UIStore[UI Store]
+  Data --> Schemas[Zod Schemas]
+  Data --> Mocks[Mock Data]
+  Data --> Supabase[Supabase Client]
+  Supabase --> Auth[Auth]
+  Supabase --> DB[Postgres + RLS]
+  Supabase --> Storage[Storage]
+  Supabase --> Edge[Edge Fn]
+  DB --> Audit[Activity Events]
+  Edge --> DB
+  Storage --> Audit
+  Session --> Query
+  Query --> UI[App Screens]
+  UI --> User

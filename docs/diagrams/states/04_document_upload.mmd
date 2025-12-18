@@ -1,0 +1,8 @@
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> RequestURL : request signed URL
+  RequestURL --> Uploading : got URL
+  Uploading --> Stored : object saved
+  Stored --> Logged : insert document row + activity
+  Logged --> Visible : query invalidated
+  Visible --> Idle

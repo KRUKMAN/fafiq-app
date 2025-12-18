@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant User
+  participant Dogs as DogsScreen
+  participant UI as UIStore
+  participant Query as QueryClient
+  participant Data as fetchDogs
+  participant Mocks
+  User->>Dogs: open /dogs
+  Dogs->>UI: read filters + orgId
+  Dogs->>Query: useDogs(queryKey)
+  Query->>Data: fetchDogs(orgId, filters)
+  Data->>Mocks: getMockDogs(orgId)
+  Mocks-->>Data: filtered dogs
+  Data-->>Query: parsed dogs (zod)
+  Query-->>Dogs: data + loading states
+  Dogs-->>User: grid, filters, pagination

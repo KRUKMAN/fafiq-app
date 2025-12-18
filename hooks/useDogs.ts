@@ -4,7 +4,7 @@ import { fetchDogs } from '@/lib/data/dogs';
 import { Dog } from '@/schemas/dog';
 
 type UseDogsFilters = {
-  status?: string;
+  stage?: string;
   search?: string;
   location?: string;
   responsible?: string;
@@ -18,7 +18,7 @@ export const useDogs = (orgId?: string, filters?: UseDogsFilters) =>
     queryKey: [
       'dogs',
       orgId ?? '',
-      filters?.status ?? '',
+      filters?.stage ?? '',
       filters?.search ?? '',
       filters?.location ?? '',
       filters?.responsible ?? '',

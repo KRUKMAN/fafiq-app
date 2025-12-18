@@ -14,7 +14,7 @@ import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUIStore } from '@/stores/uiStore';
 
-const STATUS_FILTERS = ['All', 'In Foster', 'Medical', 'Medical Hold', 'Transport', 'Available'];
+const STAGE_FILTERS = ['All', 'In Foster', 'Medical', 'Medical Hold', 'Transport', 'Available'];
 
 export default function DogsListScreen() {
   const { dogList, setDogList } = useUIStore();
@@ -40,7 +40,7 @@ export default function DogsListScreen() {
 
   const { data, isLoading, error } = useDogs(activeOrgId ?? undefined, {
     search: dogList.search || undefined,
-    status: dogList.status === 'All' ? undefined : dogList.status,
+    stage: dogList.stage === 'All' ? undefined : dogList.stage,
     location: dogList.location || undefined,
     responsible: dogList.responsible || undefined,
     hasAlerts: dogList.hasAlerts || undefined,
@@ -123,12 +123,12 @@ export default function DogsListScreen() {
         searchValue={searchInput}
         onSearchChange={setSearchInput}
         onOpenAdvancedFilters={() => setDogList({ advancedOpen: true })}
-        filters={STATUS_FILTERS.map((label) => ({
+        filters={STAGE_FILTERS.map((label) => ({
           label,
           value: label,
-          active: dogList.status === label,
+          active: dogList.stage === label,
           onPress: () => {
-            setDogList({ status: label, page: 1 });
+            setDogList({ stage: label, page: 1 });
             setCurrentPage(1);
           },
         }))}
@@ -153,12 +153,12 @@ export default function DogsListScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                setDogList({
-                  search: '',
-                  status: 'All',
-                  location: '',
-                  responsible: '',
-                  hasAlerts: false,
+              setDogList({
+                search: '',
+                stage: 'All',
+                location: '',
+                responsible: '',
+                hasAlerts: false,
                   updatedAfter: '',
                   updatedBefore: '',
                   page: 1,
@@ -338,7 +338,7 @@ const toDogListItem = (dog: Dog): DogListItem => {
     id: dog.id,
     name: dog.name,
     internalId: extra.internal_id ?? '',
-    status: dog.status,
+    stage: dog.stage,
     breed: attributes.breed,
     sex: attributes.sex,
     age: attributes.age,

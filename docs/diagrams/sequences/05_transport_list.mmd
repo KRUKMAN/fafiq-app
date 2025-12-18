@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant User
+  participant Transports as TransportsScreen
+  participant Query as QueryClient
+  participant Data as fetchTransports
+  participant Mocks
+  User->>Transports: open /transports
+  Transports->>Query: useTransports(orgId)
+  Query->>Data: fetchTransports(orgId)
+  Data->>Mocks: getMockTransports(orgId)
+  Mocks-->>Data: transport list
+  Data-->>Query: parsed transports
+  Query-->>Transports: data + loading/error
+  Transports-->>User: cards per transport

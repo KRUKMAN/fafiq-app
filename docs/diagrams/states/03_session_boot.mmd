@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> SignedOut
+  SignedOut --> Booting : bootstrap()
+  Booting --> Ready : mock sign-in
+  Ready --> NoOrg : no memberships
+  Ready --> OrgActive : activeOrgId set
+  NoOrg --> SignedOut : signOut()
+  OrgActive --> SignedOut : signOut()
+  OrgActive --> OrgSwitch : switchOrg()
+  OrgSwitch --> OrgActive : activeOrgId persisted

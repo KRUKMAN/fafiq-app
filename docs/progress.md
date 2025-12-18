@@ -1,41 +1,29 @@
-# Progress Log (Phase 1 – Visual MVP)
+# Progress Log (Phase 1 - Visual MVP)
 
 Reference: `docs/implementation_plan.md`
 
 ## Completed / In-Progress (this update)
-- Dog schema: in_progress (aligned to `org_id`; used for mocks and queries).
-- Mock data: dogs dataset expanded (org-scoped) in `lib/mocks/dogs.ts`; orgs, memberships, transports, and activity events added as mocks.
-- Data layer: `fetchDogs` with richer filters and `useDogs` hook added; `useDog` still in use for detail; new fetchers/hooks for transports and activity events (`useTransports`, `useDogTimeline`).
-- Activity timeline: added mock `activity_events`, `useDogTimeline` hook, and Timeline tab rendering in dog detail drawer.
-- Data contracts: added Zod schemas for org, profile, membership, transport, activity_event with matching mocks/fetchers/hooks (e.g., `useTransports`).
-- Advanced filters: Drawer now has location/responsible/date/alerts controls wired to `useDogs` filters for richer mock list filtering.
-- Session/auth: mock auth guard added to layout; session store now loads memberships from mocks, persists `last_org_id`, and blocks when no memberships.
-- UI navigation: Tabs now include Dogs; Dogs tab uses a nested stack (`app/(tabs)/dogs/_layout.tsx`).
-- Dogs list screen: implemented with search + stage filters; cards navigate to dog detail.
-- Dog detail: moved to `/dogs/[id]`, Overview tab retained (mock data), org-aware; Timeline tab populated with richer mock events; added notes panel/modal, Medical tab, and Documents tab mock content; top bar simplified and padded.
-- Dashboard tab: placeholder added to keep tab structure intact.
-- Tenant context (mocked): Added `stores/sessionStore.ts` with mock user/memberships, strict boot fallback to first active org, and wired Dogs list/detail to use `activeOrgId` instead of a hard-coded org.
-- Data hooks: `useDogs` and `useDog` now accept optional `orgId` and gate queries via `enabled`.
-- Org selector UI: Added simple org switcher on Dogs list header and detail top bar; supports multiple mock orgs and persists `last_org_id` via localStorage (best-effort) plus in-memory fallback.
-- Dog tabs: kept Overview content; other tabs show placeholders; added guard when no active org.
-- Forms (mock): added Create Dog (`app/(tabs)/dogs/create.tsx`) and Edit Dog (`app/(tabs)/dogs/[id]/edit.tsx`) with Zod validation stubs (mock submit).
-- List CTA: “Add dog” button routes to create form.
-- Transports: added mocked list shell using `useTransports` with loading/error/empty states.
+- Dog domain aligned to `schema.md`: Zod dog schema now uses `stage` plus audit/membership fields; mocks refreshed with org-scoped timestamps/membership IDs; UI list/detail/form render stage-based badges/filters.
+- Data layer: `fetchDogs`/`useDogs` filter on `stage`; dog detail/notes/timeline remain mock-backed; transport list hook unchanged.
+- Session/auth guards: mock auth guard in `_layout`; sessionStore bootstraps memberships + `activeOrgId` and persists `last_org_id`; screens gate on org/memberships. Supabase-aware bootstrap fallback added; org switch now invalidates caches; sign-out clears cache.
+- Dependency audit: kept Expo/Supabase extras (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) to wire in Phase 2; prune if unused after integration.
+- Org selector lives on Dogs list header; org switch drives query keys per org (no selector inside dog detail drawer yet).
+- Added `database.types.ts` aligned to `docs/schema.md` for Supabase typing parity; remaining alignment gaps between Zod/DB are minimal.
+- Added transport detail shell (`app/(tabs)/transports/[id].tsx`) and navigation from list; dog detail now includes Financial, People & Housing, and Chat mock tabs.
+- Cleaned stray encoding artifacts and bad ternaries in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now compiles cleanly on web).
 
 ## Outstanding (Phase 1 items not started)
-- Harden tenant boot/org guard beyond current mock bootstrap (e.g., invite/create org flows).
-- Fill remaining dog tabs (Financial, People & Housing, Chat) with mock content.
-- Expand mock timelines/activities further to support more event types and tabs.
-- Add transport detail mock (list exists).
-- Polish empty states across tabs (people/finance/settings) to match org guard flow.
+- Harden tenant boot/org guard beyond mock bootstrap (invite/create org flows, empty states across tabs).
+- Polish empty states across tabs and consider adding org selector inside dog detail drawer if needed.
+- Smoke-test remaining screens for any lingering encoding artifacts (dog detail fixed; others look clean).
 
 ## Watch-outs / Next Steps
-- Keep Zod schemas aligned to future `database.types.ts` when generated (Phase 2).
+- Compare generated `database.types.ts` with Zod (stage-based) ahead of Supabase swap and adjust any drift.
 - Maintain RLS/atomic logging expectations when swapping mocks for Supabase (no client-side audit writes).
-- Swap session boot/auth/org guard to real flow in Phase 2 without UI rewrites.
+- Use Supabase auth + memberships to replace mock session; keep org-aware cache invalidation.
 
 ## Next Steps (short-term)
-- Harden tenant boot: load memberships from mocks, persist `last_org_id`, and add org guard/empty-state flows.
-- Wire mock auth guard stub so navigation respects a signed-in user (Phase 1 scope).
-- Populate remaining dog tabs (Medical, Files) with placeholder/mock data; add “no dogs” and “no memberships” empty states matching the new filters.
-- Add mock transports list/detail shells using `useTransports` to keep navigation consistent with Phase 1 DoD.
+- Harden tenant boot and org guard UX for users with no memberships/orgs.
+- Populate remaining empty states and org guard flows across tabs.
+- Keep dependency audit list in sync; prune only after Phase 2 wiring if still unused.
+- Prepare Supabase migrations for `schema.md` + `rls.md`; add audit triggers/RPC per entity.

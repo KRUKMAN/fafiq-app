@@ -42,7 +42,7 @@ export default function EditDogScreen() {
     if (data) {
       setForm({
         name: data.name,
-        stage: data.status,
+        stage: data.stage,
         location: data.location,
         description: data.description,
         responsible_person: data.extra_fields.responsible_person ?? '',

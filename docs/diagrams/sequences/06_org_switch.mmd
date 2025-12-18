@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant User
+  participant OrgSwitch as OrgSelector
+  participant Session as SessionStore
+  participant Query as QueryClient
+  User->>OrgSwitch: open selector
+  OrgSwitch->>Session: switchOrg(newOrgId)
+  Session-->>Session: validate membership + persist last_org_id
+  Session-->>OrgSwitch: activeOrgId updated
+  OrgSwitch-->>Query: queries depend on orgId
+  Query-->>User: cached dogs/transports refetch per key

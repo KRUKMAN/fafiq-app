@@ -16,7 +16,7 @@ interface UIState {
   toggleSidebar: () => void;
   dogList: {
     search: string;
-    status: string;
+    stage: string;
     page: number;
     pageSize: number;
     advancedOpen: boolean;
@@ -36,7 +36,7 @@ export const useUIStore = create<UIState>((set) => ({
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   dogList: {
     search: '',
-    status: 'All',
+    stage: 'All',
     page: 1,
     pageSize: 10,
     advancedOpen: false,

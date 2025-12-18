@@ -11,7 +11,7 @@ export type DogListItem = {
   id: string;
   name: string;
   internalId: string;
-  status: string;
+  stage: string;
   breed?: string;
   sex?: string;
   age?: string;
@@ -84,12 +84,12 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
 
       <View
         style={{
-          flex: COL_BY_KEY.status.flex,
-          minWidth: COL_BY_KEY.status.minWidth,
+          flex: COL_BY_KEY.stage.flex,
+          minWidth: COL_BY_KEY.stage.minWidth,
           paddingHorizontal: 12,
         }}
         className="py-4">
-        <StatusBadge status={item.status} />
+        <StatusBadge status={item.stage} />
       </View>
 
       <View

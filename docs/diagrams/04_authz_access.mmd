@@ -1,0 +1,15 @@
+graph TD
+  User --> Auth[Supabase Auth]
+  Auth --> Session[SessionStore]
+  Session --> OrgCtx[Active org_id]
+  OrgCtx --> RLS[Postgres RLS]
+  OrgCtx --> Roles[roles[] on memberships]
+  Roles --> RLS
+  RLS --> Tables[org-scoped tables]
+  Tables --> Audit[activity_events]
+  OrgCtx --> Storage[Storage buckets]
+  Storage --> Audit
+  Admin[admin] -. manages .-> Memberships
+  Volunteer[volunteer] -. writes .-> Tables
+  Foster[foster] -. dog-assigned .-> Tables
+  TransportRole[transport] -. transport-assigned .-> Tables

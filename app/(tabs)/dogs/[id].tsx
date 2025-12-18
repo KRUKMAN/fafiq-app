@@ -25,8 +25,8 @@ type DogProfileView = {
   id: string;
   orgId: string;
   name: string;
-  status: string;
-  medicalStatus: string;
+  stage: string;
+  medicalNotes: string;
   location: string;
   description: string;
   internalId: string;
@@ -34,6 +34,7 @@ type DogProfileView = {
   responsiblePerson: string;
   fosterName: string | null;
   budgetSpent: number;
+  budgetLimit?: number | null;
   lastUpdate: string;
   attributes: {
     age?: string;
@@ -82,8 +83,8 @@ const toDogProfileView = (dog: Dog): DogProfileView => {
     id: dog.id,
     orgId: dog.org_id,
     name: dog.name,
-    status: dog.status,
-    medicalStatus: dog.medical_status,
+    stage: dog.stage,
+    medicalNotes: dog.medical_notes ?? '',
     location: dog.location,
     description: dog.description,
     internalId: dog.extra_fields.internal_id ?? '',
@@ -91,6 +92,7 @@ const toDogProfileView = (dog: Dog): DogProfileView => {
     responsiblePerson: dog.extra_fields.responsible_person ?? '',
     fosterName: dog.extra_fields.foster_name ?? null,
     budgetSpent: dog.extra_fields.budget_spent ?? 0,
+    budgetLimit: dog.budget_limit ?? null,
     lastUpdate: dog.extra_fields.last_update ?? '',
     attributes: {
       age: attributes.age,
@@ -248,6 +250,12 @@ const renderTab = (
       return <MedicalTab history={dog.medicalHistory} />;
     case 'Documents':
       return <FilesTab files={dog.files} />;
+    case 'Financial':
+      return <FinancialTab spent={dog.budgetSpent} limit={dog.budgetLimit} />;
+    case 'People & Housing':
+      return <PeopleHousingTab dog={dog} />;
+    case 'Chat':
+      return <ChatTab />;
     default:
       return <PlaceholderTab label={tab} />;
   }
@@ -306,7 +314,7 @@ const DogHeader = ({ dog, onAddNote }: { dog: DogProfileView; onAddNote: () => v
         </Text>
         <Pressable className="flex-row items-center gap-2 bg-white border border-border py-1.5 px-3 rounded-full self-start">
           <HomeIcon size={14} color="#111827" />
-          <Text className="text-[13px] font-semibold text-gray-900">{dog.status}</Text>
+          <Text className="text-[13px] font-semibold text-gray-900">{dog.stage}</Text>
           <ChevronDown size={12} color="#6B7280" />
         </Pressable>
       </View>
@@ -335,7 +343,7 @@ const ActionButton = ({ label, onPress }: { label: string; onPress?: () => void 
 const KeyMetrics = ({ dog }: { dog: DogProfileView }) => (
   <View className="flex-row flex-wrap gap-4 mb-8">
     <KeyMetric icon={MapPin} label="LOCATION" value={dog.location} />
-    <KeyMetric icon={AlertCircle} label="MEDICAL" value={dog.medicalStatus || '-'} />
+    <KeyMetric icon={AlertCircle} label="MEDICAL" value={dog.medicalNotes || '-'} />
     <KeyMetric icon={User} label="RESPONSIBLE" value={dog.responsiblePerson || '-'} />
     <KeyMetric icon={HomeIcon} label="FOSTER" value={dog.fosterName || '-'} />
     <KeyMetric icon={DollarSign} label="SPENT" value={`$${dog.budgetSpent}`} />
@@ -394,8 +402,8 @@ const OverviewTab = ({ dog, notes, onAddNote }: { dog: DogProfileView; notes: No
   const alerts = dog.alerts;
   const attributes = dog.attributes;
   const needsFoster = !dog.fosterName;
-  const needsMedical = !!dog.medicalStatus && dog.medicalStatus.toLowerCase() !== 'healthy';
-  const needsTransport = dog.status.toLowerCase().includes('transport');
+  const needsMedical = !!dog.medicalNotes && dog.medicalNotes.toLowerCase() !== 'healthy';
+  const needsTransport = dog.stage.toLowerCase().includes('transport');
   const needsDocuments = false;
 
   return (
@@ -572,7 +580,7 @@ const FilesTab = ({ files }: { files: FileItem[] }) => {
           <View>
             <Text className="text-sm font-semibold text-gray-900">{file.name}</Text>
             <Text className="text-xs text-gray-500">
-              {file.type} • Uploaded {formatTimestamp(file.uploadedAt)}
+              {file.type} - Uploaded {formatTimestamp(file.uploadedAt)}
             </Text>
           </View>
           <Text className="text-xs text-gray-500">{file.uploadedBy ?? 'Unknown uploader'}</Text>
@@ -581,6 +589,52 @@ const FilesTab = ({ files }: { files: FileItem[] }) => {
     </View>
   );
 };
+
+const FinancialTab = ({ spent, limit }: { spent: number; limit?: number | null }) => {
+  const remaining = typeof limit === 'number' ? Math.max(limit - spent, 0) : null;
+  return (
+    <View className="gap-4">
+      <Card title="Budget Overview">
+        <View className="gap-2">
+          <SummaryRow label="Budget limit" value={limit != null ? `$${limit}` : 'Not set'} />
+          <SummaryRow label="Spent" value={`$${spent}`} />
+          <SummaryRow label="Remaining" value={remaining != null ? `$${remaining}` : 'Not set'} />
+        </View>
+      </Card>
+      <Card title="Expenses (mock)">
+        <Text className="text-sm text-gray-600">
+          Expenses tracking will connect to Supabase in Phase 2. Add edge-function-backed inserts with audit logging.
+        </Text>
+      </Card>
+    </View>
+  );
+};
+
+const PeopleHousingTab = ({ dog }: { dog: DogProfileView }) => (
+  <View className="gap-4">
+    <Card title="Assignments">
+      <SummaryRow label="Responsible" value={dog.responsiblePerson || 'Unassigned'} />
+      <SummaryRow label="Foster" value={dog.fosterName || 'No foster'} />
+      <SummaryRow label="Location" value={dog.location || 'Unknown'} />
+    </Card>
+    <Card title="Housing Notes">
+      <Text className="text-sm text-gray-600">
+        Housing and people workflows will use memberships + RLS in Phase 2. Current data is mock-only.
+      </Text>
+    </Card>
+  </View>
+);
+
+const ChatTab = () => (
+  <View className="gap-4">
+    <Card title="Chat (mock)">
+      <Text className="text-sm text-gray-600">
+        Real-time chat is out of scope for Phase 1. In Phase 2/3, consider Supabase Realtime channels scoped by
+        org_id + dog_id with RLS.
+      </Text>
+    </Card>
+  </View>
+);
 
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View className="bg-white border border-border rounded-lg p-5 shadow-sm">
@@ -722,3 +776,7 @@ const formatDateOnly = (value: string) => {
     year: 'numeric',
   });
 };
+
+
+
+

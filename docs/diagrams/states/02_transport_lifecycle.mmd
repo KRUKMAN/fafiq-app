@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> Requested
+  Requested --> Scheduled
+  Scheduled --> InProgress
+  InProgress --> Done
+  InProgress --> Canceled
+  Scheduled --> Canceled
+  Requested --> Canceled
+  Done --> [*]
+  Canceled --> [*]

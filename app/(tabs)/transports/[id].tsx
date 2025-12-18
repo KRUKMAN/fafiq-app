@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useMemo } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { useSessionStore } from '@/stores/sessionStore';
 import { useTransports } from '@/hooks/useTransports';
+import { useSessionStore } from '@/stores/sessionStore';
 
-export default function TransportsScreen() {
+export default function TransportDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const transportId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { ready, activeOrgId, memberships, bootstrap } = useSessionStore();
   const { data, isLoading, error } = useTransports(activeOrgId ?? undefined);
@@ -15,6 +17,10 @@ export default function TransportsScreen() {
       bootstrap();
     }
   }, [ready, bootstrap]);
+
+  const transport = useMemo(() => {
+    return data?.find((t) => t.id === transportId);
+  }, [data, transportId]);
 
   if (!ready) {
     return (
@@ -51,7 +57,7 @@ export default function TransportsScreen() {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator />
-        <Text className="mt-2 text-sm text-gray-600">Loading transports...</Text>
+        <Text className="mt-2 text-sm text-gray-600">Loading transport...</Text>
       </View>
     );
   }
@@ -67,44 +73,45 @@ export default function TransportsScreen() {
     );
   }
 
-  if (!data?.length) {
+  if (!transport) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-6">
-        <Text className="text-sm text-gray-600">No transports scheduled for this org.</Text>
+        <Text className="text-sm text-gray-600">Transport not found.</Text>
+        <Text className="text-xs text-gray-500 mt-1" onPress={() => router.back()}>
+          Go back
+        </Text>
       </View>
     );
   }
 
   return (
     <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ padding: 16, gap: 12 }}>
-      {data.map((t) => (
-        <Pressable
-          key={t.id}
-          accessibilityRole="button"
-          onPress={() => router.push(`/transports/${t.id}` as never)}
-          className="bg-white border border-border rounded-lg p-4 shadow-sm">
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-sm font-semibold text-gray-900">Transport {t.id}</Text>
-            <Text className="text-xs px-2 py-1 rounded-full bg-gray-900 text-white">{t.status}</Text>
-          </View>
-          <Text className="text-sm text-gray-800">
-            From: <Text className="font-semibold">{t.from_location || 'Unknown'}</Text>
-          </Text>
-          <Text className="text-sm text-gray-800">
-            To: <Text className="font-semibold">{t.to_location || 'Unknown'}</Text>
-          </Text>
-          <Text className="text-xs text-gray-500 mt-2">
-            Window: {formatDateRange(t.window_start, t.window_end)}
-          </Text>
-          <Text className="text-xs text-gray-500 mt-1">
-            Assigned: {t.assigned_membership_id || 'Unassigned'}
-          </Text>
-          {t.notes ? <Text className="text-sm text-gray-700 mt-2">{t.notes}</Text> : null}
-        </Pressable>
-      ))}
+      <View className="bg-white border border-border rounded-lg p-4 shadow-sm">
+        <View className="flex-row justify-between items-center mb-2">
+          <Text className="text-lg font-semibold text-gray-900">Transport {transport.id}</Text>
+          <Text className="text-xs px-2 py-1 rounded-full bg-gray-900 text-white">{transport.status}</Text>
+        </View>
+        <View className="gap-1">
+          <LabeledValue label="From" value={transport.from_location || 'Unknown'} />
+          <LabeledValue label="To" value={transport.to_location || 'Unknown'} />
+          <LabeledValue label="Window" value={formatDateRange(transport.window_start, transport.window_end)} />
+          <LabeledValue label="Assigned to" value={transport.assigned_membership_id || 'Unassigned'} />
+          <LabeledValue label="Dog" value={transport.dog_id || 'Unlinked'} />
+          <LabeledValue label="Notes" value={transport.notes || '—'} />
+        </View>
+      </View>
     </ScrollView>
   );
 }
+
+const LabeledValue = ({ label, value }: { label: string; value: string }) => (
+  <View className="flex-row justify-between py-1">
+    <Text className="text-sm text-gray-500">{label}</Text>
+    <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+      {value}
+    </Text>
+  </View>
+);
 
 const formatDateRange = (start?: string | null, end?: string | null) => {
   if (!start && !end) return 'Not scheduled';
@@ -116,6 +123,6 @@ const formatDateRange = (start?: string | null, end?: string | null) => {
       : null;
   const startStr = format(startDate);
   const endStr = format(endDate);
-  if (startStr && endStr) return `${startStr} → ${endStr}`;
+  if (startStr && endStr) return `${startStr} \u2192 ${endStr}`;
   return startStr || endStr || 'Not scheduled';
 };

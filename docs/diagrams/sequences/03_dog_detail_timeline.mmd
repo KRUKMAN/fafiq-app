@@ -1,0 +1,20 @@
+sequenceDiagram
+  participant User
+  participant Detail as DogDetail
+  participant Query as QueryClient
+  participant DogData as fetchDogById
+  participant Events as fetchActivityEvents
+  participant Mocks
+  User->>Detail: open /dogs/:id
+  Detail->>Query: useDog(orgId,id)
+  Detail->>Query: useDogTimeline(orgId,id)
+  Query->>DogData: fetchDogById
+  Query->>Events: fetchActivityEvents
+  DogData->>Mocks: getMockDogById
+  Events->>Mocks: getMockActivityEvents
+  Mocks-->>DogData: dog row
+  Mocks-->>Events: event list
+  DogData-->>Query: parsed dog
+  Events-->>Query: parsed events
+  Query-->>Detail: dog + timeline
+  Detail-->>User: drawer with tabs

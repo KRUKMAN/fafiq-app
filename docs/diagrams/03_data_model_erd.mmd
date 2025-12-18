@@ -1,0 +1,101 @@
+erDiagram
+  AUTH_USERS ||--|| PROFILES : owns
+  ORGS ||--o{ MEMBERSHIPS : has
+  AUTH_USERS ||--o{ MEMBERSHIPS : joins
+  ORGS ||--o{ DOGS : owns
+  ORGS ||--o{ TRANSPORTS : owns
+  ORGS ||--o{ MEDICAL_RECORDS : owns
+  ORGS ||--o{ EXPENSES : owns
+  ORGS ||--o{ DOG_PHOTOS : owns
+  ORGS ||--o{ DOCUMENTS : owns
+  ORGS ||--o{ ACTIVITY_EVENTS : owns
+  DOGS ||--o{ TRANSPORTS : may_include
+  DOGS ||--o{ MEDICAL_RECORDS : tracks
+  DOGS ||--o{ EXPENSES : costs
+  DOGS ||--o{ DOG_PHOTOS : images
+  MEMBERSHIPS ||--o{ DOGS : assigns_responsible
+  MEMBERSHIPS ||--o{ TRANSPORTS : assigns_driver
+  MEMBERSHIPS ||--o{ ACTIVITY_EVENTS : actor
+  TRANSPORTS ||--o{ ACTIVITY_EVENTS : logged
+  DOCUMENTS ||--o{ ACTIVITY_EVENTS : logged
+
+  ORGS {
+    uuid id PK
+    text name
+    jsonb settings
+    timestamptz created_at
+  }
+  PROFILES {
+    uuid user_id PK,FK
+    text full_name
+    text avatar_url
+  }
+  MEMBERSHIPS {
+    uuid id PK
+    uuid org_id FK
+    uuid user_id FK
+    text[] roles
+    bool active
+  }
+  DOGS {
+    uuid id PK
+    uuid org_id FK
+    text stage
+    text name
+    text location
+    text description
+    uuid responsible_membership_id FK
+    uuid foster_membership_id FK
+    jsonb extra_fields
+  }
+  TRANSPORTS {
+    uuid id PK
+    uuid org_id FK
+    uuid dog_id FK
+    text status
+    uuid assigned_membership_id FK
+    timestamptz window_start
+    timestamptz window_end
+    jsonb extra_fields
+  }
+  MEDICAL_RECORDS {
+    uuid id PK
+    uuid org_id FK
+    uuid dog_id FK
+    text record_type
+    date occurred_on
+    jsonb extra_fields
+  }
+  EXPENSES {
+    uuid id PK
+    uuid org_id FK
+    uuid dog_id FK
+    text category
+    numeric amount
+    date incurred_on
+  }
+  DOG_PHOTOS {
+    uuid id PK
+    uuid org_id FK
+    uuid dog_id FK
+    text storage_path
+    bool is_primary
+  }
+  DOCUMENTS {
+    uuid id PK
+    uuid org_id FK
+    text entity_type
+    uuid entity_id
+    text storage_path
+  }
+  ACTIVITY_EVENTS {
+    uuid id PK
+    uuid org_id FK
+    timestamptz created_at
+    uuid actor_user_id FK
+    uuid actor_membership_id FK
+    text entity_type
+    uuid entity_id
+    text event_type
+    jsonb payload
+  }

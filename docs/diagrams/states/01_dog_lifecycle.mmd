@@ -1,0 +1,14 @@
+stateDiagram-v2
+  [*] --> Intake
+  Intake --> InFoster
+  Intake --> Medical
+  InFoster --> Medical
+  Medical --> Transport
+  InFoster --> Transport
+  Transport --> Adopted
+  Transport --> Returned
+  Returned --> Medical
+  Returned --> InFoster
+  Adopted --> Archived
+  Medical --> Archived
+  Archived --> [*]

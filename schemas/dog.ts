@@ -26,6 +26,9 @@ const extraFieldsSchema = z
     last_update_iso: z.string().optional(),
     attributes: attributesSchema.optional(),
     alerts: z.array(alertSchema).optional(),
+    notes: z.any().optional(),
+    medical_history: z.any().optional(),
+    files: z.any().optional(),
   })
   .passthrough()
   .default({});
@@ -33,11 +36,19 @@ const extraFieldsSchema = z
 export const dogSchema = z.object({
   id: z.string(),
   org_id: z.string(),
+  stage: z.string(),
   name: z.string(),
-  status: z.string(),
-  medical_status: z.string(),
   location: z.string(),
   description: z.string(),
+  medical_notes: z.string().optional().default(''),
+  behavioral_notes: z.string().optional().default(''),
+  responsible_membership_id: z.string().nullable().optional(),
+  foster_membership_id: z.string().nullable().optional(),
+  budget_limit: z.number().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  created_by_membership_id: z.string().nullable().optional(),
+  updated_by_membership_id: z.string().nullable().optional(),
   extra_fields: extraFieldsSchema,
 });
 

@@ -2,7 +2,7 @@ import { Dog, dogSchema } from '@/schemas/dog';
 import { getMockDogById, getMockDogs } from '@/lib/mocks/dogs';
 
 type DogFilters = {
-  status?: string;
+  stage?: string;
   search?: string;
   location?: string;
   responsible?: string;
@@ -20,7 +20,7 @@ export const fetchDogById = async (orgId: string, dogId: string): Promise<Dog> =
 export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Dog[]> => {
   const dogs = await getMockDogs(orgId);
   const search = filters?.search?.toLowerCase().trim();
-  const status = filters?.status?.toLowerCase().trim();
+  const stage = filters?.stage?.toLowerCase().trim();
   const location = filters?.location?.toLowerCase().trim();
   const responsible = filters?.responsible?.toLowerCase().trim();
   const hasAlerts = filters?.hasAlerts;
@@ -28,7 +28,7 @@ export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Do
   const updatedBefore = filters?.updatedBefore ? Date.parse(filters.updatedBefore) : null;
 
   const filtered = dogs.filter((dog) => {
-    const matchesStatus = status ? dog.status.toLowerCase() === status : true;
+    const matchesStage = stage ? dog.stage.toLowerCase() === stage : true;
     const matchesSearch = search
       ? dog.name.toLowerCase().includes(search) ||
         dog.extra_fields.internal_id?.toLowerCase().includes(search ?? '') ||
@@ -47,7 +47,7 @@ export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Do
     const matchesBefore =
       updatedBefore && lastUpdateTime ? lastUpdateTime <= updatedBefore : !updatedBefore || lastUpdateTime !== null;
     return (
-      matchesStatus &&
+      matchesStage &&
       matchesSearch &&
       matchesLocation &&
       matchesResponsible &&

@@ -1,0 +1,15 @@
+graph LR
+  Screens[app/(tabs)] --> Components[components/*]
+  Screens --> Hooks[hooks/*]
+  Screens --> Layout[layout components]
+  Hooks --> Data[lib/data/*]
+  Hooks --> Stores[zustand stores]
+  Hooks --> QueryClient[queryClient]
+  Data --> Schemas[schemas/*]
+  Data --> Mocks[lib/mocks/*]
+  Data --> SupabaseStub[lib/supabase]
+  Stores --> Schemas
+  Components --> UIStore
+  Layout --> SessionStore
+  QueryClient --> Hooks
+  Schemas --> Types[types inferred]

@@ -5,7 +5,7 @@ This folder contains the authoritative execution roadmap for the project.
 ## Canonical context (must be read first)
 - Fafik_System_Context.md
 - project_context.md
-- implemementation_plan.md
+- implementation_plan.md
 - rls.md
 - schema.md
 - storage.md

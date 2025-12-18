@@ -4,12 +4,20 @@ const mockDogsList: Dog[] = [
   dogSchema.parse({
     id: '1',
     org_id: 'org_123',
+    stage: 'In Foster',
     name: 'Buddy',
-    status: 'In Foster',
-    medical_status: 'Needs vaccination',
     location: 'Vet: Clinic XYZ',
     description:
       'Energetic, friendly with people, gets along with other dogs. Does not like cats. Very food motivated and responds well to positive reinforcement.',
+    medical_notes: 'Needs vaccination; schedule on Dec 20.',
+    behavioral_notes: 'Friendly, high energy.',
+    responsible_membership_id: 'm_org123_user123',
+    foster_membership_id: 'm_org123_user123',
+    budget_limit: 2500,
+    created_at: '2025-12-01T10:00:00Z',
+    updated_at: '2025-12-17T10:45:00Z',
+    created_by_membership_id: 'm_org123_user123',
+    updated_by_membership_id: 'm_org123_user123',
     extra_fields: {
       internal_id: 'DOG-1234',
       photo_url:
@@ -61,12 +69,20 @@ const mockDogsList: Dog[] = [
   dogSchema.parse({
     id: '2',
     org_id: 'org_123',
+    stage: 'Medical',
     name: 'Luna',
-    status: 'Medical',
-    medical_status: 'Post-surgery recovery',
     location: 'Foster: Greenfield',
-      description:
-        'Calm, shy initially but warms up. On medication for recovery, needs quiet environment.',
+    medical_notes: 'Post-surgery recovery; follow-up in 2 days.',
+    behavioral_notes: 'Calm, shy initially.',
+    responsible_membership_id: 'm_org123_user123',
+    foster_membership_id: 'm_org123_user123',
+    budget_limit: 3000,
+    created_at: '2025-11-02T09:15:00Z',
+    updated_at: '2025-12-17T09:15:00Z',
+    created_by_membership_id: 'm_org123_user123',
+    updated_by_membership_id: 'm_org123_user123',
+    description:
+      'Calm, shy initially but warms up. On medication for recovery, needs quiet environment.',
     extra_fields: {
       internal_id: 'DOG-2234',
       photo_url:
@@ -116,20 +132,28 @@ const mockDogsList: Dog[] = [
   dogSchema.parse({
     id: '3',
     org_id: 'org_123',
+    stage: 'Transport',
     name: 'Rocky',
-    status: 'Transport',
-    medical_status: 'Healthy',
     location: 'Shelter HQ',
     description: 'High energy, loves fetch. Ready for transport to foster tomorrow.',
-      extra_fields: {
-        internal_id: 'DOG-3234',
-        photo_url:
-          'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=400&q=80',
-        responsible_person: 'Maria Garcia',
-        foster_name: null,
-        budget_spent: 950,
-        last_update: 'Yesterday, 4:30 PM',
-        last_update_iso: '2025-12-16T16:30:00Z',
+    medical_notes: 'Healthy; transport scheduled.',
+    behavioral_notes: 'High energy, good with fetch.',
+    responsible_membership_id: 'm_org123_user123',
+    foster_membership_id: null,
+    budget_limit: 2000,
+    created_at: '2025-12-10T14:00:00Z',
+    updated_at: '2025-12-16T16:30:00Z',
+    created_by_membership_id: 'm_org123_user123',
+    updated_by_membership_id: 'm_org123_user123',
+    extra_fields: {
+      internal_id: 'DOG-3234',
+      photo_url:
+        'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=400&q=80',
+      responsible_person: 'Maria Garcia',
+      foster_name: null,
+      budget_spent: 950,
+      last_update: 'Yesterday, 4:30 PM',
+      last_update_iso: '2025-12-16T16:30:00Z',
       attributes: {
         age: '1 year',
         sex: 'Male',
