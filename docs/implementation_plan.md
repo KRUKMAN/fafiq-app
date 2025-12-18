@@ -105,6 +105,8 @@ Requirements:
 | Files tab (UI only) | planned |
 | Create dog form | in_progress |
 | Edit dog form | in_progress |
+| Table record count below grid | planned |
+| Dog detail top bar cleanup (remove search/org picker, add spacing) | planned |
 Note: Dog list must include filters (stage/status) and search; selecting a dog opens its detail view.
 
 ---

@@ -111,7 +111,6 @@ export default function DogsListScreen() {
       <TableToolbar
         searchValue={searchInput}
         onSearchChange={setSearchInput}
-        recordCount={list.length}
         onOpenAdvancedFilters={() => setDogList({ advancedOpen: true })}
         filters={STATUS_FILTERS.map((label) => ({
           label,
@@ -176,9 +175,14 @@ export default function DogsListScreen() {
           })}
         </View>
 
-        <Text className="text-sm text-gray-500">
-          Page {pageSafe} of {totalPages}
-        </Text>
+        <View className="items-center">
+          <Text className="text-sm text-gray-500">
+            Page {pageSafe} of {totalPages}
+          </Text>
+          <Text className="text-xs text-gray-500 mt-1">
+            Showing <Text className="font-medium text-gray-900">{list.length}</Text> active records
+          </Text>
+        </View>
         <View className="flex-row gap-2">
           <Pressable
             accessibilityRole="button"

@@ -6,7 +6,6 @@ type TableToolbarProps = {
   searchValue: string;
   onSearchChange: (value: string) => void;
   filters: { label: string; value: string; active: boolean; onPress: () => void }[];
-  recordCount?: number;
   onOpenAdvancedFilters?: () => void;
 };
 
@@ -14,7 +13,6 @@ export const TableToolbar = ({
   searchValue,
   onSearchChange,
   filters,
-  recordCount,
   onOpenAdvancedFilters,
 }: TableToolbarProps) => {
   return (
@@ -34,11 +32,6 @@ export const TableToolbar = ({
         </View>
 
         <View className="flex-row items-center gap-2">
-          {typeof recordCount === 'number' ? (
-            <Text className="text-sm text-gray-500">
-              Showing <Text className="font-medium text-gray-900">{recordCount}</Text> active records
-            </Text>
-          ) : null}
           <Pressable
             accessibilityRole="button"
             onPress={onOpenAdvancedFilters}

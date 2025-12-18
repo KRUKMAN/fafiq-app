@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import {
   AlertCircle,
   AlertTriangle,
@@ -10,7 +10,6 @@ import {
   Home as HomeIcon,
   MapPin,
   MoreHorizontal,
-  Search,
   User,
   X,
 } from 'lucide-react-native';
@@ -86,7 +85,7 @@ export default function DogDetailScreen() {
   const dogId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
 
-  const { activeOrgId, ready, bootstrap, memberships, switchOrg } = useSessionStore();
+  const { activeOrgId, ready, bootstrap } = useSessionStore();
   const { activeTab, setActiveTab } = useUIStore();
 
   useEffect(() => {
@@ -138,15 +137,11 @@ export default function DogDetailScreen() {
     <View className="flex-1 bg-white">
       <TopBar
         dog={dog}
-        activeOrgId={activeOrgId}
-        memberships={memberships}
-        switchOrg={switchOrg}
-        ready={ready}
         onClose={() => router.back()}
       />
 
       <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ paddingBottom: 32 }}>
-        <View className="w-full max-w-5xl self-center px-4 md:px-8">
+        <View className="w-full max-w-5xl self-center px-4 md:px-8 mt-4">
           <DogHeader dog={dog} />
 
           <KeyMetrics dog={dog} />
@@ -174,17 +169,9 @@ const renderTab = (tab: (typeof TABS)[number], dog: DogProfileView, activeOrgId:
 
 const TopBar = ({
   dog,
-  activeOrgId,
-  memberships,
-  switchOrg,
-  ready,
   onClose,
 }: {
   dog: DogProfileView;
-  activeOrgId: string | null;
-  memberships: { org_id: string; org_name: string }[];
-  switchOrg: (orgId: string) => void;
-  ready: boolean;
   onClose: () => void;
 }) => (
   <View className="bg-white border-b border-border px-4 md:px-8 py-3 gap-3">
@@ -197,14 +184,6 @@ const TopBar = ({
       </Text>
 
       <View className="flex-row items-center gap-3">
-        <View className="flex-row items-center bg-surface border border-border rounded-md px-3 h-10 w-56">
-          <Search size={16} color="#9CA3AF" />
-          <TextInput
-            placeholder="Search..."
-            placeholderTextColor="#9CA3AF"
-            className="flex-1 ml-2 text-sm text-gray-900"
-          />
-        </View>
         <View className="w-9 h-9 rounded-full bg-gray-200 items-center justify-center border border-gray-300">
           <Text className="text-[11px] font-bold text-gray-600">AD</Text>
         </View>
@@ -217,52 +196,9 @@ const TopBar = ({
       </View>
     </View>
 
-    <OrgSelectorInline
-      activeOrgId={activeOrgId}
-      memberships={memberships}
-      switchOrg={switchOrg}
-      ready={ready}
-    />
+    <View className="h-1" />
   </View>
 );
-
-const OrgSelectorInline = ({
-  activeOrgId,
-  memberships,
-  switchOrg,
-  ready,
-}: {
-  activeOrgId: string | null;
-  memberships: { org_id: string; org_name: string }[];
-  switchOrg: (orgId: string) => void;
-  ready: boolean;
-}) => {
-  if (!ready) return null;
-  if (!memberships.length) return null;
-  return (
-    <View className="flex-row flex-wrap items-center gap-2">
-      <Text className="text-xs text-gray-500">Active org:</Text>
-      {memberships.map((m) => {
-        const isActive = m.org_id === activeOrgId;
-        return (
-          <Pressable
-            key={m.org_id}
-            onPress={() => switchOrg(m.org_id)}
-            className={`px-2 py-1.5 rounded-full border ${
-              isActive ? 'bg-gray-900 border-gray-900' : 'bg-surface border-border'
-            }`}>
-            <Text
-              className={`text-[11px] ${
-                isActive ? 'text-white font-semibold' : 'text-gray-800'
-              }`}>
-              {m.org_name}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-};
 
 const DogHeader = ({ dog }: { dog: DogProfileView }) => (
   <View className="flex-col md:flex-row justify-between gap-6 mb-8">

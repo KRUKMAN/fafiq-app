@@ -33,3 +33,9 @@ Reference: `docs/implementation_plan.md`
 - Keep Zod schemas aligned to future `database.types.ts` when generated (Phase 2).
 - Maintain RLS/atomic logging expectations when swapping mocks for Supabase (no client-side audit writes).
 - Swap session boot/auth/org guard to real flow in Phase 2 without UI rewrites.
+
+## Next Steps (short-term)
+- Harden tenant boot: load memberships from mocks, persist `last_org_id`, and add org guard/empty-state flows.
+- Wire mock auth guard stub so navigation respects a signed-in user (Phase 1 scope).
+- Populate remaining dog tabs (Medical, Files) with placeholder/mock data; add “no dogs” and “no memberships” empty states matching the new filters.
+- Add mock transports list/detail shells using `useTransports` to keep navigation consistent with Phase 1 DoD.
