@@ -1,26 +1,26 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import {
+    AlertCircle,
+    AlertTriangle,
+    Check,
+    ChevronDown,
+    Clock,
+    DollarSign,
+    Home as HomeIcon,
+    MapPin,
+    MoreHorizontal,
+    User,
+    X,
+} from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import {
-  AlertCircle,
-  AlertTriangle,
-  Check,
-  ChevronDown,
-  Clock,
-  DollarSign,
-  Home as HomeIcon,
-  MapPin,
-  MoreHorizontal,
-  User,
-  X,
-} from 'lucide-react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Dog } from '@/schemas/dog';
-import { TABS, useUIStore } from '@/stores/uiStore';
 import { useDog } from '@/hooks/useDog';
 import { useDogTimeline } from '@/hooks/useDogTimeline';
+import { addDogPhotoRecord, uploadDocument, uploadDogPhoto } from '@/lib/data/storage';
+import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
-import { uploadDocument } from '@/lib/data/storage';
+import { TABS, useUIStore } from '@/stores/uiStore';
 
 type DogProfileView = {
   id: string;
@@ -140,6 +140,8 @@ export default function DogDetailScreen() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
+  const [photoStatus, setPhotoStatus] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
     if (dog) {
@@ -159,6 +161,27 @@ export default function DogDetailScreen() {
     setNotes((prev) => [newNote, ...prev]);
     setNoteDraft('');
     setNoteModalOpen(false);
+  };
+
+  const handleUploadSamplePhoto = async () => {
+    if (!activeOrgId || !dog || photoUploading) return;
+    setPhotoUploading(true);
+    setPhotoStatus(null);
+    try {
+      const blob = new Blob(['Sample dog photo'], { type: 'text/plain' });
+      const filename = `${dog.name}-photo.txt`;
+      const { path } = await uploadDogPhoto(activeOrgId, dog.id, {
+        file: blob,
+        filename,
+        contentType: 'text/plain',
+      });
+      await addDogPhotoRecord(activeOrgId, dog.id, path, { caption: 'Sample upload', isPrimary: false });
+      setPhotoStatus(`Uploaded photo to ${path}`);
+    } catch (e: any) {
+      setPhotoStatus(e?.message ?? 'Photo upload failed');
+    } finally {
+      setPhotoUploading(false);
+    }
   };
 
   if (!ready) {
@@ -214,7 +237,13 @@ export default function DogDetailScreen() {
 
       <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="w-full max-w-5xl self-center px-4 md:px-8 mt-4">
-          <DogHeader dog={dog} onAddNote={() => setNoteModalOpen(true)} />
+          <DogHeader
+            dog={dog}
+            onAddNote={() => setNoteModalOpen(true)}
+            onUploadPhoto={handleUploadSamplePhoto}
+            photoStatus={photoStatus}
+            photoUploading={photoUploading}
+          />
 
           <KeyMetrics dog={dog} />
 
@@ -299,7 +328,19 @@ const TopBar = ({
   </View>
 );
 
-const DogHeader = ({ dog, onAddNote }: { dog: DogProfileView; onAddNote: () => void }) => (
+const DogHeader = ({
+  dog,
+  onAddNote,
+  onUploadPhoto,
+  photoStatus,
+  photoUploading,
+}: {
+  dog: DogProfileView;
+  onAddNote: () => void;
+  onUploadPhoto: () => void;
+  photoStatus: string | null;
+  photoUploading: boolean;
+}) => (
   <View className="flex-col md:flex-row justify-between gap-6 mb-8">
     <View className="flex-row gap-4">
       {dog.photoUrl ? (
@@ -329,11 +370,13 @@ const DogHeader = ({ dog, onAddNote }: { dog: DogProfileView; onAddNote: () => v
       <ActionButton label="Assign foster" />
       <ActionButton label="Create transport" />
       <ActionButton label="Add note" onPress={onAddNote} />
+      <ActionButton label={photoUploading ? 'Uploading...' : 'Upload photo'} onPress={onUploadPhoto} />
       <ActionButton label="Upload document" />
       <Pressable className="w-10 h-10 items-center justify-center border border-border rounded-md bg-white">
         <MoreHorizontal size={20} color="#6B7280" />
       </Pressable>
     </View>
+    {photoStatus ? <Text className="text-xs text-gray-600">{photoStatus}</Text> : null}
   </View>
 );
 

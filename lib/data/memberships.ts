@@ -130,3 +130,19 @@ export const addOrgMembership = async (orgId: string, userId: string, roles: str
     throw new Error(`Failed to add membership: ${error.message}`);
   }
 };
+
+export const updateMembershipRoles = async (orgId: string, membershipId: string, roles: string[]): Promise<void> => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; membership update requires Supabase env.');
+  }
+
+  const { error } = await supabase
+    .from('memberships')
+    .update({ roles, updated_at: new Date().toISOString() })
+    .eq('org_id', orgId)
+    .eq('id', membershipId);
+
+  if (error) {
+    throw new Error(`Failed to update membership roles: ${error.message}`);
+  }
+};

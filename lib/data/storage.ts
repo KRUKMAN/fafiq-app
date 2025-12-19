@@ -44,6 +44,36 @@ export const uploadDogPhoto = async (orgId: string, dogId: string, input: Upload
   return { path: data?.path ?? path };
 };
 
+export const addDogPhotoRecord = async (
+  orgId: string,
+  dogId: string,
+  storagePath: string,
+  opts?: { caption?: string; isPrimary?: boolean }
+) => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; dog photo record insert requires Supabase env.');
+  }
+
+  const { data, error } = await supabase
+    .from('dog_photos')
+    .insert({
+      org_id: orgId,
+      dog_id: dogId,
+      storage_path: storagePath,
+      storage_bucket: 'dog-photos',
+      caption: opts?.caption ?? null,
+      is_primary: opts?.isPrimary ?? false,
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to record dog photo: ${error.message}`);
+  }
+
+  return data;
+};
+
 export const uploadDocument = async (
   orgId: string,
   entityType: string,

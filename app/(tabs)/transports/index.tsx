@@ -1,18 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { z } from 'zod';
+
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { RowAction, RowActionsMenu } from '@/components/ui/RowActionsMenu';
+import { softDeleteTransport } from '@/lib/data/transports';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable } from '@/components/table/DataTable';
 import { TableToolbar } from '@/components/table/TableToolbar';
-import { useOrgMemberships } from '@/hooks/useOrgMemberships';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
+import { useOrgMemberships } from '@/hooks/useOrgMemberships';
+import { useTransports } from '@/hooks/useTransports';
 import { createTransport, updateTransport } from '@/lib/data/transports';
 import { Transport } from '@/schemas/transport';
 import { useSessionStore } from '@/stores/sessionStore';
-import { useTransports } from '@/hooks/useTransports';
 import OrgSelector from './OrgSelector';
 
 const TRANSPORT_STATUS_OPTIONS = ['Requested', 'Scheduled', 'In Progress', 'Done', 'Canceled'];
@@ -363,6 +367,8 @@ export default function TransportsScreen() {
   const [editorMode, setEditorMode] = useState<'create' | 'edit' | null>(null);
   const [editingTransportId, setEditingTransportId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [transportToDelete, setTransportToDelete] = useState<{ id: string } | null>(null);
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useTransports(activeOrgId ?? undefined);
   const {
@@ -407,6 +413,30 @@ export default function TransportsScreen() {
       setFormError(err.message || 'Unable to save transport.');
     },
   });
+
+  const deleteTransportMutation = useMutation({
+    mutationFn: async ({ orgId, transportId }: { orgId: string; transportId: string }) => {
+      await softDeleteTransport(orgId, transportId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transports', activeOrgId || ''] });
+      setDeleteModalVisible(false);
+      setTransportToDelete(null);
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete transport:', error?.message);
+    },
+  });
+
+  const handleDeleteTransport = useCallback((id: string) => {
+    setTransportToDelete({ id });
+    setDeleteModalVisible(true);
+  }, []);
+
+  const confirmDeleteTransport = useCallback(() => {
+    if (!activeOrgId || !transportToDelete) return;
+    deleteTransportMutation.mutate({ orgId: activeOrgId, transportId: transportToDelete.id });
+  }, [activeOrgId, transportToDelete, deleteTransportMutation]);
 
   useEffect(() => {
     if (!ready) {
@@ -640,6 +670,18 @@ export default function TransportsScreen() {
                 setSelectedTransportId(item.id);
               }
             }}
+            onEdit={viewMode === 'transports' ? () => {
+              const transport = (data || []).find((t) => t.id === item.id);
+              if (transport) {
+                setFormError(null);
+                setEditingTransportId(transport.id);
+                setEditorMode('edit');
+              }
+            } : undefined}
+            onDelete={viewMode === 'transports' ? () => handleDeleteTransport(item.id) : undefined}
+            onViewHistory={viewMode === 'transports' ? () => {
+              setSelectedTransportId(item.id);
+            } : undefined}
           />
         )}
       />
@@ -729,6 +771,21 @@ export default function TransportsScreen() {
           onClose={() => setSelectedTransporterId(null)}
         />
       )}
+
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        title="Delete Transport"
+        message="Are you sure you want to delete this transport? This action can be undone by an administrator."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        loading={deleteTransportMutation.isPending}
+        onConfirm={confirmDeleteTransport}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setTransportToDelete(null);
+        }}
+      />
     </View>
   );
 }
@@ -772,6 +829,7 @@ const TRANSPORT_COLUMNS = [
   { key: 'to', label: 'To', flex: 1.2, minWidth: 160 },
   { key: 'window', label: 'Window', flex: 1.4, minWidth: 180 },
   { key: 'assigned', label: 'Assigned', flex: 1, minWidth: 140 },
+  { key: 'actions', label: '', flex: 0.6, minWidth: 60, align: 'right' as const },
 ];
 
 const TRANSPORT_TABLE_MIN_WIDTH = TRANSPORT_COLUMNS.reduce((sum, col) => sum + col.minWidth, 0);
@@ -802,15 +860,38 @@ const TransportRow = ({
   item,
   onPress,
   isTransporter,
+  onEdit,
+  onDelete,
+  onViewHistory,
 }: {
   item: TransportRowItem | TransporterRowItem;
   onPress: () => void;
   isTransporter: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onViewHistory?: () => void;
 }) => {
+  const actions: RowAction[] = [];
+  if (!isTransporter) {
+    if (onEdit) {
+      actions.push({ key: 'edit', label: 'Edit', icon: 'edit', onPress: onEdit });
+    }
+    if (onViewHistory) {
+      actions.push({ key: 'history', label: 'View History', icon: 'history', onPress: onViewHistory });
+    }
+    if (onDelete) {
+      actions.push({ key: 'delete', label: 'Delete', icon: 'delete', destructive: true, onPress: onDelete });
+    }
+  }
+
   if (isTransporter) {
     const transporter = item as TransporterRowItem;
     return (
-      <View className="flex-row items-center" style={{ width: '100%' }}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        className="flex-row items-center"
+        style={{ width: '100%' }}>
         <Cell flex={1.4} minWidth={200}>
           <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
             {transporter.name}
@@ -836,7 +917,7 @@ const TransportRow = ({
             {transporter.status}
           </Text>
         </Cell>
-      </View>
+      </Pressable>
     );
   }
 
@@ -877,6 +958,9 @@ const TransportRow = ({
         <Text className="text-xs text-gray-700" numberOfLines={1}>
           {transport.assigned}
         </Text>
+      </Cell>
+      <Cell flex={0.6} minWidth={60}>
+        <RowActionsMenu actions={actions} />
       </Cell>
     </Pressable>
   );

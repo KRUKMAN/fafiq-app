@@ -1,6 +1,8 @@
 import React from 'react';
 import { FlatList, ScrollView, Text, View } from 'react-native';
 
+import { EmptyState } from '@/components/ui/EmptyState';
+
 type Column = {
   key: string;
   label: string;
@@ -42,13 +44,7 @@ export function DataTable<T>({
         ItemSeparatorComponent={
           ItemSeparatorComponent ?? (() => <View className="h-px bg-border" />)
         }
-        ListEmptyComponent={
-          ListEmptyComponent ?? (
-            <View className="items-center justify-center py-12">
-              <Text className="text-sm text-gray-500">No records to display.</Text>
-            </View>
-          )
-        }
+        ListEmptyComponent={ListEmptyComponent ?? <EmptyState title="No records to display." />}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       />
