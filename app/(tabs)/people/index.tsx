@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { Href, useRouter } from 'expo-router';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable } from '@/components/table/DataTable';
@@ -29,12 +28,12 @@ const PEOPLE_COLUMNS = [
 const PEOPLE_TABLE_MIN_WIDTH = PEOPLE_COLUMNS.reduce((sum, col) => sum + col.minWidth, 0);
 
 export default function PeopleScreen() {
-  const router = useRouter();
   const { ready, memberships, activeOrgId, bootstrap, switchOrg } = useSessionStore();
   const [viewMode, setViewMode] = useState<'members' | 'fosters'>('members');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const {
     data: orgMembers,
     isLoading,
@@ -196,9 +195,9 @@ export default function PeopleScreen() {
           minWidth={PEOPLE_TABLE_MIN_WIDTH}
           renderRow={({ item }) => (
             <Pressable
-              className="flex-row items-center"
               accessibilityRole="button"
-              onPress={() => router.push('/settings' as Href)}
+              onPress={() => setSelectedMemberId(item.id)}
+              className="flex-row items-center"
               style={{ width: '100%' }}>
               <Cell flex={1.5} minWidth={200}>
                 <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
@@ -285,6 +284,12 @@ export default function PeopleScreen() {
           </Pressable>
         </View>
       </View>
+
+      <MemberDetailDrawer
+        memberId={selectedMemberId}
+        members={rows}
+        onClose={() => setSelectedMemberId(null)}
+      />
     </View>
   );
 }
@@ -300,5 +305,50 @@ const Cell = ({
 }) => (
   <View className="px-6 py-4" style={{ flex, minWidth }}>
     {children}
+  </View>
+);
+
+const Drawer = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
+  <View className="absolute inset-0 flex-row z-50" pointerEvents="box-none">
+    <Pressable accessibilityRole="button" className="flex-1" onPress={onClose} />
+    <View className="ml-auto h-full w-full max-w-5xl bg-white border-l border-border shadow-2xl">{children}</View>
+  </View>
+);
+
+const MemberDetailDrawer = ({
+  memberId,
+  members,
+  onClose,
+}: {
+  memberId: string | null;
+  members: MemberRow[];
+  onClose: () => void;
+}) => {
+  if (!memberId) return null;
+  const member = members.find((m) => m.id === memberId);
+  if (!member) return null;
+  return (
+    <Drawer onClose={onClose}>
+      <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 12 }}>
+        <View className="bg-white border border-border rounded-lg p-4 shadow-sm">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-lg font-semibold text-gray-900">{member.name}</Text>
+            <Text className="text-xs px-2 py-1 rounded-full bg-gray-900 text-white">{member.status}</Text>
+          </View>
+          <DetailRow label="Email" value={member.email} />
+          <DetailRow label="User ID" value={member.userId} />
+          <DetailRow label="Roles" value={member.roles} />
+        </View>
+      </ScrollView>
+    </Drawer>
+  );
+};
+
+const DetailRow = ({ label, value }: { label: string; value: string }) => (
+  <View className="flex-row justify-between py-1">
+    <Text className="text-sm text-gray-500">{label}</Text>
+    <Text className="text-sm font-medium text-gray-900" numberOfLines={1}>
+      {value}
+    </Text>
   </View>
 );

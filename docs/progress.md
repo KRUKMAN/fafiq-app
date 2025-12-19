@@ -21,16 +21,16 @@ Reference: `docs/implementation_plan.md`
 - Added invite management actions (resend/cancel) in Settings; invites list shows status and role summary.
 - Added storage foundation: created `dog-photos` and `documents` buckets + storage policies aligned to `org_id` path; added path helpers and upload helpers (signed URL + direct upload) for dog photos/documents.
 - Added transport create/update Supabase mutations (with Zod parsing) to complete the transport swap surface; tightened dog schema nullability alignment with DB. Storage buckets/policies applied via Supabase migration.
-- Hardened guards/empty states on People/Finance; People and Transports now reuse the Dogs DataTable layout with pagination/search and toggles (members vs fosters, transports vs transporters).
+- Hardened guards/empty states on People/Finance; People and Transports now reuse the Dogs DataTable layout with pagination/search, toggles (members vs fosters, transports vs transporters), and drawer-style detail views consistent with Dogs.
+- Session bootstrap is now Supabase-first with explicit demo/mocks; dashboard tab now shares the same org guard empty states.
+- Transports tab supports create/edit via Supabase mutations with a side-drawer form (status, schedule, assignments); transport/transporter drawers use solid side panels. People drawer styling matches the Dogs/Transports pattern.
 
 
 ## Watch-outs / Next Steps
 - Compare regenerated `database.types.ts` with Zod and resolve any drift after recent migrations.
 - Maintain RLS/atomic logging expectations when wiring remaining mutations (no client-side audit writes).
-- Continue moving session boot fully onto Supabase memberships (minimize mock fallback) and keep org-aware cache invalidation.
+- Session boot is Supabase-first; keep an eye on membership fetch failures and org selection persistence when switching orgs or reloading.
 
 ## Next Steps (short-term)
-- Wire transport mutations and invite RPCs into UI flows beyond Settings if/when edit/create surfaces are added; add activity logging for transport updates.
-- Continue hardening tenant boot/org guard UX for users with no memberships/orgs across tabs (reduce mock fallback when Supabase present).
-- Populate remaining empty states and org guard flows across tabs; add storage upload integration in UI on top of the new buckets/policies.
-- Keep dependency audit list in sync; prune only after Phase 2 wiring if still unused.
+- Invites remain settings-only; add other invite surfaces only if the product needs them (reuse existing RPCs).
+- Keep dependency audit list in sync; likely-unused today: `expo-haptics`, `expo-image`, `expo-font`, `expo-symbols`, `expo-system-ui`, `expo-web-browser`, `expo-constants`, `expo-linking`, `@tanstack/react-query-devtools`.

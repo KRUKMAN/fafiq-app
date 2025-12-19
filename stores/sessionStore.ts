@@ -86,28 +86,23 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   bootstrap: async () => {
     if (get().ready) return;
 
-    // If Supabase env is present, prefer real session boot. Otherwise, fall back to mocks.
     if (supabase) {
       const bootstrapped = await bootstrapSupabaseSession(set);
       if (bootstrapped) return;
-
-      // No Supabase session: mark ready + signed out (do not auto-mock when Supabase is configured).
-      set({
-        ready: true,
-        isAuthenticated: false,
-        currentUser: null,
-        memberships: [],
-        activeOrgId: null,
-      });
-      return;
     }
 
-    await bootstrapMockSession(set);
+    // No Supabase session/config available - remain signed out until user opts into mock/demo mode.
+    set({
+      ready: true,
+      isAuthenticated: false,
+      currentUser: null,
+      memberships: [],
+      activeOrgId: null,
+    });
   },
   signIn: async (email: string, password: string) => {
     if (!supabase) {
-      await bootstrapMockSession(set);
-      return;
+      throw new Error('Supabase env vars missing. Configure Supabase or use the demo data option.');
     }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -119,8 +114,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   },
   signUp: async (fullName: string, email: string, password: string) => {
     if (!supabase) {
-      await bootstrapMockSession(set);
-      return;
+      throw new Error('Supabase env vars missing. Configure Supabase or use the demo data option.');
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -158,6 +152,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       };
     }),
   signInDemo: async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     await bootstrapMockSession(set);
   },
   switchOrg: (orgId: string) =>
@@ -215,6 +212,12 @@ const bootstrapSupabaseSession = async (
   }
 
   const userId = sessionData.session.user.id;
+  const currentUser: User = {
+    id: userId,
+    name: sessionData.session.user.email ?? 'User',
+    email: sessionData.session.user.email ?? '',
+  };
+
   // Attempt to accept any pending invites for the signed-in user before loading memberships.
   try {
     await acceptInvitesForCurrentUser();
@@ -222,17 +225,28 @@ const bootstrapSupabaseSession = async (
     console.warn('Skipping invite acceptance (RPC missing?)', err);
   }
 
-  const [{ data: membershipsData, error: membershipsError }, { data: profileData }] = await Promise.all([
-    supabase
-      .from('memberships')
-      .select('id, org_id, roles, active, orgs(name)')
-      .eq('user_id', userId)
-      .eq('active', true),
-    supabase.from('profiles').select('user_id, full_name').eq('user_id', userId).maybeSingle(),
-  ]);
+  const [{ data: membershipsData, error: membershipsError }, { data: profileData, error: profileError }] =
+    await Promise.all([
+      supabase
+        .from('memberships')
+        .select('id, org_id, roles, active, orgs(name)')
+        .eq('user_id', userId)
+        .eq('active', true),
+      supabase.from('profiles').select('user_id, full_name').eq('user_id', userId).maybeSingle(),
+    ]);
 
   if (membershipsError || !membershipsData) {
-    return false;
+    console.warn('Membership fetch failed; staying signed-in without org context', membershipsError);
+    set({
+      ready: true,
+      isAuthenticated: true,
+      currentUser,
+      memberships: [],
+      activeOrgId: null,
+    });
+    persistLastOrgId(null);
+    invalidateOrgScopedQueries();
+    return true;
   }
 
   const memberships: Membership[] = membershipsData.map((m) => ({
@@ -247,18 +261,23 @@ const bootstrapSupabaseSession = async (
   const activeOrgId = selectActiveOrgId(memberships, lastOrgId);
   if (activeOrgId) {
     persistLastOrgId(activeOrgId);
+  } else {
+    persistLastOrgId(null);
   }
 
-  const currentUser: User = {
-    id: userId,
-    name: profileData?.full_name ?? sessionData.session.user.email ?? 'User',
-    email: sessionData.session.user.email ?? '',
+  if (profileError) {
+    console.warn('Profile fetch failed; using auth user data only', profileError);
+  }
+
+  const currentUserWithProfile: User = {
+    ...currentUser,
+    name: profileData?.full_name ?? currentUser.name,
   };
 
   set({
     ready: true,
     isAuthenticated: true,
-    currentUser,
+    currentUser: currentUserWithProfile,
     memberships,
     activeOrgId,
   });
