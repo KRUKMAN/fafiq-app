@@ -4,17 +4,27 @@ sequenceDiagram
   participant Query as QueryClient
   participant DogData as fetchDogById
   participant Events as fetchActivityEvents
+  participant Supabase
   participant Mocks
   User->>Detail: open /dogs/:id
   Detail->>Query: useDog(orgId,id)
   Detail->>Query: useDogTimeline(orgId,id)
   Query->>DogData: fetchDogById
   Query->>Events: fetchActivityEvents
-  DogData->>Mocks: getMockDogById
-  Events->>Mocks: getMockActivityEvents
-  Mocks-->>DogData: dog row
-  Mocks-->>Events: event list
-  DogData-->>Query: parsed dog
-  Events-->>Query: parsed events
+  alt Supabase configured
+    DogData->>Supabase: select dog where org_id + id
+    Supabase-->>DogData: dog row
+    DogData-->>Query: parsed dog (zod)
+    Events->>Supabase: select activity_events where org_id + entity(dog,id)
+    Supabase-->>Events: events
+    Events-->>Query: parsed events (zod)
+  else no Supabase
+    DogData->>Mocks: getMockDogById
+    Events->>Mocks: getMockActivityEvents
+    Mocks-->>DogData: dog row
+    Mocks-->>Events: event list
+    DogData-->>Query: parsed dog (zod)
+    Events-->>Query: parsed events (zod)
+  end
   Query-->>Detail: dog + timeline
   Detail-->>User: drawer with tabs

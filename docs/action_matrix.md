@@ -8,14 +8,14 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Row click: open detail drawer
 - Edit: navigate to edit screen
 - Delete: `softDeleteDog(orgId, dogId)` → invalidates `['dogs', ...]`
-- History: open timeline view
+- History: open dog detail (Timeline tab deep-link TODO)
 
 ### Dog detail (`app/(tabs)/dogs/[id].tsx`)
 - Edit: enables inline edit mode (Overview tab)
 - Save: `updateDog(orgId, dogId, updates)` → invalidates `['dog', orgId, dogId]` + `['dogs']`
 - Cancel: resets draft (no write)
 - Upload photo: image picker → `uploadDogPhoto` + `addDogPhotoRecord` → invalidates `['dog-photos', orgId, dogId]`
-- Upload document: switches to Documents tab (upload flow lives there)
+- Upload document: Documents tab upload is storage-only right now (no `documents` table insert yet)
 - Assign foster: updates `dogs.foster_contact_id` via `updateDog` (also mirrors `extra_fields.foster_name` for now)
 - Create transport: deep-links to Transports tab create drawer with `createDogId` param prefilled
 

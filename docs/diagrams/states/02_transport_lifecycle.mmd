@@ -1,6 +1,7 @@
 stateDiagram-v2
   [*] --> Requested
   Requested --> Scheduled
+  state "In Progress" as InProgress
   Scheduled --> InProgress
   InProgress --> Done
   InProgress --> Canceled

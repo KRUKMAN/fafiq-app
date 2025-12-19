@@ -4,13 +4,26 @@ sequenceDiagram
   participant UI as UIStore
   participant Query as QueryClient
   participant Data as fetchDogs
+  participant Supabase
   participant Mocks
   User->>Dogs: open /dogs
   Dogs->>UI: read filters + orgId
   Dogs->>Query: useDogs(queryKey)
   Query->>Data: fetchDogs(orgId, filters)
-  Data->>Mocks: getMockDogs(orgId)
-  Mocks-->>Data: filtered dogs
-  Data-->>Query: parsed dogs (zod)
+  alt Supabase configured
+    Data->>Supabase: select dogs where org_id
+    Supabase-->>Data: dogs
+    opt enrich list photoUrl
+      Data->>Supabase: select dog_photos for dog_id IN (...)
+      Supabase-->>Data: photo rows
+      Data->>Supabase: storage.createSignedUrls(paths)
+      Supabase-->>Data: signed urls
+    end
+    Data-->>Query: parsed dogs (zod) + filters applied
+  else no Supabase
+    Data->>Mocks: getMockDogs(orgId)
+    Mocks-->>Data: mock dogs
+    Data-->>Query: parsed dogs (zod) + filters applied
+  end
   Query-->>Dogs: data + loading states
   Dogs-->>User: grid, filters, pagination

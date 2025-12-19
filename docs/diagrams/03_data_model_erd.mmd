@@ -2,6 +2,8 @@ erDiagram
   AUTH_USERS ||--|| PROFILES : owns
   ORGS ||--o{ MEMBERSHIPS : has
   AUTH_USERS ||--o{ MEMBERSHIPS : joins
+  ORGS ||--o{ ORG_CONTACTS : has
+  AUTH_USERS ||--o{ ORG_CONTACTS : may_link
   ORGS ||--o{ DOGS : owns
   ORGS ||--o{ TRANSPORTS : owns
   ORGS ||--o{ MEDICAL_RECORDS : owns
@@ -13,6 +15,8 @@ erDiagram
   DOGS ||--o{ MEDICAL_RECORDS : tracks
   DOGS ||--o{ EXPENSES : costs
   DOGS ||--o{ DOG_PHOTOS : images
+  ORG_CONTACTS ||--o{ DOGS : assigns_foster_or_responsible
+  ORG_CONTACTS ||--o{ TRANSPORTS : assigns_driver
   MEMBERSHIPS ||--o{ DOGS : assigns_responsible
   MEMBERSHIPS ||--o{ TRANSPORTS : assigns_driver
   MEMBERSHIPS ||--o{ ACTIVITY_EVENTS : actor
@@ -37,6 +41,17 @@ erDiagram
     text[] roles
     bool active
   }
+  ORG_CONTACTS {
+    uuid id PK
+    uuid org_id FK
+    text kind
+    text display_name
+    citext email
+    text phone
+    text[] roles
+    uuid linked_user_id FK
+    uuid linked_membership_id FK
+  }
   DOGS {
     uuid id PK
     uuid org_id FK
@@ -46,6 +61,8 @@ erDiagram
     text description
     uuid responsible_membership_id FK
     uuid foster_membership_id FK
+    uuid responsible_contact_id FK
+    uuid foster_contact_id FK
     jsonb extra_fields
   }
   TRANSPORTS {
@@ -54,6 +71,7 @@ erDiagram
     uuid dog_id FK
     text status
     uuid assigned_membership_id FK
+    uuid assigned_contact_id FK
     timestamptz window_start
     timestamptz window_end
     jsonb extra_fields

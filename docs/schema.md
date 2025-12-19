@@ -20,6 +20,8 @@ Common columns:
 - `id uuid primary key default gen_random_uuid()`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
+Soft delete:
+- For operational tables where recovery is valuable, a nullable `deleted_at timestamptz` is used (implemented for `dogs`, `transports`, `org_contacts`).
 
 ## Identity & Tenancy
 
@@ -115,6 +117,7 @@ create table public.dogs (
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
   created_by_membership_id uuid references public.memberships(id),
   updated_by_membership_id uuid references public.memberships(id)
 );
@@ -152,6 +155,7 @@ create table public.transports (
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
   created_by_membership_id uuid references public.memberships(id),
   updated_by_membership_id uuid references public.memberships(id)
 );
@@ -315,6 +319,7 @@ create table public.org_contacts (
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
+  deleted_at timestamptz,
   created_by_membership_id uuid references public.memberships(id),
   updated_by_membership_id uuid references public.memberships(id),
 
@@ -322,6 +327,11 @@ create table public.org_contacts (
   unique (org_id, email)
 );
 ```
+
+## Notes on current DB vs app usage
+
+- Soft delete is enforced in RLS read policies for `dogs`, `transports`, and `org_contacts` (admins can still read deleted rows for recovery).
+- `documents` table exists with RLS + audit trigger, but the current app UI uploads to the `documents` bucket without inserting `documents` rows yet.
 
 ## Schema Verification
 

@@ -1,10 +1,12 @@
 stateDiagram-v2
-  [*] --> SignedOut
-  SignedOut --> Booting : bootstrap()
-  Booting --> Ready : mock sign-in
-  Ready --> NoOrg : no memberships
-  Ready --> OrgActive : activeOrgId set
-  NoOrg --> SignedOut : signOut()
-  OrgActive --> SignedOut : signOut()
+  [*] --> SignedOutReady
+  SignedOutReady --> Booting : bootstrap()
+  Booting --> SignedOutReady : no Supabase session/config
+  Booting --> AuthedNoOrg : session exists, memberships=[]
+  Booting --> OrgActive : session exists, activeOrgId set
+  SignedOutReady --> OrgActive : signInDemo()
+  SignedOutReady --> Booting : signIn()/signUp()
+  AuthedNoOrg --> SignedOutReady : signOut()
+  OrgActive --> SignedOutReady : signOut()
   OrgActive --> OrgSwitch : switchOrg()
-  OrgSwitch --> OrgActive : activeOrgId persisted
+  OrgSwitch --> OrgActive : activeOrgId persisted + queries invalidated

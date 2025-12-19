@@ -1,8 +1,9 @@
 stateDiagram-v2
   [*] --> Idle
-  Idle --> RequestURL : request signed URL
-  RequestURL --> Uploading : got URL
+  Idle --> PickingFile : pick/select file
+  PickingFile --> Uploading : upload to Storage (direct or signed URL)
   Uploading --> Stored : object saved
-  Stored --> Logged : insert document row + activity
-  Logged --> Visible : query invalidated
+  Stored --> Recorded : insert dog_photos row (dog photos)
+  Recorded --> Visible : queries invalidated (dog-photos, dog, dogs)
+  Stored --> Visible : visible in UI list only (documents; DB row TODO)
   Visible --> Idle

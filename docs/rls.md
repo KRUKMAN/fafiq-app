@@ -1,17 +1,14 @@
-# RLS (Row Level Security) — Draft Policies
+# RLS (Row Level Security)
 
-This document implements the System Context rule:
+This document summarizes the current RLS model. The source of truth is the applied migrations:
+- `supabase/migrations/20251218_schema_rls_audit.sql`
+- `supabase/migrations/20251221_storage_buckets.sql`
+- `supabase/migrations/20251228_soft_delete.sql`
 
-> Users can only see rows where `org_id` matches their **active membership**.
+## Core rule
+Users can only read/write rows where `org_id` matches an **active membership** (`memberships.active = true`).
 
-In MVP, “active membership” means `memberships.active = true`. The *app* still needs a tenant-resolution strategy to pick which `org_id` to use in queries (see Gap Analysis / Implementation Plan).
-
-## Principles
-- RLS is enabled on **all business tables** (`org_id` everywhere).
-- Policies are consistent and DRY via helper functions.
-- Avoid relying on “frontend role logic” for security (System Context MUST NOT).
-
-## Helper functions (recommended)
+## Helper functions (implemented)
 
 ```sql
 create or replace function public.is_active_org_member(target_org_id uuid)
@@ -44,142 +41,64 @@ as $$
 $$;
 ```
 
-## Enable RLS
+## Table-level RLS (enabled)
+- `orgs`, `profiles`, `memberships`
+- `dogs`, `transports`, `medical_records`, `expenses`
+- `dog_photos`, `documents`
+- `activity_events`
+- `org_contacts`
 
-```sql
-alter table public.orgs enable row level security;
-alter table public.profiles enable row level security;
-alter table public.memberships enable row level security;
+## Policy summary (current)
 
-alter table public.dogs enable row level security;
-alter table public.transports enable row level security;
-alter table public.medical_records enable row level security;
-alter table public.expenses enable row level security;
-alter table public.dog_photos enable row level security;
-alter table public.documents enable row level security;
-alter table public.activity_events enable row level security;
-alter table public.org_contacts enable row level security;
-```
+`profiles`
+- Users can read/update their own row.
 
-## Baseline policy pattern (org-scoped tables)
+`orgs`
+- Members can read orgs they belong to.
+- Admins can update org settings.
 
-For each table that has `org_id`, apply:
-
-```sql
-create policy "org members can read"
-on public.<table>
-for select
-using (public.is_active_org_member(org_id));
-
-create policy "org members can insert"
-on public.<table>
-for insert
-with check (public.is_active_org_member(org_id));
-
-create policy "org members can update"
-on public.<table>
-for update
-using (public.is_active_org_member(org_id))
-with check (public.is_active_org_member(org_id));
-
-create policy "org members can delete"
-on public.<table>
-for delete
-using (public.is_active_org_member(org_id));
-```
-
-Role tightening (optional MVP hardening):
-- Only admins can delete: `using (public.has_role(org_id, 'admin'))`.
-- Only admins can edit org settings tables (if added later).
-
-## Special cases
-
-### `profiles`
-- User can read/update their own profile.
-
-```sql
-create policy "users read own profile"
-on public.profiles
-for select
-using (user_id = auth.uid());
-
-create policy "users update own profile"
-on public.profiles
-for update
-using (user_id = auth.uid())
-with check (user_id = auth.uid());
-```
-
-### `memberships`
+`memberships`
 - Users can read their own memberships.
-- Only admins manage memberships (invite/remove, assign roles).
+- Admins can manage memberships.
+
+Org-scoped business tables (examples: `dogs`, `transports`, `medical_records`, `expenses`, `dog_photos`, `documents`, `org_contacts`)
+- Members can read/insert/update within their org.
+- Deletes are admin-only in the current migrations.
+
+`activity_events`
+- Members can read/insert within their org.
+- Treat as append-only at application level (no UPDATE/DELETE flows).
+
+## Soft delete (implemented)
+
+`dogs`, `transports`, and `org_contacts` have `deleted_at`.
+- Default read policies exclude soft-deleted rows (`deleted_at is null`).
+- Admins have an additional read policy for deleted rows (recovery).
+
+## Storage object policies (implemented)
+
+Storage buckets are private and tenant-scoped by path prefix.
 
 ```sql
-create policy "users read own memberships"
-on public.memberships
-for select
-using (user_id = auth.uid());
+create or replace function public.org_id_from_storage_path(object_name text)
+returns uuid
+language sql
+immutable
+as $$
+  select case
+    when object_name is null then null
+    when length(split_part(object_name, '/', 1)) = 36 then (split_part(object_name, '/', 1))::uuid
+    else null
+  end;
+$$;
 
-create policy "admins manage memberships"
-on public.memberships
-for all
-using (public.has_role(org_id, 'admin'))
-with check (public.has_role(org_id, 'admin'));
+create policy "org members read dog-photos"
+on storage.objects
+for select
+using (
+  bucket_id = 'dog-photos'
+  and public.is_active_org_member(public.org_id_from_storage_path(name))
+);
 ```
 
-### `orgs`
-- Users can read orgs they belong to.
-
-```sql
-create policy "members read org"
-on public.orgs
-for select
-using (public.is_active_org_member(id));
-```
-
-### `org_contacts`
-- Contacts are operational directory records that can be unlinked (no user_id yet).
-- Any org member can read/write contacts by default (tighten to admin if desired).
-
-```sql
-create policy "org members can read org_contacts"
-on public.org_contacts
-for select
-using (public.is_active_org_member(org_id));
-
-create policy "org members can insert org_contacts"
-on public.org_contacts
-for insert
-with check (public.is_active_org_member(org_id));
-
-create policy "org members can update org_contacts"
-on public.org_contacts
-for update
-using (public.is_active_org_member(org_id))
-with check (public.is_active_org_member(org_id));
-
-create policy "org members can delete org_contacts"
-on public.org_contacts
-for delete
-using (public.is_active_org_member(org_id));
-```
-
-## Storage RLS (Supabase Storage)
-
-### Bucket + path conventions (MVP)
-- `dog-photos`: `{org_id}/dogs/{dog_id}/{uuid}.{ext}`
-- `documents`: `{org_id}/{entity_type}/{entity_id}/{uuid}.{ext}`
-
-### Enforcement approach
-Use a combination of:
-1) RLS on `dog_photos` / `documents` tables (authoritative references)
-2) Storage object policies that require:
-   - first path segment equals an org UUID
-   - `is_active_org_member(<org_id from path>)`
-
-Implementation detail depends on Supabase Storage policy capabilities in your project; the table-level RLS is non-negotiable.
-
-## Activity logging RLS
-- `activity_events` follows the baseline org-scoped pattern.
-- Inserts must be permitted for org members (or stricter: only roles allowed to mutate).
-- Table must remain **append-only** at application level (no UPDATE/DELETE in app flows).
+This same pattern is applied for writes and for the `documents` bucket in the migrations.

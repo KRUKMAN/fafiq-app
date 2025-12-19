@@ -11,7 +11,7 @@ This defines the MVP storage structure for dog photos and documents, aligned to 
 Purpose: Images used in dog profiles and timelines.
 
 Path convention:
-`{org_id}/dogs/{dog_id}/{photo_id}.{ext}`
+`{org_id}/dogs/{dog_id}/{randomId}-{filename}`
 
 Database reference:
 - `dog_photos.org_id`
@@ -22,7 +22,7 @@ Database reference:
 Purpose: Medical PDFs, transport paperwork, contracts, etc.
 
 Path convention:
-`{org_id}/{entity_type}/{entity_id}/{document_id}.{ext}`
+`{org_id}/{entity_type}/{entity_id}/{randomId}-{filename}`
 
 Database reference:
 - `documents.org_id`
@@ -35,14 +35,23 @@ Database reference:
 - Reads/writes require an **active membership** in the org.
 - App must always include `org_id` in inserts into `dog_photos` / `documents`.
 
-## Upload flow (recommended)
-1) App requests a signed upload URL (client-side or Edge Function).
-2) Upload to Storage.
-3) Insert row into `dog_photos` or `documents` with `org_id` and `storage_path`.
-4) Insert an `activity_events` row:
-   - `event_type`: `dog.photo_added`, `document.uploaded`, etc.
-   - `entity_type/entity_id`: the owning entity
-   - `payload`: `{bucket, path, mime_type, size, ...}`
+## Upload flow (current implementation)
+
+Implemented pieces:
+- Storage buckets + object policies are applied via `supabase/migrations/20251221_storage_buckets.sql`.
+- Client helpers exist in `lib/data/storage.ts` for:
+  - direct uploads (`uploadDogPhoto`, `uploadDocument`)
+  - signed upload URLs (`createSignedUploadUrl` + `uploadViaSignedUrl`) (available, not required by current UI)
+
+Dog photos (implemented end-to-end):
+1) Upload to Storage (`dog-photos` bucket, org-scoped path).
+2) Insert a `dog_photos` row with `org_id` + `storage_path`.
+3) Activity event is written by the database audit trigger on `dog_photos` (no client-side audit inserts).
+
+Documents (partially implemented):
+1) Upload to Storage (`documents` bucket, org-scoped path).
+2) UI currently shows an in-memory list item (no `documents` row insert yet).
+3) Because there is no `documents` row insert, the audit trigger on `documents` is not exercised by the current UI.
 
 ## Retention / deletion
 - Prefer immutable objects (new UUID path per upload).

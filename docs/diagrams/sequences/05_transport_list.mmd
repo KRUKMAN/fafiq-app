@@ -3,12 +3,19 @@ sequenceDiagram
   participant Transports as TransportsScreen
   participant Query as QueryClient
   participant Data as fetchTransports
+  participant Supabase
   participant Mocks
   User->>Transports: open /transports
   Transports->>Query: useTransports(orgId)
   Query->>Data: fetchTransports(orgId)
-  Data->>Mocks: getMockTransports(orgId)
-  Mocks-->>Data: transport list
-  Data-->>Query: parsed transports
+  alt Supabase configured
+    Data->>Supabase: select transports where org_id
+    Supabase-->>Data: transport list
+    Data-->>Query: parsed transports (zod)
+  else no Supabase
+    Data->>Mocks: getMockTransports(orgId)
+    Mocks-->>Data: transport list
+    Data-->>Query: parsed transports (zod)
+  end
   Query-->>Transports: data + loading/error
-  Transports-->>User: cards per transport
+  Transports-->>User: table + drawers per transport

@@ -4,12 +4,12 @@ This plan is aligned to `Fafik_System_Context.md` and cross-checked against the 
 
 ## Current Codebase Reality (Delta to Target)
 - Domain naming is aligned to `org_id` in the app code; Supabase schema + RLS + audit triggers are applied per `docs/schema.md` / `docs/rls.md`.
-- Tenant resolution is **mock-first** with a Supabase bootstrap fallback: sessionStore uses mock memberships/org selection when no Supabase session/env is available.
+- Tenant resolution is **Supabase-first** with a demo/mock opt-in: sessionStore bootstraps from Supabase when a session exists; otherwise it stays signed out until the user signs in or chooses demo data.
 - RLS and audit functions/triggers are live in the DB; frontend mutations partially wired (auth, invites, transport create/update).
 - NativeWind v4 + metro config are in place; Expo Router shell + sidebar tabs are stable with org guards on list/detail/placeholder tabs.
 - Dogs/Transports/Activity hooks now fetch from Supabase when env/session is present (mock fallback remains); dog detail drawer has Financial/People & Housing/Chat mock tabs; transports include list + detail shells.
 - Org settings include membership list + email view + invite flow (email-based) with resend/cancel; invites auto-accept on session bootstrap.
-- Storage buckets/policies for dog photos/documents are applied; path helpers and upload helpers exist (UI integration pending).
+- Storage buckets/policies for dog photos/documents are applied; dog photo upload + dog photo list (signed read URL) are integrated in dog detail; documents are currently uploaded to Storage but not inserted into the `documents` table yet.
 - Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
 
 
@@ -266,7 +266,7 @@ planned | in_progress | done | mocked | blocked
 | Task | Status |
 |---|---|
 | dog-photos bucket | done (bucket + policies + path helpers) |
-| Upload integration | in_progress (helpers + transport detail sample upload + dog detail docs upload; dog photo UI pending) |
+| Upload integration | in_progress (dog photo upload+list done; documents table insert/list pending) |
 | Optimistic updates | planned |
 
 ---

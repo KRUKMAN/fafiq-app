@@ -8,15 +8,25 @@ sequenceDiagram
   App->>Session: bootstrap()
   alt Supabase env present
     Session->>Supabase: getSession()
-    Supabase-->>Session: session or none
-    Session->>Supabase: accept_org_invites_for_current_user()
-    Session->>Supabase: fetch memberships (org_id + roles)
-    Supabase-->>Session: memberships
-    Session->>Supabase: link_my_contact_in_org(org_id) (best effort)
-    Session-->>App: set ready + activeOrgId
+    alt session exists
+      Supabase-->>Session: session
+      Session->>Supabase: accept_org_invites_for_current_user() (best effort)
+      Session->>Supabase: fetch memberships (org_id + roles + org name)
+      Supabase-->>Session: memberships
+      Session->>Supabase: link_my_contact_in_org(org_id) (best effort per membership)
+      Session-->>App: set ready + activeOrgId (from last_org_id or first active)
+    else no session
+      Supabase-->>Session: none
+      Session-->>App: set ready + SignedOut (no memberships/org)
+    end
   else no Supabase env
+    Session-->>App: set ready + SignedOut (no Supabase config)
+  end
+  opt User opts into demo
+    User->>App: tap "Use demo data"
+    App->>Session: signInDemo()
     Session->>Mocks: fetch memberships/orgs/profiles
     Mocks-->>Session: mock datasets
-    Session-->>App: set ready + activeOrgId
+    Session-->>App: set isAuthenticated + activeOrgId
   end
   App-->>User: render tabs with guard
