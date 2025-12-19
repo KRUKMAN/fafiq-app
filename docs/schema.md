@@ -322,3 +322,11 @@ create table public.org_contacts (
   unique (org_id, email)
 );
 ```
+
+## Schema Verification
+
+After applying migrations in Supabase, run `supabase/verify_full.sql` in the Supabase SQL Editor to confirm:
+- all expected tables exist,
+- no required columns are missing (the `missing_columns` output should be empty),
+- RLS/policies/triggers/RPCs exist,
+- sensitive views (e.g. `org_member_contacts`) are not exposed to `anon`/`authenticated`.

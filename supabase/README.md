@@ -24,17 +24,18 @@ Follow these steps to align the Supabase project with the app:
    - Add storage policies requiring `is_active_org_member(<org_id_from_path>)` once buckets are created.
 
 4) **Verification checks (post-migration):**
-   - Confirm RLS helpers exist: `select public.is_active_org_member('<org_uuid>');`
-   - Confirm policies: `select policyname, tablename from pg_policies where schemaname = 'public';`
-   - Confirm admin membership email RPC exists: `select * from public.admin_list_org_memberships('<org_uuid>');` (should error when not an org admin)
-   - Confirm invite RPC exists: `select * from public.admin_invite_member_by_email('<org_uuid>', '<email>', array['admin'], 'Name');`
-   - Confirm storage buckets: `select id from storage.buckets;`
-   - Smoke fetch via SQL: `select * from public.orgs limit 1;` (should return rows only when the session user has a membership).
+  - Confirm RLS helpers exist: `select public.is_active_org_member('<org_uuid>');`
+  - Confirm policies: `select policyname, tablename from pg_policies where schemaname = 'public';`
+  - Confirm admin membership email RPC exists: `select * from public.admin_list_org_memberships('<org_uuid>');` (should error when not an org admin)
+  - Confirm invite RPC exists: `select * from public.admin_invite_member_by_email('<org_uuid>', '<email>', array['admin'], 'Name');`
+  - Confirm storage buckets: `select id from storage.buckets;`
+  - Smoke fetch via SQL: `select * from public.orgs limit 1;` (should return rows only when the session user has a membership).
+  - Run `supabase/verify_setup.sql` (quick) and `supabase/verify_full.sql` (full): section "missing_columns" should return 0 rows; "extra_columns" is informational.
 
 5) **Run the app:**
-   - `npm install` (if not already), then `npm start`.
-   - With env vars set, the Supabase client in `lib/supabase.ts` will initialize instead of mocks.
-   - Regenerate types after migrations: `npx supabase gen types typescript --linked --schema public > database.types.ts`.
+  - `npm install` (if not already), then `npm start`.
+  - With env vars set, the Supabase client in `lib/supabase.ts` will initialize instead of mocks.
+  - Regenerate types after migrations: `npx supabase gen types typescript --linked --schema public > database.types.ts`.
 
 ## User management (manual admin steps)
 

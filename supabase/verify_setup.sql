@@ -15,6 +15,58 @@ from information_schema.columns
 where table_schema = 'public' and table_name = 'org_contacts'
 order by ordinal_position;
 
+-- 2b) Quick column drift check (missing-only, for core tables)
+-- Expectation: this should return 0 rows. For a full missing+extra report, run `supabase/verify_full.sql`.
+with expected_columns as (
+  select * from (values
+    ('profiles','user_id'),
+    ('profiles','full_name'),
+    ('profiles','avatar_url'),
+    ('profiles','created_at'),
+    ('profiles','updated_at'),
+
+    ('memberships','org_id'),
+    ('memberships','user_id'),
+    ('memberships','roles'),
+    ('memberships','active'),
+
+    ('org_invites','org_id'),
+    ('org_invites','email'),
+    ('org_invites','roles'),
+    ('org_invites','status'),
+
+    ('org_contacts','org_id'),
+    ('org_contacts','kind'),
+    ('org_contacts','display_name'),
+    ('org_contacts','roles'),
+    ('org_contacts','linked_user_id'),
+
+    ('dogs','org_id'),
+    ('dogs','name'),
+    ('dogs','stage'),
+    ('dogs','responsible_membership_id'),
+    ('dogs','foster_membership_id'),
+    ('dogs','responsible_contact_id'),
+    ('dogs','foster_contact_id'),
+
+    ('transports','org_id'),
+    ('transports','dog_id'),
+    ('transports','status'),
+    ('transports','assigned_membership_id'),
+    ('transports','assigned_contact_id')
+  ) as t(table_name, column_name)
+),
+actual_columns as (
+  select table_name, column_name
+  from information_schema.columns
+  where table_schema = 'public'
+)
+select e.table_name, e.column_name as missing_column
+from expected_columns e
+left join actual_columns a using (table_name, column_name)
+where a.column_name is null
+order by e.table_name, e.column_name;
+
 -- 3) Added contact assignment columns exist
 select table_name, column_name, data_type, is_nullable
 from information_schema.columns
