@@ -7,6 +7,8 @@ export const orgSchema = z.object({
   name: z.string(),
   slug: z.string().nullable().optional(),
   settings: orgSettingsSchema,
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
 });
 
 export type Org = z.infer<typeof orgSchema>;

@@ -128,6 +128,52 @@ export const deleteOrgContact = async (orgId: string, contactId: string): Promis
   }
 };
 
+export const softDeleteOrgContact = async (orgId: string, contactId: string): Promise<void> => {
+  const client = supabase;
+  if (!client) {
+    throw new Error('Supabase not configured; contact deletion requires Supabase env.');
+  }
+
+  const { error } = await client
+    .from('org_contacts')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', contactId)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to delete contact'));
+  }
+};
+
+export const restoreOrgContact = async (orgId: string, contactId: string): Promise<OrgContact> => {
+  const client = supabase;
+  if (!client) {
+    throw new Error('Supabase not configured; contact restoration requires Supabase env.');
+  }
+
+  const { data, error } = await client
+    .from('org_contacts')
+    .update({ deleted_at: null })
+    .eq('id', contactId)
+    .eq('org_id', orgId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to restore contact'));
+  }
+  if (!data) {
+    throw new Error('Contact not found or restoration failed.');
+  }
+
+  return orgContactSchema.parse({
+    ...data,
+    roles: data.roles ?? [],
+    address: (data as any).address ?? {},
+    extra_fields: (data as any).extra_fields ?? {},
+  });
+};
+
 export const linkMyContactInOrg = async (orgId: string): Promise<{ contact_id: string | null; status: string }[]> => {
   const client = supabase;
   if (!client) return [];

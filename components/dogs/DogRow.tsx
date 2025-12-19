@@ -1,10 +1,11 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
-import { MapPin, MoreHorizontal, User } from 'lucide-react-native';
+import { MapPin, User } from 'lucide-react-native';
 
 import { AlertIcons } from './AlertIcons';
 import { StatusBadge } from './StatusBadge';
 import { DOG_TABLE_COLUMNS } from './TableConfig';
+import { RowActionsMenu, RowAction } from '@/components/ui/RowActionsMenu';
 import { formatLastUpdate } from '@/lib/formatters';
 
 export type DogListItem = {
@@ -26,7 +27,9 @@ export type DogListItem = {
 type DogRowProps = {
   item: DogListItem;
   onPress: () => void;
-  onActionPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onViewHistory?: () => void;
 };
 
 const COL_BY_KEY = DOG_TABLE_COLUMNS.reduce<Record<string, (typeof DOG_TABLE_COLUMNS)[number]>>(
@@ -37,10 +40,21 @@ const COL_BY_KEY = DOG_TABLE_COLUMNS.reduce<Record<string, (typeof DOG_TABLE_COL
   {}
 );
 
-export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps) => {
+export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHistory }: DogRowProps) => {
   const budget = item.budgetSpent ?? 0;
   const budgetPct = Math.min(Math.max((budget / 2000) * 100, 0), 100);
   const lastUpdate = formatLastUpdate(item.lastUpdate);
+
+  const actions: RowAction[] = [];
+  if (onEdit) {
+    actions.push({ key: 'edit', label: 'Edit', icon: 'edit', onPress: onEdit });
+  }
+  if (onViewHistory) {
+    actions.push({ key: 'history', label: 'View History', icon: 'history', onPress: onViewHistory });
+  }
+  if (onDelete) {
+    actions.push({ key: 'delete', label: 'Delete', icon: 'delete', destructive: true, onPress: onDelete });
+  }
 
   return (
     <Pressable
@@ -149,15 +163,7 @@ export const DogRow = React.memo(({ item, onPress, onActionPress }: DogRowProps)
           paddingHorizontal: 12,
         }}
         className="py-4 items-end justify-center">
-        <Pressable
-          accessibilityRole="button"
-          onPress={(event) => {
-            event.stopPropagation();
-            onActionPress?.();
-          }}
-          className="p-2 rounded-md hover:bg-gray-100">
-          <MoreHorizontal size={18} color="#6B7280" />
-        </Pressable>
+        <RowActionsMenu actions={actions} />
       </View>
     </Pressable>
   );

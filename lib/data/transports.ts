@@ -135,3 +135,50 @@ export const updateTransport = async (
     extra_fields: data.extra_fields ?? {},
   });
 };
+
+export const softDeleteTransport = async (orgId: string, transportId: string): Promise<void> => {
+  const client = supabase;
+  if (!client) {
+    throw new Error('Supabase not configured; transport deletion requires Supabase env.');
+  }
+
+  const { error } = await client
+    .from('transports')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', transportId)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to delete transport'));
+  }
+};
+
+export const restoreTransport = async (orgId: string, transportId: string): Promise<Transport> => {
+  const client = supabase;
+  if (!client) {
+    throw new Error('Supabase not configured; transport restoration requires Supabase env.');
+  }
+
+  const { data, error } = await client
+    .from('transports')
+    .update({ deleted_at: null })
+    .eq('id', transportId)
+    .eq('org_id', orgId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to restore transport'));
+  }
+  if (!data) {
+    throw new Error('Transport not found or restoration failed.');
+  }
+
+  return transportSchema.parse({
+    ...data,
+    from_location: data.from_location ?? '',
+    to_location: data.to_location ?? '',
+    notes: data.notes ?? '',
+    extra_fields: data.extra_fields ?? {},
+  });
+};

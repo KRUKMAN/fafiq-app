@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Href, useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DogRow, DogListItem } from '@/components/dogs/DogRow';
@@ -9,7 +10,9 @@ import { DOG_TABLE_COLUMNS, TABLE_MIN_WIDTH } from '@/components/dogs/TableConfi
 import { DataTable } from '@/components/table/DataTable';
 import { TableToolbar } from '@/components/table/TableToolbar';
 import { AdvancedFilterDrawer } from '@/components/table/AdvancedFilterDrawer';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useDogs } from '@/hooks/useDogs';
+import { softDeleteDog } from '@/lib/data/dogs';
 import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -19,10 +22,27 @@ const STAGE_FILTERS = ['All', 'In Foster', 'Medical', 'Medical Hold', 'Transport
 export default function DogsListScreen() {
   const { dogList, setDogList } = useUIStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState(dogList.search);
   const [currentPage, setCurrentPage] = useState(dogList.page || 1);
   const [itemsPerPage, setItemsPerPage] = useState(dogList.pageSize || 10);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [dogToDelete, setDogToDelete] = useState<{ id: string; name: string } | null>(null);
   const { activeOrgId, ready, bootstrap, memberships, switchOrg } = useSessionStore();
+
+  const deleteMutation = useMutation({
+    mutationFn: async ({ orgId, dogId }: { orgId: string; dogId: string }) => {
+      await softDeleteDog(orgId, dogId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dogs', activeOrgId || ''] });
+      setDeleteModalVisible(false);
+      setDogToDelete(null);
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete dog:', error?.message);
+    },
+  });
 
   useEffect(() => {
     if (!ready) {
@@ -63,6 +83,34 @@ export default function DogsListScreen() {
     },
     [router]
   );
+
+  const handleEditDog = useCallback(
+    (id: string) => {
+      router.push(`/dogs/${id}/edit` as Href);
+    },
+    [router]
+  );
+
+  const handleViewDogHistory = useCallback(
+    (id: string) => {
+      // Navigate to dog detail with timeline tab
+      router.push(`/dogs/${id}` as Href);
+    },
+    [router]
+  );
+
+  const handleDeleteDog = useCallback(
+    (id: string, name: string) => {
+      setDogToDelete({ id, name });
+      setDeleteModalVisible(true);
+    },
+    []
+  );
+
+  const confirmDeleteDog = useCallback(() => {
+    if (!activeOrgId || !dogToDelete) return;
+    deleteMutation.mutate({ orgId: activeOrgId, dogId: dogToDelete.id });
+  }, [activeOrgId, dogToDelete, deleteMutation]);
 
   if (!ready) {
     return (
@@ -175,7 +223,15 @@ export default function DogsListScreen() {
             columns={DOG_TABLE_COLUMNS}
             data={paginatedList}
             minWidth={TABLE_MIN_WIDTH}
-            renderRow={({ item }) => <DogRow item={item} onPress={() => handlePressRow(item.id)} />}
+            renderRow={({ item }) => (
+              <DogRow
+                item={item}
+                onPress={() => handlePressRow(item.id)}
+                onEdit={() => handleEditDog(item.id)}
+                onDelete={() => handleDeleteDog(item.id, item.name)}
+                onViewHistory={() => handleViewDogHistory(item.id)}
+              />
+            )}
           />
         )}
       </View>
@@ -268,6 +324,21 @@ export default function DogsListScreen() {
         onApply={() => {
           setDogList({ page: 1, advancedOpen: false });
           setCurrentPage(1);
+        }}
+      />
+
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        title="Delete Dog"
+        message={`Are you sure you want to delete "${dogToDelete?.name || 'this dog'}"? This action can be undone by an administrator.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        loading={deleteMutation.isPending}
+        onConfirm={confirmDeleteDog}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setDogToDelete(null);
         }}
       />
     </View>

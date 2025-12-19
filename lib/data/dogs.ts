@@ -118,3 +118,49 @@ export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Do
 
   return filterDogs(parsed, filters);
 };
+
+export const softDeleteDog = async (orgId: string, dogId: string): Promise<void> => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; dog deletion requires Supabase env.');
+  }
+
+  const { error } = await supabase
+    .from('dogs')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', dogId)
+    .eq('org_id', orgId);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to delete dog'));
+  }
+};
+
+export const restoreDog = async (orgId: string, dogId: string): Promise<Dog> => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; dog restoration requires Supabase env.');
+  }
+
+  const { data, error } = await supabase
+    .from('dogs')
+    .update({ deleted_at: null })
+    .eq('id', dogId)
+    .eq('org_id', orgId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to restore dog'));
+  }
+  if (!data) {
+    throw new Error('Dog not found or restoration failed.');
+  }
+
+  return dogSchema.parse({
+    ...data,
+    location: data.location ?? '',
+    description: data.description ?? '',
+    medical_notes: data.medical_notes ?? '',
+    behavioral_notes: data.behavioral_notes ?? '',
+    extra_fields: data.extra_fields ?? {},
+  });
+};

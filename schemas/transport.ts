@@ -15,6 +15,10 @@ export const transportSchema = z.object({
   window_end: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   extra_fields: transportExtraFieldsSchema,
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  created_by_membership_id: z.string().nullable().optional(),
+  updated_by_membership_id: z.string().nullable().optional(),
 });
 
 export type Transport = z.infer<typeof transportSchema>;
