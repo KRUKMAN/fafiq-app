@@ -2,7 +2,10 @@ graph LR
   Screens[app/(tabs)] --> Components[components/*]
   Screens --> Hooks[hooks/*]
   Screens --> Layout[layout components]
+  Screens --> Constants[constants/*]
   Hooks --> Data[lib/data/*]
+  Hooks --> ViewModels[lib/viewModels/*]
+  Hooks --> Helpers[lib/* helpers]
   Hooks --> Stores[zustand stores]
   Hooks --> QueryClient[queryClient]
   Data --> Schemas[schemas/*]
@@ -13,3 +16,8 @@ graph LR
   Layout --> SessionStore
   QueryClient --> Hooks
   Schemas --> Types[types inferred]
+
+  Constants --> Strings[constants/strings.ts]
+  Constants --> LayoutTokens[constants/layout.ts]
+  Constants --> UIColorMap[constants/uiColors.ts]
+  Helpers --> Pagination[lib/pagination.ts]

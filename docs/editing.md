@@ -30,5 +30,6 @@
 - Always show Save + Cancel when in edit mode.
 - Keep read-only layout for non-editing users.
 - Show a small status message on save/error; avoid toasts.
+  - Use `components/ui/StatusMessage.tsx` for consistent inline feedback.
 - Do not auto-save; require explicit Save.
 

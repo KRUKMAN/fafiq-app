@@ -2,7 +2,7 @@ sequenceDiagram
   participant User
   participant Create as CreateDogScreen
   participant Zod as Zod
-  participant Alert
+  participant Status as StatusMessage
   User->>Create: fill form
   User->>Create: tap Save
   Create->>Zod: validate(dogFormSchema)
@@ -10,6 +10,6 @@ sequenceDiagram
   alt validation fails
     Create-->>User: inline errors
   else success
-    Create-->>Alert: show mock submit
-    Alert-->>User: acknowledged (no persistence)
+    Create-->>Status: show inline success message
+    Status-->>User: visible confirmation (no persistence)
   end

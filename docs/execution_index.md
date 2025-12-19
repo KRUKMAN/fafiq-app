@@ -9,6 +9,7 @@ This folder contains the authoritative execution roadmap for the project.
 - rls.md
 - schema.md
 - storage.md
+- architecture_round3_polish.md
 
 ## Execution phases (must be followed in order)
 1. phase_0_prerequisites.md

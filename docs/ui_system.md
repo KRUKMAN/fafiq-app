@@ -36,12 +36,16 @@ Hard rules:
 
 Tokens are expressed via NativeWind/Tailwind **semantic colors**:
 
-- `bg-surface`, `border-border`
-- `bg-primary`, `border-primary`
-- `bg-destructive`, `border-destructive`
-- `text-muted`, `text-muted-foreground`
+- Core surfaces: `bg-background`, `bg-card`, `bg-surface`, `border-border`
+- Primary: `bg-primary`, `border-primary`
+- Destructive: `bg-destructive`, `border-destructive`, `text-destructive`
+- Status text: `text-foreground`, `text-muted`, `text-muted-foreground`, `text-success`, `text-warning`
 
 Source: `tailwind.config.js`
+
+Notes:
+- Icon libraries (e.g. `lucide-react-native`) take explicit `color` props; they do not read NativeWind classes.
+  - Use `constants/uiColors.ts` (`UI_COLORS`) for consistent icon colors.
 
 ---
 
@@ -55,6 +59,9 @@ Use semantic variants for text:
 - `h1`, `h2`, `h3`
 - `body`, `bodySmall`
 - `caption`, `label`
+
+### `StatusMessage`
+Standard inline feedback component (success/error/info). Use this for save/error messages and action errors; avoid toasts.
 
 ### `Button`
 Variants:
@@ -98,6 +105,22 @@ Standard horizontal tab selector.
 
 ### `Pagination`
 Standard pagination footer for list/table pages.
+
+---
+
+## Shared UI Constants & Helpers
+
+### `constants/strings.ts`
+Central store for user-facing copy (i18n-ready).
+
+### `constants/layout.ts`
+Shared `StyleSheet` snippets for common ScrollView padding/gap patterns. Prefer this over ad-hoc numeric `contentContainerStyle` values.
+
+### `lib/pagination.ts`
+Shared pagination model helper (`getPagination`) used by list screens to keep pagination math out of JSX.
+
+### `lib/viewModels/*`
+Pure mapping functions that translate domain schemas into UI view models (example: `lib/viewModels/dogProfile.ts`).
 
 ---
 

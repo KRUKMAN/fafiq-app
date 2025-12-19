@@ -1,0 +1,23 @@
+graph TD
+  Screen[Screen (app/*)] -->|copy| Strings[constants/strings.ts]
+  Screen -->|layout constants| Layout[constants/layout.ts]
+  Screen -->|icons| UIColor[constants/uiColors.ts]
+  Screen -->|loading/empty/error| Patterns[components/patterns/*]
+  Screen -->|primitives| UI[components/ui/*]
+
+  UI --> Typography[ui/Typography]
+  UI --> Status[ui/StatusMessage]
+  UI --> Input[ui/Input]
+  UI --> Button[ui/Button]
+
+  Screen --> Hooks[hooks/*]
+  Hooks --> Query[TanStack Query]
+  Query --> Data[lib/data/*]
+  Data --> Zod[schemas/*]
+  Data --> Supabase[Supabase]
+
+  Data --> ViewModels[lib/viewModels/*]
+  ViewModels --> Screen
+
+  Screen --> Pagination[lib/pagination.ts]
+

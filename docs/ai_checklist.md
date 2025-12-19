@@ -31,3 +31,6 @@ This project has an authoritative system context: `Fafik_System_Context.md`. Do 
 - Confirm `org_id` is always passed and validated.
 - Confirm activity events are written for new mutations (and are atomic).
 - Confirm web build still works (routing, styling, dependencies).
+
+## Recent architecture notes
+- `docs/architecture_round3_polish.md` captures the current UI/token/string conventions and the “Round 3” structural changes (StatusMessage, strings module, layout/pagination helpers, view-model extraction).
