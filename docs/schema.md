@@ -105,6 +105,10 @@ create table public.dogs (
   responsible_membership_id uuid references public.memberships(id),
   foster_membership_id uuid references public.memberships(id),
 
+  -- Optional: assignments to offline contacts (pre-user fosters/responsibles)
+  responsible_contact_id uuid references public.org_contacts(id),
+  foster_contact_id uuid references public.org_contacts(id),
+
   budget_limit numeric(12,2),
 
   extra_fields jsonb not null default '{}'::jsonb,
@@ -138,6 +142,7 @@ create table public.transports (
 
   status text not null, -- NGO-configurable / workflow-driven
   assigned_membership_id uuid references public.memberships(id),
+  assigned_contact_id uuid references public.org_contacts(id),
 
   window_start timestamptz,
   window_end timestamptz,
@@ -285,3 +290,35 @@ Atomicity rule (MVP):
 ## Notes / Explicitly Deferred (per System Context)
 - Public portals, cross-NGO pooling, heavy automation engines: **not in MVP**.
 - Offline sync, notifications: **not in MVP**.
+
+## Contacts (People & Homes)
+
+Contacts are operational directory records that may or may not be app users. Authorization remains membership-based.
+
+```sql
+create table public.org_contacts (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.orgs(id) on delete cascade,
+
+  kind text not null, -- person | home (MVP)
+  display_name text not null,
+
+  email citext,
+  phone text,
+  roles text[] not null default '{}'::text[], -- same vocabulary as memberships.roles[]
+
+  linked_user_id uuid references auth.users(id) on delete set null,
+  linked_membership_id uuid references public.memberships(id) on delete set null,
+
+  address jsonb not null default '{}'::jsonb,
+  extra_fields jsonb not null default '{}'::jsonb,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by_membership_id uuid references public.memberships(id),
+  updated_by_membership_id uuid references public.memberships(id),
+
+  unique (org_id, linked_user_id),
+  unique (org_id, email)
+);
+```

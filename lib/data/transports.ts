@@ -10,6 +10,7 @@ type NewTransportInput = {
   to_location?: string | null;
   status: string;
   assigned_membership_id?: string | null;
+  assigned_contact_id?: string | null;
   window_start?: string | null;
   window_end?: string | null;
   notes?: string | null;
@@ -17,12 +18,13 @@ type NewTransportInput = {
 };
 
 export const fetchTransports = async (orgId: string): Promise<Transport[]> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     const transports = await getMockTransports(orgId);
     return transports.map((t) => transportSchema.parse(t));
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('transports')
     .select('*')
     .eq('org_id', orgId)
@@ -44,11 +46,12 @@ export const fetchTransports = async (orgId: string): Promise<Transport[]> => {
 };
 
 export const createTransport = async (input: NewTransportInput): Promise<Transport> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     throw new Error('Supabase not configured; transport creation requires Supabase env.');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('transports')
     .insert({
       org_id: input.org_id,
@@ -57,10 +60,11 @@ export const createTransport = async (input: NewTransportInput): Promise<Transpo
       to_location: input.to_location ?? null,
       status: input.status,
       assigned_membership_id: input.assigned_membership_id ?? null,
+      assigned_contact_id: input.assigned_contact_id ?? null,
       window_start: input.window_start ?? null,
       window_end: input.window_end ?? null,
       notes: input.notes ?? null,
-      extra_fields: input.extra_fields ?? {},
+      extra_fields: (input.extra_fields ?? {}) as any,
     })
     .select('*')
     .maybeSingle();
@@ -86,7 +90,8 @@ export const updateTransport = async (
   transportId: string,
   updates: Partial<Omit<NewTransportInput, 'org_id'>>
 ): Promise<Transport> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     throw new Error('Supabase not configured; transport update requires Supabase env.');
   }
 
@@ -97,16 +102,17 @@ export const updateTransport = async (
   if (updates.status !== undefined) updatePayload.status = updates.status;
   if (updates.assigned_membership_id !== undefined)
     updatePayload.assigned_membership_id = updates.assigned_membership_id ?? null;
+  if (updates.assigned_contact_id !== undefined) updatePayload.assigned_contact_id = updates.assigned_contact_id ?? null;
   if (updates.window_start !== undefined) updatePayload.window_start = updates.window_start ?? null;
   if (updates.window_end !== undefined) updatePayload.window_end = updates.window_end ?? null;
   if (updates.notes !== undefined) updatePayload.notes = updates.notes ?? null;
-  if (updates.extra_fields !== undefined) updatePayload.extra_fields = updates.extra_fields ?? {};
+  if (updates.extra_fields !== undefined) updatePayload.extra_fields = (updates.extra_fields ?? {}) as any;
 
   if (Object.keys(updatePayload).length === 0) {
     throw new Error('No updates provided for transport.');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('transports')
     .update(updatePayload)
     .eq('id', transportId)

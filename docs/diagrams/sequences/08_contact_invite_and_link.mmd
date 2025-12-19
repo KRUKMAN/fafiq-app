@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant Admin
+  participant App
+  participant DB as Supabase (Postgres)
+  participant Auth as Supabase Auth
+
+  Admin->>App: create contact (org_contacts: email + roles)
+  App->>DB: insert org_contacts (org_id, email, roles, kind)
+  DB-->>App: contact created
+
+  Admin->>App: invite by email
+  App->>DB: rpc admin_invite_member_by_email(org_id, email, roles)
+  DB-->>App: org_invites pending (or membership added_existing)
+
+  note over Auth: user signs up / signs in
+  App->>DB: rpc accept_org_invites_for_current_user()
+  DB-->>App: membership created/updated
+
+  App->>DB: rpc link_my_contact_in_org(org_id)
+  DB-->>App: contact linked to auth.uid + membership roles synced
+

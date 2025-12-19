@@ -2,6 +2,11 @@
 
 Roles are **per-org**, stored only on `memberships.roles[]`. There is **no global role** on `profiles`.
 
+Contacts:
+- The same role vocabulary is used for `org_contacts.roles[]` (operational tagging/UI for offline contacts) and `memberships.roles[]` (authorization).
+- Authorization is always enforced via `memberships.roles[]` + RLS helpers.
+- When a contact is linked to a user/membership, keep `org_contacts.roles[]` aligned to `memberships.roles[]`.
+
 ## Admin / Coordinator (`admin`)
 - Full access to org data (dogs, transports, medical, expenses, documents).
 - Membership management: invite/remove users, assign roles, deactivate memberships.

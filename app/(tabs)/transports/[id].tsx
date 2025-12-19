@@ -98,7 +98,7 @@ export default function TransportDetailScreen() {
           <LabeledValue label="From" value={transport.from_location || 'Unknown'} />
           <LabeledValue label="To" value={transport.to_location || 'Unknown'} />
           <LabeledValue label="Window" value={formatDateRange(transport.window_start, transport.window_end)} />
-          <LabeledValue label="Assigned to" value={transport.assigned_membership_id || 'Unassigned'} />
+          <LabeledValue label="Assigned to" value={transport.assigned_membership_id || transport.assigned_contact_id || 'Unassigned'} />
           <LabeledValue label="Dog" value={transport.dog_id || 'Unlinked'} />
           <LabeledValue label="Notes" value={transport.notes || ''} />
         </View>

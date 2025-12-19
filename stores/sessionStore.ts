@@ -6,6 +6,7 @@ import { getMockProfiles } from '@/lib/mocks/profiles';
 import { supabase } from '@/lib/supabase';
 import { getQueryClient } from '@/lib/queryClient';
 import { acceptInvitesForCurrentUser } from '@/lib/data/invites';
+import { linkMyContactInOrg } from '@/lib/data/contacts';
 
 type User = {
   id: string;
@@ -35,6 +36,8 @@ type SessionState = {
   signOut: () => void;
   switchOrg: (orgId: string) => void;
 };
+
+type StoreSetter = (partial: Partial<SessionState> | ((state: SessionState) => Partial<SessionState>)) => void;
 
 let lastOrgIdMemory: string | null = null;
 
@@ -184,9 +187,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     }),
 }));
 
-const bootstrapMockSession = async (
-  set: Parameters<ReturnType<typeof create<SessionState>>['setState']>[0]
-) => {
+const bootstrapMockSession = async (set: StoreSetter) => {
   // Mock-only bootstrap is used when Supabase env is absent (or explicitly falling back).
   const lastOrgId = loadLastOrgId();
   const [membershipsRaw, orgs, profiles] = await Promise.all([
@@ -217,9 +218,7 @@ const bootstrapMockSession = async (
   });
 };
 
-const bootstrapSupabaseSession = async (
-  set: Parameters<ReturnType<typeof create<SessionState>>['setState']>[0]
-) => {
+const bootstrapSupabaseSession = async (set: StoreSetter) => {
   if (!supabase) return false;
 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -291,6 +290,16 @@ const bootstrapSupabaseSession = async (
     persistLastOrgId(activeOrgId);
   } else {
     persistLastOrgId(null);
+  }
+
+  // Best-effort: if an offline contact exists for this email/org, link it to this user now that membership exists.
+  // This is safe to run repeatedly; server-side uniqueness prevents duplicates.
+  try {
+    for (const membership of memberships) {
+      await linkMyContactInOrg(membership.org_id);
+    }
+  } catch (err) {
+    console.warn('Contact linking skipped', err);
   }
 
   if (profileError) {

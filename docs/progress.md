@@ -25,6 +25,7 @@ Reference: `docs/implementation_plan.md`
 - Session bootstrap is now Supabase-first with explicit demo/mocks; dashboard tab now shares the same org guard empty states.
 - Transports tab supports create/edit via Supabase mutations with a side-drawer form (status, schedule, assignments); transport/transporter drawers use solid side panels. People drawer styling matches the Dogs/Transports pattern.
 - Added password reset flow on sign-in and verified Supabase-first session boot persists org selection; added dog detail document upload using Supabase Storage helpers (documents bucket).
+- Added `org_contacts` model + People & Homes contacts directory (supports offline contacts, invite/link flows, and assigning transports to contacts); updated schema/RLS docs and diagrams.
 
 
 ## Watch-outs / Next Steps

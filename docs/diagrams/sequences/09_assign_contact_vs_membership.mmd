@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant User
+  participant App
+  participant DB as Supabase (Postgres)
+
+  User->>App: open transport create
+  alt assign app user (membership)
+    User->>App: select member transporter
+    App->>DB: insert transports (assigned_membership_id=membership.id)
+    DB-->>App: transport row created (audit trigger logs activity)
+  else assign offline contact
+    User->>App: select contact transporter
+    App->>DB: insert transports (assigned_contact_id=org_contacts.id)
+    DB-->>App: transport row created (audit trigger logs activity)
+  end
+

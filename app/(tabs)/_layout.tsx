@@ -35,7 +35,7 @@ export default function TabLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-  const { ready, isAuthenticated, activeOrgId, memberships, bootstrap, signOut } = useSessionStore();
+  const { ready, isAuthenticated, activeOrgId, memberships, currentUser, bootstrap, signOut } = useSessionStore();
 
   useEffect(() => {
     if (!ready) {
@@ -93,6 +93,9 @@ export default function TabLayout() {
           onNavigate={(href) => router.push(href as never)}
           isOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
+          currentUser={currentUser}
+          activeOrgId={activeOrgId}
+          memberships={memberships}
           onSignOut={signOut}
         />
 
@@ -110,19 +113,39 @@ const Sidebar = ({
   isOpen,
   toggleSidebar,
   onSignOut,
+  currentUser,
+  activeOrgId,
+  memberships,
 }: {
   pathname: string;
   onNavigate: (href: string) => void;
   isOpen: boolean;
   toggleSidebar: () => void;
+  currentUser: { id: string; name: string; email: string } | null;
+  activeOrgId: string | null;
+  memberships: { id: string; org_id: string; org_name: string; roles: string[]; active: boolean }[];
   onSignOut: () => void;
 }) => {
+  const activeMembership =
+    memberships.find((m) => m.org_id === activeOrgId && m.active) ?? memberships.find((m) => m.active) ?? null;
+  const displayName = currentUser?.name || currentUser?.email || 'User';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'U';
+  const roleLabel = activeMembership?.roles?.join(', ') || 'Member';
+
   return (
     <View
       className={`border-r border-border bg-[#FAFAFA] py-6 ${
         isOpen ? 'w-[260px]' : 'w-16'
       }`}>
-      <View className="flex-row items-center px-4 mb-8">
+      <Pressable
+        accessibilityLabel="Toggle sidebar"
+        onPress={toggleSidebar}
+        className="flex-row items-center px-4 mb-8">
         <View className="w-8 h-8 bg-gray-900 rounded-md items-center justify-center">
           <Text className="text-white font-bold text-xs">R</Text>
         </View>
@@ -131,13 +154,7 @@ const Sidebar = ({
             RESCUEOPS
           </Text>
         ) : null}
-        <Pressable
-          accessibilityLabel="Toggle sidebar"
-          onPress={toggleSidebar}
-          className="ml-auto p-2 rounded-md border border-border bg-white">
-          {isOpen ? <ChevronLeft size={16} color="#4B5563" /> : <ChevronRight size={16} color="#4B5563" />}
-        </Pressable>
-      </View>
+      </Pressable>
 
       <View className="gap-1 px-2">
         {NAV_ITEMS.map((item) => {
@@ -162,12 +179,12 @@ const Sidebar = ({
 
       <View className="mt-auto flex-row items-center gap-3 px-4 pt-6 border-t border-border">
         <View className="w-9 h-9 rounded-full bg-gray-200 items-center justify-center">
-          <Text className="text-[11px] font-bold text-gray-600">SF</Text>
+          <Text className="text-[11px] font-bold text-gray-600">{initials}</Text>
         </View>
         {isOpen ? (
           <View>
-            <Text className="text-sm font-semibold text-gray-900">Stray Found</Text>
-            <Text className="text-xs text-gray-500">Admin</Text>
+            <Text className="text-sm font-semibold text-gray-900">{displayName}</Text>
+            <Text className="text-xs text-gray-500">{roleLabel}</Text>
           </View>
         ) : null}
         {isOpen ? (

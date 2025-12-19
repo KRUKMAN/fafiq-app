@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable } from '@/components/table/DataTable';
 import { TableToolbar } from '@/components/table/TableToolbar';
 import { useOrgMemberships } from '@/hooks/useOrgMemberships';
+import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { createTransport, updateTransport } from '@/lib/data/transports';
 import { Transport } from '@/schemas/transport';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -21,19 +22,33 @@ const transportFormSchema = z.object({
   from_location: z.string().trim().min(1, 'From location is required'),
   to_location: z.string().trim().min(1, 'To location is required'),
   assigned_membership_id: z.string().trim().optional(),
+  assigned_contact_id: z.string().trim().optional(),
   dog_id: z.string().trim().optional(),
   window_start: z.string().trim().optional(),
   window_end: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
 
-type TransportFormValues = z.infer<typeof transportFormSchema>;
+// Form state uses strings for all fields (schema still validates required vs optional).
+// This keeps TextInput props simple under strict TS.
+type TransportFormValues = {
+  status: string;
+  from_location: string;
+  to_location: string;
+  assigned_membership_id: string;
+  assigned_contact_id: string;
+  dog_id: string;
+  window_start: string;
+  window_end: string;
+  notes: string;
+};
 
 type TransportMutationInput = {
   status: string;
   from_location: string;
   to_location: string;
   assigned_membership_id: string | null;
+  assigned_contact_id: string | null;
   dog_id: string | null;
   window_start: string | null;
   window_end: string | null;
@@ -45,6 +60,7 @@ const toFormState = (transportto: Transport | null): TransportFormValues => ({
   from_location: transportto?.from_location ?? '',
   to_location: transportto?.to_location ?? '',
   assigned_membership_id: transportto?.assigned_membership_id ?? '',
+  assigned_contact_id: transportto?.assigned_contact_id ?? '',
   dog_id: transportto?.dog_id ?? '',
   window_start: transportto?.window_start ?? '',
   window_end: transportto?.window_end ?? '',
@@ -59,6 +75,7 @@ const TransportEditorDrawer = ({
   submitting,
   error,
   transporters,
+  contactTransporters,
 }: {
   mode: 'create' | 'edit' | null;
   transport: Transport | null;
@@ -67,13 +84,14 @@ const TransportEditorDrawer = ({
   submitting: boolean;
   error: string | null;
   transporters: { id: string; name: string; status: string }[];
+  contactTransporters: { id: string; name: string; status: string }[];
 }) => {
-  const [formState, setFormState] = useState<TransportFormValues>(toFormState());
+  const [formState, setFormState] = useState<TransportFormValues>(toFormState(null));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!mode) return;
-    setFormState(mode === 'edit' ? toFormState(transport ?? undefined) : toFormState());
+    setFormState(mode === 'edit' ? toFormState(transport ?? null) : toFormState(null));
     setFieldErrors({});
   }, [mode, transport]);
 
@@ -81,7 +99,15 @@ const TransportEditorDrawer = ({
   if (mode === 'edit' && !transport) return null;
 
   const setField = (key: keyof TransportFormValues, value: string) => {
-    setFormState((prev) => ({ ...prev, [key]: value }));
+    setFormState((prev) => {
+      if (key === 'assigned_membership_id') {
+        return { ...prev, assigned_membership_id: value, assigned_contact_id: '' };
+      }
+      if (key === 'assigned_contact_id') {
+        return { ...prev, assigned_contact_id: value, assigned_membership_id: '' };
+      }
+      return { ...prev, [key]: value };
+    });
   };
 
   const validateAndSubmit = async () => {
@@ -132,6 +158,7 @@ const TransportEditorDrawer = ({
       from_location: parsed.data.from_location,
       to_location: parsed.data.to_location,
       assigned_membership_id: normalizeText(parsed.data.assigned_membership_id),
+      assigned_contact_id: normalizeText(parsed.data.assigned_contact_id),
       dog_id: normalizeText(parsed.data.dog_id),
       window_start: windowStart ?? null,
       window_end: windowEnd ?? null,
@@ -235,6 +262,41 @@ const TransportEditorDrawer = ({
         ) : null}
 
         <InputField
+          label="Assigned contact ID (offline contact)"
+          value={formState.assigned_contact_id}
+          onChangeText={(val) => setField('assigned_contact_id', val)}
+          error={fieldErrors.assigned_contact_id}
+          placeholder="contact id (optional)"
+          helper="Assign to an offline transporter contact; selecting a contact clears membership assignment."
+        />
+        {contactTransporters.length ? (
+          <View className="flex-row flex-wrap gap-2">
+            {contactTransporters.map((t) => {
+              const active = formState.assigned_contact_id === t.id;
+              return (
+                <Pressable
+                  key={t.id}
+                  accessibilityRole="button"
+                  onPress={() => setField('assigned_contact_id', t.id)}
+                  className={`px-3 py-1 rounded-md border ${
+                    active ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                  }`}>
+                  <Text className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
+                    {t.name} ({t.status})
+                  </Text>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setField('assigned_contact_id', '')}
+              className="px-3 py-1 rounded-md border border-border bg-white">
+              <Text className="text-xs font-semibold text-gray-800">Clear contact</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <InputField
           label="Dog ID (optional)"
           value={formState.dog_id}
           onChangeText={(val) => setField('dog_id', val)}
@@ -308,6 +370,7 @@ export default function TransportsScreen() {
     isLoading: membersLoading,
     error: membersError,
   } = useOrgMemberships(activeOrgId ?? undefined);
+  const { data: contactData, isLoading: contactsLoading, error: contactsError } = useOrgContacts(activeOrgId ?? undefined);
   const createTransportMutation = useMutation({
     mutationFn: async (values: TransportMutationInput) => {
       if (!activeOrgId) {
@@ -383,13 +446,24 @@ export default function TransportsScreen() {
   const start = (pageSafe - 1) * pageSize;
   const paginated = filteredRows.slice(start, start + pageSize);
   const editingTransport = useMemo(
-    () => editingTransportId ? (data || []).find((t) => t.id === editingTransportId) : null,
+    () => (editingTransportId ? (data || []).find((t) => t.id === editingTransportId) ?? null : null),
     [data, editingTransportId]
   );
   const mutationInFlight = createTransportMutation.isPending || updateTransportMutation.isPending;
   const transporterOptions = useMemo(
     () => transporterRows.map((t) => ({ id: t.id, name: t.name, status: t.status })),
     [transporterRows]
+  );
+  const contactTransporterOptions = useMemo(
+    () =>
+      (contactData ?? [])
+        .filter((c) => (c.roles ?? []).includes('transport'))
+        .map((c) => ({
+          id: c.id,
+          name: c.display_name,
+          status: c.linked_user_id ? 'linked' : 'offline',
+        })),
+    [contactData]
   );
 
   const closeEditor = () => {
@@ -435,7 +509,7 @@ export default function TransportsScreen() {
     );
   }
 
-  if (isLoading || (viewMode === 'transporters' && membersLoading)) {
+  if (isLoading || (viewMode === 'transporters' && membersLoading) || contactsLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator />
@@ -446,12 +520,15 @@ export default function TransportsScreen() {
     );
   }
 
-  if (error || membersError) {
+  if (error || membersError || contactsError) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-6">
         <Text className="text-base font-semibold text-gray-900">Failed to load data</Text>
         <Text className="mt-2 text-sm text-gray-600 text-center">
-          {(error as Error).message || (membersError as Error).message || 'Please try again shortly.'}
+          {(error as Error).message ||
+            (membersError as Error).message ||
+            (contactsError as Error).message ||
+            'Please try again shortly.'}
         </Text>
       </View>
     );
@@ -495,7 +572,7 @@ export default function TransportsScreen() {
     </View>
   );
 
-  const headerActions: React.ReactNode[] = [];
+  const headerActions: React.ReactElement[] = [];
   if (viewMode === 'transports') {
     headerActions.push(
       <Pressable
@@ -538,7 +615,6 @@ export default function TransportsScreen() {
           setPage(1);
         }}
         filters={[]}
-        disableFilters
       />
       <DataTable
         columns={viewMode === 'transporters' ? TRANSPORTER_COLUMNS : TRANSPORT_COLUMNS}
@@ -643,6 +719,7 @@ export default function TransportsScreen() {
             submitting={mutationInFlight}
             error={formError}
             transporters={transporterOptions}
+            contactTransporters={contactTransporterOptions}
           />
         </>
       ) : (
@@ -656,7 +733,7 @@ export default function TransportsScreen() {
   );
 }
 
-const formatDateRange = (start: string | null, end: string | null) => {
+const formatDateRange = (start?: string | null, end?: string | null) => {
   if (!start && !end) return 'Not scheduled';
   const startDate = start ? new Date(start) : null;
   const endDate = end ? new Date(end) : null;
@@ -705,7 +782,7 @@ const toTransportRow = (t: Transport): TransportRowItem => ({
   from: t.from_location || 'Unknown',
   to: t.to_location || 'Unknown',
   window: formatDateRange(t.window_start, t.window_end),
-  assigned: t.assigned_membership_id || 'Unassigned',
+  assigned: t.assigned_membership_id || t.assigned_contact_id || 'Unassigned',
 });
 
 const TRANSPORTER_COLUMNS = [

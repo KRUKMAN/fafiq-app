@@ -13,6 +13,9 @@ Follow these steps to align the Supabase project with the app:
    - Run `supabase/migrations/20251218_schema_rls_audit.sql` (tables from `docs/schema.md`, RLS policies from `docs/rls.md`, helper functions, audit triggers, and `updated_at`/org settings triggers).
    - Then run `supabase/migrations/20251219_member_contact_view.sql` (admin-only member contact view + RPC that exposes email for the Settings panel).
    - Run `supabase/migrations/20251220_invites.sql` (email-based invite flow: org_invites table + admin invite/accept RPCs).
+   - Run `supabase/migrations/20251222_invite_accept_policies.sql` and `supabase/migrations/20251224_accept_invites_fix2.sql` (invite acceptance hardening + RLS policy for invited users).
+   - Run `supabase/migrations/20251225_org_member_contacts_hardening.sql` (prevents exposing `auth.users` via `org_member_contacts`; use admin RPC instead).
+   - Run `supabase/migrations/20251226_org_contacts.sql` (adds `org_contacts` for offline people/homes + linking RPCs; adds optional contact assignment FKs to dogs/transports).
    - Run `supabase/migrations/20251221_storage_buckets.sql` (creates `dog-photos`/`documents` buckets + storage policies).
    - If you prefer CLI (already linked): `npx supabase db push` from repo root to apply pending migrations.
 

@@ -14,26 +14,28 @@ export const inviteOrgMember = async (
   roles: string[],
   fullName?: string
 ): Promise<InviteResponse> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     throw new Error('Supabase not configured; invites require Supabase env.');
   }
 
-  const { data, error } = await supabase.rpc<InviteResponse>('admin_invite_member_by_email', {
+  const { data, error } = await client.rpc('admin_invite_member_by_email', {
     p_org_id: orgId,
     p_email: email,
     p_roles: roles,
-    p_full_name: fullName ?? null,
+    p_full_name: fullName ?? undefined,
   });
 
   if (error) {
     throw new Error(`Invite failed: ${error.message}`);
   }
 
-  if (!data) {
+  const row = data?.[0];
+  if (!row) {
     throw new Error('Invite failed: no response from server.');
   }
 
-  return data;
+  return row;
 };
 
 export type OrgInvite = {
@@ -51,11 +53,12 @@ export type OrgInvite = {
 };
 
 export const fetchOrgInvites = async (orgId: string): Promise<OrgInvite[]> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     return [];
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('org_invites')
     .select('*')
     .eq('org_id', orgId)
@@ -69,16 +72,18 @@ export const fetchOrgInvites = async (orgId: string): Promise<OrgInvite[]> => {
 };
 
 export const acceptInvitesForCurrentUser = async (): Promise<void> => {
-  if (!supabase) return;
-  await supabase.rpc('accept_org_invites_for_current_user');
+  const client = supabase;
+  if (!client) return;
+  await client.rpc('accept_org_invites_for_current_user');
 };
 
 export const cancelOrgInvite = async (orgId: string, inviteId: string): Promise<void> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     throw new Error('Supabase not configured; invite management requires Supabase env.');
   }
 
-  const { error } = await supabase
+  const { error } = await client
     .from('org_invites')
     .delete()
     .eq('id', inviteId)

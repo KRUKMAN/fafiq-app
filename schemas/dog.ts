@@ -60,6 +60,8 @@ export const dogSchema = z.object({
     .default(''),
   responsible_membership_id: z.string().nullable().optional(),
   foster_membership_id: z.string().nullable().optional(),
+  responsible_contact_id: z.string().nullable().optional(),
+  foster_contact_id: z.string().nullable().optional(),
   budget_limit: z.number().nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),

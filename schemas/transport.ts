@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const transportExtraFieldsSchema = z.record(z.any()).default({});
+export const transportExtraFieldsSchema = z.record(z.string(), z.any()).default({});
 
 export const transportSchema = z.object({
   id: z.string(),
@@ -10,6 +10,7 @@ export const transportSchema = z.object({
   to_location: z.string().nullable().optional(),
   status: z.string(),
   assigned_membership_id: z.string().nullable().optional(),
+  assigned_contact_id: z.string().nullable().optional(),
   window_start: z.string().nullable().optional(),
   window_end: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),

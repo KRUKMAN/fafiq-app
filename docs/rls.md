@@ -58,6 +58,7 @@ alter table public.expenses enable row level security;
 alter table public.dog_photos enable row level security;
 alter table public.documents enable row level security;
 alter table public.activity_events enable row level security;
+alter table public.org_contacts enable row level security;
 ```
 
 ## Baseline policy pattern (org-scoped tables)
@@ -134,6 +135,33 @@ create policy "members read org"
 on public.orgs
 for select
 using (public.is_active_org_member(id));
+```
+
+### `org_contacts`
+- Contacts are operational directory records that can be unlinked (no user_id yet).
+- Any org member can read/write contacts by default (tighten to admin if desired).
+
+```sql
+create policy "org members can read org_contacts"
+on public.org_contacts
+for select
+using (public.is_active_org_member(org_id));
+
+create policy "org members can insert org_contacts"
+on public.org_contacts
+for insert
+with check (public.is_active_org_member(org_id));
+
+create policy "org members can update org_contacts"
+on public.org_contacts
+for update
+using (public.is_active_org_member(org_id))
+with check (public.is_active_org_member(org_id));
+
+create policy "org members can delete org_contacts"
+on public.org_contacts
+for delete
+using (public.is_active_org_member(org_id));
 ```
 
 ## Storage RLS (Supabase Storage)

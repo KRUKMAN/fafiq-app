@@ -12,6 +12,7 @@ sequenceDiagram
     Session->>Supabase: accept_org_invites_for_current_user()
     Session->>Supabase: fetch memberships (org_id + roles)
     Supabase-->>Session: memberships
+    Session->>Supabase: link_my_contact_in_org(org_id) (best effort)
     Session-->>App: set ready + activeOrgId
   else no Supabase env
     Session->>Mocks: fetch memberships/orgs/profiles

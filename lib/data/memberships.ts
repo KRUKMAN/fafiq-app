@@ -26,7 +26,8 @@ type MembershipRow = {
 };
 
 export const fetchOrgMemberships = async (orgId: string): Promise<MembershipRow[]> => {
-  if (!supabase) {
+  const client = supabase;
+  if (!client) {
     const [memberships, orgs, profiles] = await Promise.all([getMockMemberships(), getMockOrgs(), getMockProfiles()]);
     return memberships
       .filter((m) => m.org_id === orgId)
@@ -47,7 +48,7 @@ export const fetchOrgMemberships = async (orgId: string): Promise<MembershipRow[
   }
 
   const fetchWithoutEmails = async (): Promise<MembershipRow[]> => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('memberships')
       .select('id, org_id, roles, active, user_id, orgs(name)')
       .eq('org_id', orgId);
@@ -61,7 +62,7 @@ export const fetchOrgMemberships = async (orgId: string): Promise<MembershipRow[
 
     let profileMap: Record<string, { full_name?: string | null }> = {};
     if (userIds.length > 0) {
-      const { data: profilesData, error: profilesError } = await supabase
+      const { data: profilesData, error: profilesError } = await client
         .from('profiles')
         .select('user_id, full_name')
         .in('user_id', userIds);
@@ -89,10 +90,7 @@ export const fetchOrgMemberships = async (orgId: string): Promise<MembershipRow[
     }));
   };
 
-  const { data: contacts, error: contactsError } = await supabase.rpc<AdminOrgMembershipRow[]>(
-    'admin_list_org_memberships',
-    { p_org_id: orgId }
-  );
+  const { data: contacts, error: contactsError } = await client.rpc('admin_list_org_memberships', { p_org_id: orgId });
 
   if (contactsError) {
     const isAuthScopedError =
@@ -105,7 +103,7 @@ export const fetchOrgMemberships = async (orgId: string): Promise<MembershipRow[
     throw new Error(`Failed to fetch memberships: ${contactsError.message}`);
   }
 
-  const rows = contacts ?? [];
+  const rows = (contacts ?? []) as unknown as AdminOrgMembershipRow[];
 
   return rows.map((m) => ({
     id: m.membership_id,
