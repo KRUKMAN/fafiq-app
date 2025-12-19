@@ -32,7 +32,7 @@ export function DataTable<T>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator
-      className="flex-1 bg-white"
+      className="flex-1 bg-card"
       contentContainerStyle={{ minWidth, flexGrow: 1 }}>
       <FlatList
         style={{ flex: 1, width: '100%' }}
@@ -53,7 +53,7 @@ export function DataTable<T>({
 }
 
 const TableHeader = React.memo(({ columns }: { columns: Column[] }) => (
-  <View className="flex-row bg-gray-50 border-b border-border" style={{ width: '100%' }}>
+  <View className="flex-row bg-surface border-b border-border" style={{ width: '100%' }}>
     {columns.map((col) => (
       <View
         key={col.key}
@@ -61,7 +61,7 @@ const TableHeader = React.memo(({ columns }: { columns: Column[] }) => (
         className="px-6 py-3">
         <Text
           numberOfLines={1}
-          className={`text-xs font-semibold text-gray-500 uppercase tracking-wider ${
+          className={`text-xs font-semibold text-muted uppercase tracking-wider ${
             col.align === 'right' || col.key === 'actions' ? 'text-right' : ''
           }`}>
           {col.label}

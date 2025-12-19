@@ -10,7 +10,7 @@ type EmptyStateProps = {
 
 export const EmptyState = ({ title, description }: EmptyStateProps) => (
   <View className="items-center justify-center py-12 px-4">
-    <Typography variant="body" className="text-base font-semibold text-gray-900">
+    <Typography variant="body" className="text-base font-semibold">
       {title}
     </Typography>
     {description ? (

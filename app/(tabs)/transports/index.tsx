@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { createTransport, softDeleteTransport, updateTransport } from '@/lib/data/transports';
@@ -16,9 +16,13 @@ import { DataTable } from '@/components/table/DataTable';
 import { TableToolbar } from '@/components/table/TableToolbar';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusMessage } from '@/components/ui/StatusMessage';
+import { STRINGS } from '@/constants/strings';
+import { UI_COLORS } from '@/constants/uiColors';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { useOrgMemberships } from '@/hooks/useOrgMemberships';
 import { useTransports } from '@/hooks/useTransports';
+import { getPagination } from '@/lib/pagination';
 import { Transport } from '@/schemas/transport';
 import { useSessionStore } from '@/stores/sessionStore';
 import { TransportRow, type TransportRowItem, type TransporterRowItem } from '@/components/transports/TransportRow';
@@ -26,7 +30,6 @@ import {
   TransportDetailDrawer,
   TransportEditorDrawer,
   TransporterDetailDrawer,
-  TRANSPORT_STATUS_OPTIONS,
   formatDateRange,
   type TransportMutationInput,
 } from '@/components/transports/TransportsDrawers';
@@ -48,6 +51,7 @@ export default function TransportsScreen() {
   const [prefillDogId, setPrefillDogId] = useState<string | null>(null);
   const [editingTransportId, setEditingTransportId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [transportToDelete, setTransportToDelete] = useState<{ id: string } | null>(null);
   const queryClient = useQueryClient();
@@ -103,9 +107,12 @@ export default function TransportsScreen() {
       queryClient.invalidateQueries({ queryKey: ['transports', activeOrgId || ''] });
       setDeleteModalVisible(false);
       setTransportToDelete(null);
+      setActionError(null);
     },
     onError: (error: any) => {
-      console.error('Failed to delete transport:', error?.message);
+      setDeleteModalVisible(false);
+      setTransportToDelete(null);
+      setActionError(error?.message ?? 'Failed to delete transport.');
     },
   });
 
@@ -170,10 +177,14 @@ export default function TransportsScreen() {
   }, [activeRows, search]);
 
   const totalItems = filteredRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const pageSafe = Math.min(page, totalPages);
-  const start = (pageSafe - 1) * pageSize;
-  const paginated = filteredRows.slice(start, start + pageSize);
+  const pagination = useMemo(
+    () => getPagination({ page, pageSize, totalItems }),
+    [page, pageSize, totalItems]
+  );
+  const paginated = useMemo(
+    () => filteredRows.slice(pagination.start, pagination.start + pageSize),
+    [filteredRows, pagination.start, pageSize]
+  );
   const editingTransport = useMemo(
     () => (editingTransportId ? (data || []).find((t) => t.id === editingTransportId) ?? null : null),
     [data, editingTransportId]
@@ -249,14 +260,14 @@ export default function TransportsScreen() {
       <Button
         key="add-transport"
         variant="primary"
-        leftIcon={<Plus size={16} color="#fff" />}
+        leftIcon={<Plus size={16} color={UI_COLORS.white} />}
         onPress={() => {
           setSelectedTransportId(null);
           setFormError(null);
           setEditingTransportId(null);
           setEditorMode('create');
         }}>
-        New transport
+        {STRINGS.transports.newTransport}
       </Button>
     );
   }
@@ -273,10 +284,10 @@ export default function TransportsScreen() {
 
   return (
     <ScreenGuard session={session}>
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-background">
         <PageHeader
-          title="Transports"
-          subtitle="View transport events or transporters assigned to your org."
+          title={STRINGS.transports.title}
+          subtitle={STRINGS.transports.subtitle}
           actions={headerActions}
         />
 
@@ -289,17 +300,21 @@ export default function TransportsScreen() {
           filters={[]}
         />
 
+        <View className="px-6 pt-3">
+          <StatusMessage variant="error" message={actionError} />
+        </View>
+
         <View className="flex-1 relative">
           <DataView
             data={paginated}
             isLoading={isLoading || (viewMode === 'transporters' && membersLoading) || contactsLoading}
             error={error || membersError || contactsError}
             isEmpty={() => filteredRows.length === 0}
-            loadingLabel={viewMode === 'transporters' ? 'Loading transporters...' : 'Loading transports...'}
+            loadingLabel={viewMode === 'transporters' ? STRINGS.transports.loadingTransporters : STRINGS.transports.loadingTransports}
             emptyComponent={
               <View className="flex-1 items-center justify-center py-12 px-6">
                 <EmptyState
-                  title={viewMode === 'transporters' ? 'No transporters found for this org.' : 'No transports scheduled for this org.'}
+                  title={viewMode === 'transporters' ? STRINGS.transports.emptyTransporters : STRINGS.transports.emptyTransports}
                 />
               </View>
             }>
@@ -341,7 +356,7 @@ export default function TransportsScreen() {
         </View>
 
         <Pagination
-          page={pageSafe}
+          page={pagination.pageSafe}
           pageSize={pageSize}
           totalItems={totalItems}
           onChangePage={setPage}

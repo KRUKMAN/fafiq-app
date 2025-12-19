@@ -26,7 +26,7 @@ export function Drawer({ open, onClose, widthClassName = 'max-w-5xl', overlayCla
         className={cn('flex-1 bg-black/30', overlayClassName)}
         onPress={onClose}
       />
-      <View className={cn('ml-auto h-full w-full bg-white border-l border-border shadow-2xl', widthClassName)}>
+      <View className={cn('ml-auto h-full w-full bg-card border-l border-border shadow-2xl', widthClassName)}>
         {children}
       </View>
     </View>

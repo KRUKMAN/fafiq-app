@@ -1,5 +1,7 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+
+import { Typography } from '@/components/ui/Typography';
 
 type Action = React.ReactElement;
 
@@ -12,14 +14,16 @@ type PageHeaderProps = {
 
 export const PageHeader = ({ title, subtitle, actions, accessory }: PageHeaderProps) => {
   return (
-    <View className="w-full px-6 py-4 border-b border-border bg-white">
+    <View className="w-full px-6 py-4 border-b border-border bg-card">
       <View className="flex-row flex-wrap items-start gap-3">
-        <View className="flex-1 min-w-[200px]">
-          <Text className="text-2xl font-bold text-gray-900 tracking-tight">{title}</Text>
+        <View className="flex-1 min-w-48">
+          <Typography variant="h2" className="text-2xl">
+            {title}
+          </Typography>
           {subtitle ? (
-            <Text className="text-sm text-gray-500 mt-1" numberOfLines={1} ellipsizeMode="tail">
+            <Typography variant="body" color="muted" className="mt-1" numberOfLines={1} ellipsizeMode="tail">
               {subtitle}
-            </Text>
+            </Typography>
           ) : null}
         </View>
 

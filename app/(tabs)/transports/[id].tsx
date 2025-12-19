@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { LAYOUT_STYLES } from '@/constants/layout';
 import { useTransports } from '@/hooks/useTransports';
 import { useSessionStore } from '@/stores/sessionStore';
 import { uploadDocument } from '@/lib/data/storage';
@@ -88,7 +89,7 @@ export default function TransportDetailScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView className="flex-1 bg-white" contentContainerStyle={LAYOUT_STYLES.scrollScreenPaddedGapped}>
       <View className="bg-white border border-border rounded-lg p-4 shadow-sm">
         <View className="flex-row justify-between items-center mb-2">
           <Text className="text-lg font-semibold text-gray-900">Transport {transport.id}</Text>

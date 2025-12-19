@@ -1,5 +1,11 @@
 import React from 'react';
-import { Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { Switch, View } from 'react-native';
+
+import { Drawer } from '@/components/patterns/Drawer';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Typography } from '@/components/ui/Typography';
+import { STRINGS } from '@/constants/strings';
 
 type AdvancedFilters = {
   location?: string;
@@ -28,39 +34,32 @@ export const AdvancedFilterDrawer = ({
   onClear,
   children,
 }: AdvancedFilterDrawerProps) => {
-  if (!visible) return null;
-
   const canRenderBuiltIn = filters && onChangeFilters;
 
   return (
-    <View className="absolute top-0 bottom-0 right-0 w-full max-w-md z-20 bg-white shadow-2xl border-l border-border">
+    <Drawer open={visible} onClose={onClose} widthClassName="max-w-md">
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
-        <Text className="text-base font-semibold text-gray-900">Advanced Filters</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onClose}
-          className="px-3 py-1 rounded-md border border-border bg-white">
-          <Text className="text-sm text-gray-700">Close</Text>
-        </Pressable>
+        <Typography variant="body" className="text-base font-semibold">
+          {STRINGS.filters.advancedFiltersTitle}
+        </Typography>
+        <Button variant="outline" size="sm" onPress={onClose}>
+          {STRINGS.common.close}
+        </Button>
       </View>
       <View className="flex-1 px-4 py-4">
         {canRenderBuiltIn ? (
           <View className="gap-4">
-            <FilterField label="Location">
-              <TextInput
-                placeholder="e.g. Shelter HQ or Vet"
-                placeholderTextColor="#9CA3AF"
-                className="border border-border rounded-md px-3 py-2 text-sm text-gray-900"
+            <FilterField label={STRINGS.filters.locationLabel}>
+              <Input
+                placeholder={STRINGS.filters.locationPlaceholder}
                 value={filters.location ?? ''}
                 onChangeText={(text) => onChangeFilters?.({ location: text })}
               />
             </FilterField>
 
-            <FilterField label="Responsible person">
-              <TextInput
-                placeholder="e.g. Maria Garcia"
-                placeholderTextColor="#9CA3AF"
-                className="border border-border rounded-md px-3 py-2 text-sm text-gray-900"
+            <FilterField label={STRINGS.filters.responsibleLabel}>
+              <Input
+                placeholder={STRINGS.filters.responsiblePlaceholder}
                 value={filters.responsible ?? ''}
                 onChangeText={(text) => onChangeFilters?.({ responsible: text })}
               />
@@ -68,22 +67,18 @@ export const AdvancedFilterDrawer = ({
 
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <FilterField label="Updated after">
-                  <TextInput
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                    className="border border-border rounded-md px-3 py-2 text-sm text-gray-900"
+                <FilterField label={STRINGS.filters.updatedAfter}>
+                  <Input
+                    placeholder={STRINGS.filters.datePlaceholder}
                     value={filters.updatedAfter ?? ''}
                     onChangeText={(text) => onChangeFilters?.({ updatedAfter: text })}
                   />
                 </FilterField>
               </View>
               <View className="flex-1">
-                <FilterField label="Updated before">
-                  <TextInput
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                    className="border border-border rounded-md px-3 py-2 text-sm text-gray-900"
+                <FilterField label={STRINGS.filters.updatedBefore}>
+                  <Input
+                    placeholder={STRINGS.filters.datePlaceholder}
                     value={filters.updatedBefore ?? ''}
                     onChangeText={(text) => onChangeFilters?.({ updatedBefore: text })}
                   />
@@ -91,9 +86,11 @@ export const AdvancedFilterDrawer = ({
               </View>
             </View>
 
-            <FilterField label="Has alerts">
+            <FilterField label={STRINGS.filters.hasAlerts}>
               <View className="flex-row items-center justify-between px-3 py-2 border border-border rounded-md bg-surface">
-                <Text className="text-sm text-gray-800">Only show dogs with alerts</Text>
+                <Typography variant="body" className="text-sm">
+                  {STRINGS.filters.hasAlertsDescription}
+                </Typography>
                 <Switch
                   value={Boolean(filters.hasAlerts)}
                   onValueChange={(value) => onChangeFilters?.({ hasAlerts: value })}
@@ -102,33 +99,29 @@ export const AdvancedFilterDrawer = ({
             </FilterField>
 
             <View className="flex-row justify-end gap-3 pt-2">
-              <Pressable
-                accessibilityRole="button"
-                onPress={onClear}
-                className="px-4 py-2 rounded-md border border-border bg-white">
-                <Text className="text-sm font-medium text-gray-700">Reset</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={onApply}
-                className="px-4 py-2 rounded-md border border-gray-900 bg-gray-900">
-                <Text className="text-sm font-semibold text-white">Apply filters</Text>
-              </Pressable>
+              <Button variant="outline" onPress={onClear}>
+                {STRINGS.common.reset}
+              </Button>
+              <Button variant="primary" onPress={onApply}>
+                {STRINGS.common.applyFilters}
+              </Button>
             </View>
           </View>
         ) : children ? (
           children
         ) : (
-          <Text className="text-sm text-gray-500">No filters yet.</Text>
+          <Typography variant="bodySmall" color="muted">
+            {STRINGS.filters.noFilters}
+          </Typography>
         )}
       </View>
-    </View>
+    </Drawer>
   );
 };
 
 const FilterField = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <View className="gap-2">
-    <Text className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{label}</Text>
+    <Typography variant="label">{label}</Typography>
     {children}
   </View>
 );

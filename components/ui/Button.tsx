@@ -1,6 +1,8 @@
 import React, { forwardRef, useMemo } from 'react';
 import { ActivityIndicator, Pressable, type PressableProps, View } from 'react-native';
 
+import { UI_COLORS } from '@/constants/uiColors';
+
 import { cn } from './cn';
 import { Typography } from './Typography';
 
@@ -24,9 +26,9 @@ const BASE =
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'bg-primary border-primary',
-  secondary: 'bg-gray-100 border-gray-100',
+  secondary: 'bg-surface border-border',
   ghost: 'bg-transparent border-transparent',
-  outline: 'bg-white border-border',
+  outline: 'bg-card border-border',
   destructive: 'bg-destructive border-destructive',
 };
 
@@ -37,9 +39,9 @@ const SIZE_CLASS: Record<ButtonSize, string> = {
 };
 
 function textColorForVariant(variant: ButtonVariant, disabled?: boolean) {
-  if (disabled) return 'text-gray-400';
+  if (disabled) return 'text-muted-foreground';
   if (variant === 'primary' || variant === 'destructive') return 'text-white';
-  return 'text-gray-900';
+  return 'text-foreground';
 }
 
 export const Button = forwardRef<View, ButtonProps>(function Button(
@@ -73,7 +75,9 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
       className={cn(BASE, VARIANT_CLASS[variant], SIZE_CLASS[size], fullWidth && 'w-full', className)}
       {...props}>
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' || variant === 'destructive' ? '#fff' : '#111827'} />
+        <ActivityIndicator
+          color={variant === 'primary' || variant === 'destructive' ? UI_COLORS.white : UI_COLORS.foreground}
+        />
       ) : (
         <>
           {leftIcon ? <View className="mr-2">{leftIcon}</View> : null}

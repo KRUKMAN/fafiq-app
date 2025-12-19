@@ -13,19 +13,19 @@ export type BadgeProps = {
 };
 
 const VARIANT_CLASS: Record<BadgeVariant, string> = {
-  default: 'bg-gray-50 border-gray-200',
+  default: 'bg-surface border-border',
   primary: 'bg-primary border-primary',
-  success: 'bg-green-50 border-green-200',
-  warning: 'bg-amber-50 border-amber-200',
-  error: 'bg-red-50 border-red-200',
+  success: 'bg-surface border-border',
+  warning: 'bg-surface border-border',
+  error: 'bg-surface border-border',
 };
 
 const TEXT_COLOR_CLASS: Record<BadgeVariant, string> = {
-  default: 'text-gray-700',
+  default: 'text-foreground',
   primary: 'text-white',
-  success: 'text-green-700',
-  warning: 'text-amber-700',
-  error: 'text-red-700',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-destructive',
 };
 
 export function Badge({ variant = 'default', children, className }: BadgeProps) {

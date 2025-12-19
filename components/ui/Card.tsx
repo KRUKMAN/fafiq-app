@@ -15,9 +15,9 @@ export type CardProps = {
 };
 
 const VARIANT_CLASS: Record<CardVariant, string> = {
-  default: 'bg-white border border-border shadow-sm',
-  outline: 'bg-white border-2 border-border',
-  elevated: 'bg-white border border-border shadow-lg',
+  default: 'bg-card border border-border shadow-sm',
+  outline: 'bg-card border-2 border-border',
+  elevated: 'bg-card border border-border shadow-lg',
 };
 
 export function Card({ title, variant = 'default', headerRight, className, children }: CardProps) {
@@ -25,7 +25,7 @@ export function Card({ title, variant = 'default', headerRight, className, child
     <View className={cn('rounded-lg p-5', VARIANT_CLASS[variant], className)}>
       {title ? (
         <View className="flex-row items-center justify-between mb-4">
-          <Typography variant="label" className="text-xs font-bold text-gray-900 tracking-[0.08em] uppercase">
+          <Typography variant="label" className="text-xs font-bold tracking-wide uppercase">
             {title}
           </Typography>
           {headerRight}

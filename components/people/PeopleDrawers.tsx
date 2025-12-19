@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { LAYOUT_STYLES } from '@/constants/layout';
 import { Drawer } from '@/components/patterns/Drawer';
 import { TabBar } from '@/components/patterns/TabBar';
 import { Button } from '@/components/ui/Button';
@@ -359,7 +360,7 @@ export function ContactEditorDrawer({
 
   return (
     <Drawer open={true} onClose={onClose} widthClassName="max-w-md">
-      <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView className="flex-1 bg-white" contentContainerStyle={LAYOUT_STYLES.scrollScreenPaddedGapped}>
         <View className="flex-row items-center justify-between">
           <Typography variant="h3" className="text-lg font-semibold text-gray-900">
             Create contact

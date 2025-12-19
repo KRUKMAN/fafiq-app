@@ -2,6 +2,8 @@ import React from 'react';
 import { View } from 'react-native';
 import { AlertCircle, AlertTriangle } from 'lucide-react-native';
 
+import { UI_COLORS } from '@/constants/uiColors';
+
 type Alert = { type: 'warning' | 'error'; message: string };
 
 type AlertIconsProps = {
@@ -18,13 +20,11 @@ export const AlertIcons = React.memo(({ alerts }: AlertIconsProps) => {
         return (
           <View
             key={`${alert.type}-${idx}`}
-            className={`w-7 h-7 rounded-full border-2 border-white items-center justify-center ${
-              isError ? 'bg-red-100' : 'bg-amber-100'
-            }`}>
+            className="w-7 h-7 rounded-full border-2 border-white items-center justify-center bg-card">
             {isError ? (
-              <AlertCircle size={14} color="#b91c1c" />
+              <AlertCircle size={14} color={UI_COLORS.destructive} />
             ) : (
-              <AlertTriangle size={14} color="#b45309" />
+              <AlertTriangle size={14} color={UI_COLORS.warning} />
             )}
           </View>
         );

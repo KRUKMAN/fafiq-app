@@ -18,8 +18,8 @@ export function OrgSelector({ activeOrgId, memberships, switchOrg, ready, classN
   if (!ready) return null;
   if (!memberships.length) {
     return (
-      <View className={cn('px-3 py-2 border border-amber-200 bg-amber-50 rounded-md', className)}>
-        <Typography variant="caption" className="text-amber-800 font-medium">
+      <View className={cn('px-3 py-2 border border-border bg-surface rounded-md', className)}>
+        <Typography variant="caption" className="font-medium text-warning">
           No memberships found
         </Typography>
       </View>
@@ -34,15 +34,19 @@ export function OrgSelector({ activeOrgId, memberships, switchOrg, ready, classN
       <Pressable
         accessibilityRole="button"
         onPress={() => hasChoices && setOpen((v) => !v)}
-        className="flex-row items-center gap-2 px-3 py-2 rounded-full border border-border bg-white shadow-sm">
-        <Typography variant="bodySmall" className="text-xs font-semibold text-gray-900">
+        className="flex-row items-center gap-2 px-3 py-2 rounded-full border border-border bg-card shadow-sm">
+        <Typography variant="bodySmall" className="text-xs font-semibold">
           {active.org_name}
         </Typography>
-        {hasChoices ? <Typography variant="caption" className="text-xs text-gray-500">▾</Typography> : null}
+        {hasChoices ? (
+          <Typography variant="caption" color="muted" className="text-xs">
+            ▾
+          </Typography>
+        ) : null}
       </Pressable>
 
       {open ? (
-        <View className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-white shadow-lg z-10">
+        <View className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-card shadow-lg z-10">
           {memberships.map((m) => {
             const isActive = m.org_id === active.org_id;
             return (
@@ -56,7 +60,7 @@ export function OrgSelector({ activeOrgId, memberships, switchOrg, ready, classN
                 className={cn('px-3 py-2', isActive && 'bg-surface')}>
                 <Typography
                   variant="body"
-                  className={cn('text-sm', isActive ? 'font-semibold text-gray-900' : 'text-gray-700')}>
+                  className={cn('text-sm', isActive ? 'font-semibold text-foreground' : 'text-muted')}>
                   {m.org_name}
                 </Typography>
               </Pressable>

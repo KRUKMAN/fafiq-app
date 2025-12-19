@@ -2,6 +2,7 @@ import { MapPin, User } from 'lucide-react-native';
 import React from 'react';
 import { Image, Platform, Pressable, View } from 'react-native';
 
+import { UI_COLORS } from '@/constants/uiColors';
 import { RowAction, RowActionsMenu } from '@/components/ui/RowActionsMenu';
 import { Typography } from '@/components/ui/Typography';
 import { formatLastUpdate } from '@/lib/formatters';
@@ -70,19 +71,19 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
           {item.photoUrl ? (
             <Image
               source={{ uri: item.photoUrl }}
-              className="w-12 h-12 rounded-lg bg-gray-200 border border-border"
+              className="w-12 h-12 rounded-lg bg-surface border border-border"
             />
           ) : (
-            <View className="w-12 h-12 rounded-lg bg-gray-100 border border-border items-center justify-center">
+            <View className="w-12 h-12 rounded-lg bg-surface border border-border items-center justify-center">
               <Typography variant="caption" color="muted">No photo</Typography>
             </View>
           )}
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
-              <Typography variant="body" className="text-sm font-bold text-gray-900" numberOfLines={1}>
+              <Typography variant="body" className="text-sm font-bold" numberOfLines={1}>
                 {item.name}
               </Typography>
-              <Typography variant="caption" className="text-xs font-mono text-gray-400" numberOfLines={1}>
+              <Typography variant="caption" className="text-xs font-mono text-muted-foreground" numberOfLines={1}>
                 {item.internalId || '-'}
               </Typography>
             </View>
@@ -110,14 +111,14 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
           paddingHorizontal: 12,
         }}
         className="py-4">
-        <View className="flex-row items-center gap-1.5">
-          <MapPin size={14} color="#9CA3AF" />
-          <Typography variant="body" className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+        <View className="flex-row items-center gap-2">
+          <MapPin size={14} color={UI_COLORS.mutedForeground} />
+          <Typography variant="body" className="text-sm font-semibold" numberOfLines={1}>
             {item.location || 'Unknown location'}
           </Typography>
         </View>
-        <View className="flex-row items-center gap-1.5 mt-1">
-          <User size={12} color="#9CA3AF" />
+        <View className="flex-row items-center gap-2 mt-1">
+          <User size={12} color={UI_COLORS.mutedForeground} />
           <Typography variant="caption" color="muted" numberOfLines={1}>
             {item.responsiblePerson || 'Unassigned'}
           </Typography>
@@ -131,16 +132,16 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
           paddingHorizontal: 12,
         }}
         className="py-4">
-        <Typography variant="body" className="text-sm font-semibold text-gray-900">
+        <Typography variant="body" className="text-sm font-semibold">
           {lastUpdate}
         </Typography>
-        <View className="w-28 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+        <View className="w-28 h-1 bg-surface rounded-full mt-2 overflow-hidden">
           <View
             style={{ width: `${budgetPct}%` }}
-            className={`h-full rounded-full ${budgetPct > 50 ? 'bg-orange-400' : 'bg-green-400'}`}
+            className={`h-full rounded-full ${budgetPct > 50 ? 'bg-warning' : 'bg-success'}`}
           />
         </View>
-        <Typography variant="caption" className="text-[10px] text-gray-400 mt-1">
+        <Typography variant="caption" className="text-xs text-muted-foreground mt-1">
           ${budget} spent
         </Typography>
       </View>
@@ -183,7 +184,7 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
           }
         }}
         style={{ minWidth: '100%' }}
-        className="flex-row items-center bg-white hover:bg-gray-50">
+        className="flex-row items-center bg-card hover:bg-surface">
         {content}
       </View>
     );
@@ -194,7 +195,7 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
       accessibilityRole="button"
       onPress={onPress}
       style={{ minWidth: '100%' }}
-      className="flex-row items-center bg-white hover:bg-gray-50">
+      className="flex-row items-center bg-card hover:bg-surface">
       {content}
     </Pressable>
   );

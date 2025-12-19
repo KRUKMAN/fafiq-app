@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 
 import { cn } from '@/components/ui/cn';
 import { Typography } from '@/components/ui/Typography';
+import { LAYOUT_STYLES } from '@/constants/layout';
 
 export type TabBarProps<TTab extends string> = {
   tabs: readonly TTab[];
@@ -17,19 +18,19 @@ export function TabBar<TTab extends string>({ tabs, active, onChange, className 
       horizontal
       showsHorizontalScrollIndicator={false}
       className={cn('border-b border-border', className)}
-      contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>
+      contentContainerStyle={LAYOUT_STYLES.tabBarContent}>
       {tabs.map((tab) => {
         const isActive = tab === active;
         return (
           <Pressable key={tab} accessibilityRole="button" onPress={() => onChange(tab)}>
-            <Typography
-              variant="body"
-              className={cn(
-                'pb-3 text-sm font-medium border-b-2',
-                isActive ? 'border-primary text-gray-900' : 'border-transparent text-gray-500'
-              )}>
-              {tab}
-            </Typography>
+              <Typography
+                variant="body"
+                className={cn(
+                  'pb-3 text-sm font-medium border-b-2',
+                  isActive ? 'border-primary text-foreground' : 'border-transparent text-muted'
+                )}>
+                {tab}
+              </Typography>
           </Pressable>
         );
       })}

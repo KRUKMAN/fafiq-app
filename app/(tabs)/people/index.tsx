@@ -18,6 +18,7 @@ import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { useOrgMemberships } from '@/hooks/useOrgMemberships';
 import { adminLinkContactToUser, createOrgContact } from '@/lib/data/contacts';
 import { inviteOrgMember } from '@/lib/data/invites';
+import { getPagination } from '@/lib/pagination';
 import { OrgContact } from '@/schemas/orgContact';
 import { useSessionStore } from '@/stores/sessionStore';
 
@@ -158,13 +159,16 @@ export default function PeopleScreen() {
   }, [orgContacts, contactFilter, search]);
 
   const rows = dataset === 'users' ? userRows : contactRows;
-  const columns = dataset === 'users' ? USER_COLUMNS : CONTACT_COLUMNS;
 
   const totalItems = rows.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const pageSafe = Math.min(page, totalPages);
-  const start = (pageSafe - 1) * pageSize;
-  const paginated = rows.slice(start, start + pageSize);
+  const pagination = useMemo(
+    () => getPagination({ page, pageSize, totalItems }),
+    [page, pageSize, totalItems]
+  );
+  const paginated = useMemo(
+    () => rows.slice(pagination.start, pagination.start + pageSize),
+    [rows, pagination.start, pageSize]
+  );
 
   const headerActions: React.ReactElement[] = [];
   headerActions.push(
@@ -370,7 +374,7 @@ export default function PeopleScreen() {
         </View>
 
         <Pagination
-          page={pageSafe}
+          page={pagination.pageSafe}
           pageSize={pageSize}
           totalItems={totalItems}
           onChangePage={setPage}

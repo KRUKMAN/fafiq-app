@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';
@@ -7,21 +7,24 @@ import { z } from 'zod';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Typography } from '@/components/ui/Typography';
+import { LAYOUT_STYLES } from '@/constants/layout';
+import { STRINGS } from '@/constants/strings';
 import { useDog } from '@/hooks/useDog';
 import { useSessionStore } from '@/stores/sessionStore';
 
 const dogFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  stage: z.string().min(1, 'Stage is required'),
-  location: z.string().min(1, 'Location is required'),
-  description: z.string().min(1, 'Description is required'),
+  name: z.string().min(1, STRINGS.dogs.validation.nameRequired),
+  stage: z.string().min(1, STRINGS.dogs.validation.stageRequired),
+  location: z.string().min(1, STRINGS.dogs.validation.locationRequired),
+  description: z.string().min(1, STRINGS.dogs.validation.descriptionRequired),
   responsible_person: z.string().optional(),
 });
 
 type DogFormState = z.infer<typeof dogFormSchema>;
 
-const STAGES = ['In Foster', 'Medical', 'Transport', 'Adopted'];
+const STAGES = STRINGS.dogs.formStages;
 
 export default function EditDogScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +40,9 @@ export default function EditDogScreen() {
     responsible_person: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<{ variant: 'success' | 'error'; message: string } | null>(null);
+
+  const stageHelper = useMemo(() => `${STRINGS.dogs.form.stageOptionsHelperPrefix} ${STAGES.join(', ')}`, []);
 
   useEffect(() => {
     if (data) {
@@ -47,6 +53,7 @@ export default function EditDogScreen() {
         description: data.description,
         responsible_person: data.extra_fields.responsible_person ?? '',
       });
+      setStatus(null);
     }
   }, [data]);
 
@@ -59,70 +66,64 @@ export default function EditDogScreen() {
         if (typeof path === 'string') errs[path] = issue.message;
       });
       setErrors(errs);
+      setStatus({ variant: 'error', message: 'Fix the highlighted fields and try again.' });
       return;
     }
     setErrors({});
-    Alert.alert('Mock submit', 'Dog updated (mock). Supabase wiring comes in Phase 2.');
+    setStatus({ variant: 'success', message: STRINGS.dogs.mockSaved });
   };
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
       <ScreenGuard session={session} isLoading={isLoading || !data} loadingLabel="Loading dog...">
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
-          <Typography variant="h3" className="mb-4">
-            Edit Dog (Mock)
-          </Typography>
+        <ScrollView contentContainerStyle={LAYOUT_STYLES.scrollScreenPadded}>
+          <View className="gap-4">
+            <Typography variant="h3">{STRINGS.dogs.mockEditTitle}</Typography>
 
-          <Input
-            label="Name"
-            value={form.name}
-            onChangeText={(name) => setForm((f) => ({ ...f, name }))}
-            error={errors.name}
-          />
+            <StatusMessage variant={status?.variant} message={status?.message ?? null} />
 
-          <View className="h-4" />
+            <Input
+              label={STRINGS.dogs.form.nameLabel}
+              value={form.name}
+              onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+              error={errors.name}
+            />
 
-          <Input
-            label="Stage"
-            value={form.stage}
-            onChangeText={(stage) => setForm((f) => ({ ...f, stage }))}
-            helper={`Options: ${STAGES.join(', ')}`}
-            error={errors.stage}
-          />
+            <Input
+              label={STRINGS.dogs.form.stageLabel}
+              value={form.stage}
+              onChangeText={(stage) => setForm((f) => ({ ...f, stage }))}
+              helper={stageHelper}
+              error={errors.stage}
+            />
 
-          <View className="h-4" />
+            <Input
+              label={STRINGS.dogs.form.locationLabel}
+              value={form.location}
+              onChangeText={(location) => setForm((f) => ({ ...f, location }))}
+              error={errors.location}
+            />
 
-          <Input
-            label="Location"
-            value={form.location}
-            onChangeText={(location) => setForm((f) => ({ ...f, location }))}
-            error={errors.location}
-          />
+            <Input
+              label={STRINGS.dogs.form.responsibleLabel}
+              value={form.responsible_person ?? ''}
+              onChangeText={(responsible_person) => setForm((f) => ({ ...f, responsible_person }))}
+            />
 
-          <View className="h-4" />
+            <Input
+              label={STRINGS.dogs.form.descriptionLabel}
+              multiline
+              value={form.description}
+              onChangeText={(description) => setForm((f) => ({ ...f, description }))}
+              error={errors.description}
+              className="min-h-24"
+            />
 
-          <Input
-            label="Responsible Person"
-            value={form.responsible_person ?? ''}
-            onChangeText={(responsible_person) => setForm((f) => ({ ...f, responsible_person }))}
-          />
-
-          <View className="h-4" />
-
-          <Input
-            label="Description"
-            multiline
-            value={form.description}
-            onChangeText={(description) => setForm((f) => ({ ...f, description }))}
-            error={errors.description}
-            className="min-h-[100px]"
-          />
-
-          <Button onPress={submit} className="mt-4">
-            Save changes (mock)
-          </Button>
+            <Button onPress={submit}>{STRINGS.dogs.mockSaveChanges}</Button>
+          </View>
         </ScrollView>
       </ScreenGuard>
     </SafeAreaView>
   );
 }
+

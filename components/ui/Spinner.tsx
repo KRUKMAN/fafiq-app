@@ -13,7 +13,11 @@ export function Spinner({ label, className, ...props }: SpinnerProps) {
   return (
     <View className={cn('items-center justify-center', className)}>
       <ActivityIndicator {...props} />
-      {label ? <Typography variant="caption" className="mt-2 text-gray-600">{label}</Typography> : null}
+      {label ? (
+        <Typography variant="caption" color="muted" className="mt-2">
+          {label}
+        </Typography>
+      ) : null}
     </View>
   );
 }

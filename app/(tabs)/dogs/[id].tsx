@@ -17,6 +17,8 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { UI_COLORS } from '@/constants/uiColors';
+import { LAYOUT_STYLES } from '@/constants/layout';
 import { NoteModal } from '@/components/dogs/NoteModal';
 import { Drawer } from '@/components/patterns/Drawer';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
@@ -31,98 +33,15 @@ import { useDogTimeline } from '@/hooks/useDogTimeline';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { updateDog } from '@/lib/data/dogs';
 import { addDogPhotoRecord, createSignedReadUrl, uploadDocument, uploadDogPhoto } from '@/lib/data/storage';
-import { Dog } from '@/schemas/dog';
+import {
+  type DogProfileFileItem as FileItem,
+  type DogProfileMedicalRecord as MedicalRecord,
+  type DogProfileNote as Note,
+  type DogProfileView,
+  toDogProfileView,
+} from '@/lib/viewModels/dogProfile';
 import { useSessionStore } from '@/stores/sessionStore';
 import { TABS, useUIStore } from '@/stores/uiStore';
-
-type DogProfileView = {
-  id: string;
-  orgId: string;
-  name: string;
-  stage: string;
-  medicalNotes: string;
-  behavioralNotes: string;
-  location: string;
-  description: string;
-  internalId: string;
-  photoUrl?: string;
-  responsiblePerson: string;
-  fosterName: string | null;
-  budgetSpent: number;
-  budgetLimit?: number | null;
-  lastUpdate: string;
-  attributes: {
-    age?: string;
-    sex?: 'Male' | 'Female';
-    size?: string;
-    breed?: string;
-    intakeDate?: string;
-  };
-  alerts: { type: 'warning' | 'error'; message: string }[];
-  notes: Note[];
-  medicalHistory: MedicalRecord[];
-  files: FileItem[];
-};
-
-type Note = {
-  id: string;
-  author: string;
-  body: string;
-  createdAt: string;
-};
-
-type MedicalRecord = {
-  id: string;
-  title: string;
-  status: string;
-  date: string;
-  doctor?: string;
-  notes?: string;
-};
-
-type FileItem = {
-  id: string;
-  name: string;
-  type: string;
-  uploadedAt: string;
-  uploadedBy?: string;
-};
-
-const toDogProfileView = (dog: Dog): DogProfileView => {
-  const attributes = dog.extra_fields.attributes ?? {};
-  const notes = (dog.extra_fields.notes as Note[] | undefined) ?? [];
-  const medicalHistory = (dog.extra_fields.medical_history as MedicalRecord[] | undefined) ?? [];
-  const files = (dog.extra_fields.files as FileItem[] | undefined) ?? [];
-
-  return {
-    id: dog.id,
-    orgId: dog.org_id,
-    name: dog.name,
-    stage: dog.stage,
-    medicalNotes: dog.medical_notes ?? '',
-    behavioralNotes: dog.behavioral_notes ?? '',
-    location: dog.location,
-    description: dog.description,
-    internalId: dog.extra_fields.internal_id ?? '',
-    photoUrl: dog.extra_fields.photo_url,
-    responsiblePerson: dog.extra_fields.responsible_person ?? '',
-    fosterName: dog.extra_fields.foster_name ?? null,
-    budgetSpent: dog.extra_fields.budget_spent ?? 0,
-    budgetLimit: dog.budget_limit ?? null,
-    lastUpdate: dog.extra_fields.last_update ?? '',
-    attributes: {
-      age: attributes.age,
-      sex: attributes.sex,
-      size: attributes.size,
-      breed: attributes.breed,
-      intakeDate: attributes.intake_date,
-    },
-    alerts: dog.extra_fields.alerts ?? [],
-    notes,
-    medicalHistory,
-    files,
-  };
-};
 
 export default function DogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -501,7 +420,7 @@ export default function DogDetailScreen() {
               Select a foster contact and save.
             </Typography>
 
-            <ScrollView className="max-h-[240px]" contentContainerStyle={{ gap: 8 }}>
+            <ScrollView className="max-h-[240px]" contentContainerStyle={LAYOUT_STYLES.compactGapped}>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setFosterContactIdDraft('')}
@@ -658,7 +577,7 @@ const TopBar = ({
           accessibilityRole="button"
           onPress={onClose}
           className="w-9 h-9 items-center justify-center border border-border rounded-md bg-white">
-          <X size={18} color="#4B5563" />
+          <X size={18} color={UI_COLORS.muted} />
         </Pressable>
       </View>
     </View>
@@ -718,11 +637,11 @@ const DogHeader = ({
           Internal ID: {dog.internalId || '-'}
         </Typography>
         <Pressable className="flex-row items-center gap-2 bg-white border border-border py-1.5 px-3 rounded-full self-start">
-          <HomeIcon size={14} color="#111827" />
+          <HomeIcon size={14} color={UI_COLORS.foreground} />
           <Typography variant="body" className="text-[13px] font-semibold text-gray-900">
             {dog.stage}
           </Typography>
-          <ChevronDown size={12} color="#6B7280" />
+          <ChevronDown size={12} color={UI_COLORS.muted} />
         </Pressable>
       </View>
     </View>
@@ -746,7 +665,7 @@ const DogHeader = ({
       />
       <ActionButton label="Upload document" onPress={onUploadDocument} />
       <Pressable className="w-10 h-10 items-center justify-center border border-border rounded-md bg-white">
-        <MoreHorizontal size={20} color="#6B7280" />
+        <MoreHorizontal size={20} color={UI_COLORS.muted} />
       </Pressable>
     </View>
     {photoStatus ? <Typography variant="caption" color="muted" className="text-xs">{photoStatus}</Typography> : null}
@@ -789,7 +708,7 @@ const KeyMetric = ({
 }) => (
   <View className="flex-1 min-w-[180px] flex-row items-center gap-3 bg-white border border-border rounded-lg p-3 shadow-sm">
     <View className="w-9 h-9 items-center justify-center bg-surface rounded-md border border-gray-100">
-      <Icon size={16} color="#9CA3AF" />
+      <Icon size={16} color={UI_COLORS.mutedForeground} />
     </View>
     <View className="flex-1">
       <Typography variant="label" className="text-[11px] font-bold text-gray-400 tracking-[0.08em] uppercase">
@@ -1067,9 +986,9 @@ const OverviewTab = ({
                       : 'bg-amber-50 border-amber-100'
                   }`}>
                   {alert.type === 'error' ? (
-                    <AlertCircle size={16} color="#b91c1c" />
+                    <AlertCircle size={16} color={UI_COLORS.destructive} />
                   ) : (
-                    <AlertTriangle size={16} color="#b45309" />
+                    <AlertTriangle size={16} color={UI_COLORS.warning} />
                   )}
                   <Typography
                     variant="body"
@@ -1313,7 +1232,7 @@ const CheckRow = ({ label, checked }: { label: string; checked: boolean }) => (
       className={`w-5 h-5 border rounded items-center justify-center ${
         checked ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-300'
       }`}>
-      {checked ? <Check size={12} color="#fff" /> : null}
+      {checked ? <Check size={12} color={UI_COLORS.white} /> : null}
     </View>
     <Typography variant="body" className={`text-sm ${checked ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
       {label}

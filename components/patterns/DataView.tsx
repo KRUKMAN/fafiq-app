@@ -40,7 +40,7 @@ export function DataView<T>({
     const message = (error as any)?.message ?? 'Please try again shortly.';
     return (
       <View className="flex-1 items-center justify-center bg-surface px-6">
-        <Typography variant="body" className="text-base font-semibold text-gray-900">
+        <Typography variant="body" className="text-base font-semibold">
           Failed to load data
         </Typography>
         <Typography variant="body" color="muted" className="mt-2 text-center">

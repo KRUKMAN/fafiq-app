@@ -21,20 +21,20 @@ export type TypographyProps = TextProps & {
 };
 
 const VARIANT_CLASS: Record<TypographyVariant, string> = {
-  h1: 'text-3xl font-bold text-gray-900 tracking-tight',
-  h2: 'text-2xl font-bold text-gray-900 tracking-tight',
-  h3: 'text-xl font-semibold text-gray-900',
-  body: 'text-sm text-gray-900',
-  bodySmall: 'text-xs text-gray-900',
-  caption: 'text-xs text-gray-500',
-  label: 'text-xs font-semibold text-gray-700 uppercase tracking-wide',
+  h1: 'text-3xl font-bold text-foreground tracking-tight',
+  h2: 'text-2xl font-bold text-foreground tracking-tight',
+  h3: 'text-xl font-semibold text-foreground',
+  body: 'text-sm text-foreground',
+  bodySmall: 'text-xs text-foreground',
+  caption: 'text-xs text-muted',
+  label: 'text-xs font-semibold text-muted uppercase tracking-wide',
 };
 
 const COLOR_CLASS: Record<TypographyColor, string> = {
   default: '',
-  muted: 'text-gray-600',
-  error: 'text-red-600',
-  success: 'text-green-600',
+  muted: 'text-muted',
+  error: 'text-destructive',
+  success: 'text-success',
 };
 
 export function Typography({

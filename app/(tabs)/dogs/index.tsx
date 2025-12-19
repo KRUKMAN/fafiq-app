@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Href, useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,13 +17,17 @@ import { Pagination } from '@/components/patterns/Pagination';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusMessage } from '@/components/ui/StatusMessage';
+import { STRINGS, formatDogDeleteMessage } from '@/constants/strings';
+import { UI_COLORS } from '@/constants/uiColors';
 import { useDogs } from '@/hooks/useDogs';
 import { softDeleteDog } from '@/lib/data/dogs';
+import { getPagination } from '@/lib/pagination';
 import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUIStore } from '@/stores/uiStore';
 
-const STAGE_FILTERS = ['All', 'In Foster', 'Medical', 'Medical Hold', 'Transport', 'Available'];
+const STAGE_FILTERS = STRINGS.dogs.stageFilters;
 
 export default function DogsListScreen() {
   const { dogList, setDogList } = useUIStore();
@@ -34,6 +38,7 @@ export default function DogsListScreen() {
   const [itemsPerPage, setItemsPerPage] = useState(dogList.pageSize || 10);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [dogToDelete, setDogToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const session = useSessionStore();
   const { activeOrgId, memberships, ready, switchOrg } = session;
 
@@ -45,9 +50,12 @@ export default function DogsListScreen() {
       queryClient.invalidateQueries({ queryKey: ['dogs', activeOrgId || ''] });
       setDeleteModalVisible(false);
       setDogToDelete(null);
+      setActionError(null);
     },
     onError: (error: any) => {
-      console.error('Failed to delete dog:', error?.message);
+      setDeleteModalVisible(false);
+      setDogToDelete(null);
+      setActionError(error?.message ?? 'Failed to delete dog.');
     },
   });
 
@@ -73,10 +81,14 @@ export default function DogsListScreen() {
   const pageSize = dogList.pageSize || itemsPerPage;
   const page = dogList.page || currentPage;
   const totalItems = list.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const pageSafe = Math.min(page, totalPages);
-  const start = (pageSafe - 1) * pageSize;
-  const paginatedList = list.slice(start, start + pageSize);
+  const pagination = useMemo(
+    () => getPagination({ page, pageSize, totalItems }),
+    [page, pageSize, totalItems]
+  );
+  const paginatedList = useMemo(
+    () => list.slice(pagination.start, pagination.start + pageSize),
+    [list, pagination.start, pageSize]
+  );
 
   const handlePressRow = useCallback(
     (id: string) => {
@@ -115,18 +127,18 @@ export default function DogsListScreen() {
 
   return (
     <ScreenGuard session={session}>
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-background">
         <PageHeader
-          title="Dogs"
-          subtitle="Manage intake, medical status, transport, and adoption flow."
+          title={STRINGS.dogs.title}
+          subtitle={STRINGS.dogs.subtitle}
           actions={[
             <Button
               key="add-dog"
               variant="primary"
               size="md"
-              leftIcon={<Plus size={16} color="#fff" />}
+              leftIcon={<Plus size={16} color={UI_COLORS.white} />}
               onPress={() => router.push('/dogs/create' as Href)}>
-              Add Dog
+              {STRINGS.dogs.addDog}
             </Button>,
             <OrgSelector
               key="org"
@@ -153,34 +165,38 @@ export default function DogsListScreen() {
           }))}
         />
 
+        <View className="px-6 pt-3">
+          <StatusMessage variant="error" message={actionError} />
+        </View>
+
         <View className="flex-1 relative">
           <DataView
             data={paginatedList}
             isLoading={isLoading}
             error={error}
             isEmpty={() => list.length === 0}
-            loadingLabel="Loading dogs..."
+            loadingLabel={STRINGS.dogs.loadingDogs}
             emptyComponent={
               <View className="flex-1 items-center justify-center bg-surface">
-                <EmptyState title="No dogs match the current filters." />
+                <EmptyState title={STRINGS.dogs.emptyTitle} />
                 <Button
                   variant="outline"
                   className="mt-3"
                   onPress={() => {
-                    setDogList({
-                      search: '',
-                      stage: 'All',
-                      location: '',
-                      responsible: '',
-                      hasAlerts: false,
-                      updatedAfter: '',
-                      updatedBefore: '',
-                      page: 1,
-                    });
-                    setSearchInput('');
-                    setCurrentPage(1);
-                  }}>
-                  Reset filters
+                      setDogList({
+                        search: '',
+                        stage: STRINGS.dogs.stageFilters[0],
+                        location: '',
+                        responsible: '',
+                        hasAlerts: false,
+                        updatedAfter: '',
+                        updatedBefore: '',
+                        page: 1,
+                      });
+                      setSearchInput('');
+                      setCurrentPage(1);
+                    }}>
+                  {STRINGS.dogs.resetFilters}
                 </Button>
               </View>
             }>
@@ -204,7 +220,7 @@ export default function DogsListScreen() {
         </View>
 
         <Pagination
-          page={pageSafe}
+          page={pagination.pageSafe}
           pageSize={pageSize}
           totalItems={totalItems}
           onChangePage={(next) => {
@@ -247,10 +263,9 @@ export default function DogsListScreen() {
 
         <ConfirmationModal
           visible={deleteModalVisible}
-          title="Delete Dog"
-          message={`Are you sure you want to delete "${dogToDelete?.name || 'this dog'}"? This action can be undone by an administrator.`}
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
+          title={STRINGS.dogs.deleteTitle}
+          message={formatDogDeleteMessage(dogToDelete?.name)}
+          confirmLabel={STRINGS.dogs.deleteConfirmLabel}
           destructive
           loading={deleteMutation.isPending}
           onConfirm={confirmDeleteDog}

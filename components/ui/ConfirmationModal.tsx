@@ -2,6 +2,9 @@ import React from 'react';
 import { Modal, View } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 
+import { UI_COLORS } from '@/constants/uiColors';
+import { STRINGS } from '@/constants/strings';
+
 import { Button } from './Button';
 import { Typography } from './Typography';
 
@@ -21,8 +24,8 @@ export const ConfirmationModal = ({
   visible,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = STRINGS.common.confirm,
+  cancelLabel = STRINGS.common.cancel,
   destructive = false,
   loading = false,
   onConfirm,
@@ -31,16 +34,16 @@ export const ConfirmationModal = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View className="flex-1 items-center justify-center bg-black/50 px-4">
-        <View className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden">
+        <View className="w-full max-w-md bg-card rounded-xl shadow-2xl overflow-hidden">
           <View className="p-6">
             <View className="flex-row items-start gap-4">
               {destructive && (
-                <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center flex-shrink-0">
-                  <AlertTriangle size={20} color="#DC2626" />
+                <View className="w-10 h-10 rounded-full bg-surface items-center justify-center flex-shrink-0">
+                  <AlertTriangle size={20} color={UI_COLORS.destructive} />
                 </View>
               )}
               <View className="flex-1">
-                <Typography variant="h3" className="text-lg font-semibold text-gray-900">
+                <Typography variant="h3" className="text-lg font-semibold">
                   {title}
                 </Typography>
                 <Typography variant="body" color="muted" className="mt-2 leading-relaxed">
@@ -59,7 +62,7 @@ export const ConfirmationModal = ({
               onPress={onConfirm}
               disabled={loading}
               loading={loading}>
-              {loading ? 'Please wait...' : confirmLabel}
+              {loading ? STRINGS.common.pleaseWait : confirmLabel}
             </Button>
           </View>
         </View>
