@@ -24,13 +24,15 @@ Reference: `docs/implementation_plan.md`
 - Hardened guards/empty states on People/Finance; People and Transports now reuse the Dogs DataTable layout with pagination/search, toggles (members vs fosters, transports vs transporters), and drawer-style detail views consistent with Dogs.
 - Session bootstrap is now Supabase-first with explicit demo/mocks; dashboard tab now shares the same org guard empty states.
 - Transports tab supports create/edit via Supabase mutations with a side-drawer form (status, schedule, assignments); transport/transporter drawers use solid side panels. People drawer styling matches the Dogs/Transports pattern.
+- Added password reset flow on sign-in and verified Supabase-first session boot persists org selection; added dog detail document upload using Supabase Storage helpers (documents bucket).
 
 
 ## Watch-outs / Next Steps
-- Compare regenerated `database.types.ts` with Zod and resolve any drift after recent migrations.
-- Maintain RLS/atomic logging expectations when wiring remaining mutations (no client-side audit writes).
+- Compare regenerated `database.types.ts` with Zod and resolve any drift after recent migrations. (Done; keep checking after future migrations.)
+- Audit triggers are already in place; ensure any new mutations rely on them (no client-side audit writes).
 - Session boot is Supabase-first; keep an eye on membership fetch failures and org selection persistence when switching orgs or reloading.
 
 ## Next Steps (short-term)
 - Invites remain settings-only; add other invite surfaces only if the product needs them (reuse existing RPCs).
+- Finish storage UI (dog photos/documents) now that helpers and buckets exist; transport detail + dog detail now exercise document uploads.
 - Keep dependency audit list in sync; likely-unused today: `expo-haptics`, `expo-image`, `expo-font`, `expo-symbols`, `expo-system-ui`, `expo-web-browser`, `expo-constants`, `expo-linking`, `@tanstack/react-query-devtools`.

@@ -31,6 +31,7 @@ type SessionState = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (fullName: string, email: string, password: string) => Promise<void>;
   signInDemo: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => void;
   switchOrg: (orgId: string) => void;
 };
@@ -151,6 +152,21 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         activeOrgId: null,
       };
     }),
+  resetPassword: async (email: string) => {
+    if (!supabase) {
+      throw new Error('Supabase env vars missing. Configure Supabase to reset passwords.');
+    }
+    const trimmed = email.trim();
+    if (!trimmed) {
+      throw new Error('Email is required to reset password.');
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: undefined,
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
   signInDemo: async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -221,8 +237,20 @@ const bootstrapSupabaseSession = async (
   // Attempt to accept any pending invites for the signed-in user before loading memberships.
   try {
     await acceptInvitesForCurrentUser();
-  } catch (err) {
-    console.warn('Skipping invite acceptance (RPC missing?)', err);
+  } catch (err: any) {
+    const msg = err?.message?.toString?.() ?? '';
+    const lower = msg.toLowerCase();
+    const maybeMissingRpc =
+      lower.includes('does not exist') && lower.includes('accept_org_invites_for_current_user');
+    const maybeRls = lower.includes('rls') || err?.code === '42501';
+    console.warn(
+      'Skipping invite acceptance',
+      maybeMissingRpc
+        ? 'RPC missing - run supabase/migrations/20251220_invites.sql and 20251224_accept_invites_fix2.sql'
+        : maybeRls
+          ? 'Invite acceptance blocked by RLS - ensure invite policies are applied'
+          : err
+    );
   }
 
   const [{ data: membershipsData, error: membershipsError }, { data: profileData, error: profileError }] =

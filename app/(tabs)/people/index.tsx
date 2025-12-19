@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable } from '@/components/table/DataTable';
 import { TableToolbar } from '@/components/table/TableToolbar';
 import { useOrgMemberships } from '@/hooks/useOrgMemberships';
-import { OrgSelector } from './OrgSelector';
+import OrgSelector from './OrgSelector';
 import { useSessionStore } from '@/stores/sessionStore';
 
 type MemberRow = {
@@ -309,7 +309,7 @@ const Cell = ({
 );
 
 const Drawer = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
-  <View className="absolute inset-0 flex-row z-50" pointerEvents="box-none">
+  <View className="absolute inset-0 flex-row z-50" style={{ pointerEvents: 'box-none' }}>
     <Pressable accessibilityRole="button" className="flex-1" onPress={onClose} />
     <View className="ml-auto h-full w-full max-w-5xl bg-white border-l border-border shadow-2xl">{children}</View>
   </View>
@@ -324,20 +324,62 @@ const MemberDetailDrawer = ({
   members: MemberRow[];
   onClose: () => void;
 }) => {
-  if (!memberId) return null;
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Contact' | 'Activity'>('Overview');
   const member = members.find((m) => m.id === memberId);
-  if (!member) return null;
+  if (!memberId || !member) return null;
   return (
     <Drawer onClose={onClose}>
-      <ScrollView className="flex-1 bg-white" contentContainerStyle={{ padding: 16, gap: 12 }}>
-        <View className="bg-white border border-border rounded-lg p-4 shadow-sm">
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-lg font-semibold text-gray-900">{member.name}</Text>
-            <Text className="text-xs px-2 py-1 rounded-full bg-gray-900 text-white">{member.status}</Text>
+      <ScrollView className="flex-1 bg-surface" contentContainerStyle={{ paddingBottom: 24 }}>
+        <View className="bg-white border-b border-border px-4 md:px-8 py-4">
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-xs font-semibold text-gray-500 tracking-[0.06em] uppercase">Member</Text>
+              <Text className="text-xl font-bold text-gray-900">{member.name}</Text>
+              <Text className="text-sm text-gray-500 mt-1">{member.email}</Text>
+            </View>
+            <View className="flex-row items-center gap-3">
+              <Text className="text-xs px-2 py-1 rounded-full bg-gray-900 text-white">{member.status}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onClose}
+                className="w-9 h-9 items-center justify-center border border-border rounded-md bg-white">
+                <Text className="text-lg text-gray-600">x</Text>
+              </Pressable>
+            </View>
           </View>
-          <DetailRow label="Email" value={member.email} />
-          <DetailRow label="User ID" value={member.userId} />
-          <DetailRow label="Roles" value={member.roles} />
+        </View>
+
+        <View className="w-full max-w-5xl self-center px-4 md:px-8 py-6">
+          <DrawerTabs
+            tabs={['Overview', 'Contact', 'Activity']}
+            active={activeTab}
+            onChange={setActiveTab}
+            className="mb-6"
+          />
+
+          {activeTab === 'Overview' ? (
+            <View className="flex-row flex-wrap gap-4 mb-6">
+              <MemberCard label="User ID" value={member.userId} />
+              <MemberCard label="Roles" value={member.roles || 'No roles'} />
+              <MemberCard label="Status" value={member.status} />
+            </View>
+          ) : null}
+
+          {activeTab === 'Contact' ? (
+            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
+              <Text className="text-sm font-semibold text-gray-900">Contact</Text>
+              <DetailRow label="Name" value={member.name} />
+              <DetailRow label="Email" value={member.email} />
+              <DetailRow label="User ID" value={member.userId} />
+            </View>
+          ) : null}
+
+          {activeTab === 'Activity' ? (
+            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
+              <Text className="text-sm font-semibold text-gray-900">Activity</Text>
+              <Text className="text-sm text-gray-600">No activity yet.</Text>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </Drawer>
@@ -352,3 +394,41 @@ const DetailRow = ({ label, value }: { label: string; value: string }) => (
     </Text>
   </View>
 );
+
+const MemberCard = ({ label, value }: { label: string; value: string }) => (
+  <View className="flex-1 min-w-[180px] bg-white border border-border rounded-lg p-3 shadow-sm">
+    <Text className="text-[11px] font-bold text-gray-400 tracking-[0.08em] uppercase">{label}</Text>
+    <Text className="text-[13px] font-semibold text-gray-900 mt-1">{value}</Text>
+  </View>
+);
+
+const DrawerTabs = ({
+  tabs,
+  active,
+  onChange,
+  className,
+}: {
+  tabs: readonly string[];
+  active: string;
+  onChange: (tab: string) => void;
+  className?: string;
+}) => (
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    className={className}
+    contentContainerStyle={{ gap: 16, paddingBottom: 12 }}>
+    {tabs.map((tab) => (
+      <Pressable key={tab} onPress={() => onChange(tab)}>
+        <Text
+          className={`pb-3 text-sm font-medium border-b-2 ${
+            active === tab ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500'
+          }`}>
+          {tab}
+        </Text>
+      </Pressable>
+    ))}
+  </ScrollView>
+);
+
+

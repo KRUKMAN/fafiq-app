@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant User
+  participant App
+  participant Session as SessionStore
+  participant Storage as Supabase Storage
+
+  User->>App: open dog detail (Documents tab)
+  App->>Session: bootstrap (auth + memberships, org selection)
+  Note over Session: Uses last_org_id + active membership
+  User->>App: press "Upload sample document"
+  App->>Storage: uploadDocument(org_id, "dog", dog_id, file)
+  Storage-->>App: path/key stored in bucket
+  App-->>User: show upload status + add file to list
+

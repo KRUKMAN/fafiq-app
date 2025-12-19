@@ -8,7 +8,7 @@ type OrgSelectorProps = {
   ready: boolean;
 };
 
-export const OrgSelector = ({ activeOrgId, memberships, switchOrg, ready }: OrgSelectorProps) => {
+export default function OrgSelector({ activeOrgId, memberships, switchOrg, ready }: OrgSelectorProps) {
   const [open, setOpen] = useState(false);
 
   if (!ready) return null;
@@ -30,7 +30,7 @@ export const OrgSelector = ({ activeOrgId, memberships, switchOrg, ready }: OrgS
         onPress={() => hasChoices && setOpen((v) => !v)}
         className="flex-row items-center gap-2 px-3 py-2 rounded-full border border-border bg-white shadow-sm">
         <Text className="text-xs font-semibold text-gray-900">{active.org_name}</Text>
-        {hasChoices ? <Text className="text-xs text-gray-500">↓</Text> : null}
+        {hasChoices ? <Text className="text-xs text-gray-500">▼</Text> : null}
       </Pressable>
       {open ? (
         <View className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-white shadow-lg z-10">
@@ -55,4 +55,4 @@ export const OrgSelector = ({ activeOrgId, memberships, switchOrg, ready }: OrgS
       ) : null}
     </View>
   );
-};
+}

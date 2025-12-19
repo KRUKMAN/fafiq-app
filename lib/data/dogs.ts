@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Dog, dogSchema } from '@/schemas/dog';
 import { getMockDogById, getMockDogs } from '@/lib/mocks/dogs';
+import { formatSupabaseError } from '@/lib/data/errors';
 
 type DogFilters = {
   stage?: string;
@@ -68,7 +69,7 @@ export const fetchDogById = async (orgId: string, dogId: string): Promise<Dog> =
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to fetch dog: ${error.message}`);
+    throw new Error(formatSupabaseError(error, 'Failed to fetch dog'));
   }
   if (!data) {
     throw new Error('Dog not found');
@@ -101,7 +102,7 @@ export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Do
   const { data, error } = await query.order('updated_at', { ascending: false, nullsFirst: false });
 
   if (error) {
-    throw new Error(`Failed to fetch dogs: ${error.message}`);
+    throw new Error(formatSupabaseError(error, 'Failed to fetch dogs'));
   }
 
   const parsed = (data ?? []).map((dog) =>

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { transportSchema, Transport } from '@/schemas/transport';
 import { getMockTransports } from '@/lib/mocks/transports';
+import { formatSupabaseError } from '@/lib/data/errors';
 
 type NewTransportInput = {
   org_id: string;
@@ -28,7 +29,7 @@ export const fetchTransports = async (orgId: string): Promise<Transport[]> => {
     .order('updated_at', { ascending: false, nullsFirst: false });
 
   if (error) {
-    throw new Error(`Failed to fetch transports: ${error.message}`);
+    throw new Error(formatSupabaseError(error, 'Failed to fetch transports'));
   }
 
   return (data ?? []).map((t) =>
@@ -65,7 +66,7 @@ export const createTransport = async (input: NewTransportInput): Promise<Transpo
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to create transport: ${error.message}`);
+    throw new Error(formatSupabaseError(error, 'Failed to create transport'));
   }
   if (!data) {
     throw new Error('Transport creation returned no data.');
@@ -114,7 +115,7 @@ export const updateTransport = async (
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to update transport: ${error.message}`);
+    throw new Error(formatSupabaseError(error, 'Failed to update transport'));
   }
   if (!data) {
     throw new Error('Transport update returned no data.');

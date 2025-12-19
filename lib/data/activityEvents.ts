@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { activityEventSchema, ActivityEvent } from '@/schemas/activityEvent';
 import { getMockActivityEventsByEntity } from '@/lib/mocks/activityEvents';
+import { formatSupabaseError } from '@/lib/data/errors';
 
 export const fetchActivityEvents = async (
   orgId: string,
@@ -21,7 +22,7 @@ export const fetchActivityEvents = async (
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch activity events: ${error.message}`);
+    throw new Error(formatSupabaseError(error, 'Failed to fetch activity events'));
   }
 
   return (data ?? []).map((event) =>

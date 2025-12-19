@@ -75,3 +75,11 @@ Until we ship an invite UI, use these SQL snippets in the Supabase SQL Editor:
   ```sql
   select * from public.admin_list_org_memberships('<org_id>');
   ```
+
+## Seed mock data into Supabase
+
+Use this to load the same sample records the mock layer uses (orgs, memberships, dogs, transports, activity events).
+
+1) Open `supabase/seed_mocks.sql` and replace `REPLACE_WITH_YOUR_AUTH_USER_ID` with your actual `auth.users.id` (run `select id,email from auth.users;` in the SQL Editor if needed). The membership FK will fail if the user id does not exist.
+2) Paste the entire file into the Supabase SQL Editor and run it. It upserts safely, so re-running is fine.
+3) Sign in with that same user in the app and switch to the “Stray Love Found NGO” org; the seeded dogs live there. RLS will hide them if you are not a member of that org.

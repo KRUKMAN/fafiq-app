@@ -7,13 +7,14 @@ import { useSessionStore } from '@/stores/sessionStore';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { ready, isAuthenticated, bootstrap, signIn, signUp, signInDemo } = useSessionStore();
+  const { ready, isAuthenticated, bootstrap, signIn, signUp, signInDemo, resetPassword } = useSessionStore();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) {
@@ -34,6 +35,7 @@ export default function SignInScreen() {
     }
     setSubmitting(true);
     setError(null);
+    setInfo(null);
     try {
       if (mode === 'signin') {
         await signIn(email.trim(), password);
@@ -93,11 +95,12 @@ export default function SignInScreen() {
                 onChangeText={setPassword}
                 placeholder="••••••••"
                 secureTextEntry
-                className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-              />
-            </View>
+              className="border border-gray-300 rounded-lg px-3 py-2 text-base"
+            />
+          </View>
 
             {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
+            {info ? <Text className="text-sm text-green-700">{info}</Text> : null}
 
             <Pressable
               accessibilityRole="button"
@@ -119,6 +122,27 @@ export default function SignInScreen() {
               <Link href="/" replace className="text-sm text-gray-600">
                 Back to app
               </Link>
+            </View>
+
+            <View className="pt-2">
+              <Pressable
+                accessibilityRole="button"
+                disabled={submitting}
+                onPress={async () => {
+                  setError(null);
+                  setInfo(null);
+                  setSubmitting(true);
+                  try {
+                    await resetPassword(email);
+                    setInfo('If this email exists, a reset link was sent.');
+                  } catch (err: any) {
+                    setError(err?.message ?? 'Unable to send reset email.');
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}>
+                <Text className="text-xs text-gray-700 font-semibold">Forgot password? Send reset email</Text>
+              </Pressable>
             </View>
 
             <View className="pt-4 border-t border-gray-200 space-y-3">

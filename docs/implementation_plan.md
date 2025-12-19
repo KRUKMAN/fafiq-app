@@ -163,8 +163,8 @@ planned | in_progress | done | mocked | blocked
 |---|---|
 | Align Zod dog schema to schema.md (stage/audit fields) | done |
 | Generate database.types.ts | done |
-| Compare DB vs Zod schemas | planned |
-| Resolve mismatches explicitly | planned |
+| Compare DB vs Zod schemas | done |
+| Resolve mismatches explicitly | done |
 
 ---
 
@@ -179,7 +179,7 @@ planned | in_progress | done | mocked | blocked
 | Task | Status |
 |---|---|
 | Supabase auth integration | done |
-| Replace sessionStore mocks | in_progress |
+| Replace sessionStore mocks | done |
 | Persist last_org_id | done |
 | Org-aware query cache invalidation on org switch | done |
 
@@ -204,9 +204,9 @@ Rule:
 |---|---|
 | Supabase email/password login screen | done |
 | Create account (sign-up) flow | done |
-| Session boot: Supabase session -> memberships -> org guard | in_progress |
+| Session boot: Supabase session -> memberships -> org guard | done |
 | Sign-out + cache invalidation | done |
-| Password reset hook (MVP) | planned |
+| Password reset hook (MVP) | done |
 
 Flow notes:
 - Use Supabase Auth (`signInWithPassword`, `signUp`) with inline error display; no UI rewrite to tabs.
@@ -235,9 +235,9 @@ Notes:
 
 | Entity | Mechanism | Status |
 |---|---|---|
-| Dogs | planned |
-| Transports | Trigger / RPC | planned |
-| Photos | Trigger | planned |
+| Dogs | Trigger (`audit_activity`) | done |
+| Transports | Trigger (`audit_activity`) | done |
+| Photos | Trigger (`audit_activity`) | done |
 
 Client-side audit inserts are forbidden.
 
@@ -266,7 +266,7 @@ planned | in_progress | done | mocked | blocked
 | Task | Status |
 |---|---|
 | dog-photos bucket | done (bucket + policies + path helpers) |
-| Upload integration | in_progress (helpers only; UI wiring pending) |
+| Upload integration | in_progress (helpers + transport detail sample upload + dog detail docs upload; dog photo UI pending) |
 | Optimistic updates | planned |
 
 ---

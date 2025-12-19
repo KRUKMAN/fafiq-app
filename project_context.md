@@ -25,7 +25,9 @@ Every meaningful mutation must:
 - NativeWind must be configured for web + native (`metro.config.js`).
 
 ## Current status (handover)
-- Frontend is mock-first with stage-based dog schemas; transport list/detail shells exist; dog detail has mock Financial/People/Chat tabs.
-- Session store boots from mocks but can bootstrap from Supabase when env + session are present; org switch invalidates caches; last_org_id persisted.
-- `database.types.ts` generated from `docs/schema.md`; no migrations/RLS/audit triggers applied yet.
-- Outstanding: apply `schema.md` + `rls.md`, add audit triggers/RPC, swap mocks for Supabase in hooks without UI rewrites, harden org guard/empty states.
+- Supabase schema/RLS/audit triggers applied (per `docs/schema.md`/`docs/rls.md`); `database.types.ts` generated from DB.
+- Frontend is Supabase-first with mock/demo fallback; session store boots from Supabase (auth + memberships), persists `last_org_id`, supports org switch; password reset hook/UI exists on sign-in.
+- Dogs/Transports/Activity hooks are Supabase-backed with Zod parsing; mock data remains for demo mode.
+- Storage buckets/policies exist; helpers for dog photos/documents; uploads are exercised in transport detail and dog detail (documents).
+- Invites/membership admin wired via RPC/view; Settings shows members + emails for admins; org selector present on list views.
+- Outstanding: wire dog photo UI, keep Zod/DB types in sync after migrations, expand audit-driven mutations as features land.

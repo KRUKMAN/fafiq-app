@@ -20,6 +20,7 @@ import { TABS, useUIStore } from '@/stores/uiStore';
 import { useDog } from '@/hooks/useDog';
 import { useDogTimeline } from '@/hooks/useDogTimeline';
 import { useSessionStore } from '@/stores/sessionStore';
+import { uploadDocument } from '@/lib/data/storage';
 
 type DogProfileView = {
   id: string;
@@ -136,12 +137,14 @@ export default function DogDetailScreen() {
   const { data, isLoading } = useDog(activeOrgId ?? undefined, dogId ?? undefined);
   const dog = data ? toDogProfileView(data) : null;
   const [notes, setNotes] = useState<Note[]>([]);
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
 
   useEffect(() => {
     if (dog) {
       setNotes(dog.notes ?? []);
+      setFiles(dog.files ?? []);
     }
   }, [dog]);
 
@@ -217,7 +220,7 @@ export default function DogDetailScreen() {
 
           <TabsBar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {renderTab(activeTab, dog, activeOrgId, notes, () => setNoteModalOpen(true))}
+          {renderTab(activeTab, dog, activeOrgId, notes, files, setFiles, () => setNoteModalOpen(true))}
         </View>
       </ScrollView>
 
@@ -239,6 +242,8 @@ const renderTab = (
   dog: DogProfileView,
   activeOrgId: string | null,
   notes: Note[],
+  files: FileItem[],
+  setFiles: (files: FileItem[] | ((prev: FileItem[]) => FileItem[])) => void,
   onAddNote: () => void
 ) => {
   switch (tab) {
@@ -249,7 +254,7 @@ const renderTab = (
     case 'Medical':
       return <MedicalTab history={dog.medicalHistory} />;
     case 'Documents':
-      return <FilesTab files={dog.files} />;
+      return <FilesTab orgId={activeOrgId} dogId={dog.id} files={files} setFiles={setFiles} />;
     case 'Financial':
       return <FinancialTab spent={dog.budgetSpent} limit={dog.budgetLimit} />;
     case 'People & Housing':
@@ -564,28 +569,80 @@ const MedicalTab = ({ history }: { history: MedicalRecord[] }) => {
   );
 };
 
-const FilesTab = ({ files }: { files: FileItem[] }) => {
-  if (!files.length) {
-    return (
-      <View className="items-center justify-center py-6">
-        <Text className="text-sm text-gray-600">No files uploaded yet.</Text>
-      </View>
-    );
-  }
+const FilesTab = ({
+  orgId,
+  dogId,
+  files,
+  setFiles,
+}: {
+  orgId: string | null;
+  dogId: string;
+  files: FileItem[];
+  setFiles: (files: FileItem[] | ((prev: FileItem[]) => FileItem[])) => void;
+}) => {
+  const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   return (
     <View className="gap-3">
-      {files.map((file) => (
-        <View key={file.id} className="flex-row items-center justify-between bg-white border border-border rounded-lg p-3 shadow-sm">
-          <View>
-            <Text className="text-sm font-semibold text-gray-900">{file.name}</Text>
-            <Text className="text-xs text-gray-500">
-              {file.type} - Uploaded {formatTimestamp(file.uploadedAt)}
-            </Text>
-          </View>
-          <Text className="text-xs text-gray-500">{file.uploadedBy ?? 'Unknown uploader'}</Text>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-sm font-semibold text-gray-900">Files</Text>
+        <Pressable
+          accessibilityRole="button"
+          disabled={uploading || !orgId}
+          onPress={async () => {
+            if (!orgId) return;
+            setUploading(true);
+            setStatus(null);
+            try {
+              const blob = new Blob(['Dog document'], { type: 'text/plain' });
+              const filename = `dog-${Date.now()}.txt`;
+              const { path } = await uploadDocument(orgId, 'dog', dogId, {
+                file: blob,
+                filename,
+                contentType: 'text/plain',
+              });
+              const uploaded: FileItem = {
+                id: `uploaded-${Date.now()}`,
+                name: filename,
+                type: 'text/plain',
+                uploadedAt: new Date().toISOString(),
+                uploadedBy: 'You',
+              };
+              setFiles((prev) => [...prev, uploaded]);
+              setStatus(`Uploaded to ${path}`);
+            } catch (e: any) {
+              setStatus(e?.message ?? 'Upload failed');
+            } finally {
+              setUploading(false);
+            }
+          }}
+          className={`px-3 py-2 rounded-md border ${
+            uploading || !orgId ? 'bg-gray-200 border-gray-200' : 'bg-white border-border'
+          }`}>
+          <Text className="text-xs font-semibold text-gray-900">
+            {uploading ? 'Uploading...' : 'Upload sample document'}
+          </Text>
+        </Pressable>
+      </View>
+      {status ? <Text className="text-xs text-gray-600">{status}</Text> : null}
+      {files.length === 0 ? (
+        <View className="items-center justify-center py-6">
+          <Text className="text-sm text-gray-600">No files uploaded yet.</Text>
         </View>
-      ))}
+      ) : (
+        files.map((file) => (
+          <View key={file.id} className="flex-row items-center justify-between bg-white border border-border rounded-lg p-3 shadow-sm">
+            <View>
+              <Text className="text-sm font-semibold text-gray-900">{file.name}</Text>
+              <Text className="text-xs text-gray-500">
+                {file.type} - Uploaded {formatTimestamp(file.uploadedAt)}
+              </Text>
+            </View>
+            <Text className="text-xs text-gray-500">{file.uploadedBy ?? 'Unknown uploader'}</Text>
+          </View>
+        ))
+      )}
     </View>
   );
 };
