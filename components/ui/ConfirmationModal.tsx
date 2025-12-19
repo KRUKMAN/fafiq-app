@@ -1,6 +1,9 @@
 import React from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, View } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
+
+import { Button } from './Button';
+import { Typography } from './Typography';
 
 export type ConfirmationModalProps = {
   visible: boolean;
@@ -37,36 +40,27 @@ export const ConfirmationModal = ({
                 </View>
               )}
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-gray-900">{title}</Text>
-                <Text className="text-sm text-gray-600 mt-2 leading-relaxed">{message}</Text>
+                <Typography variant="h3" className="text-lg font-semibold text-gray-900">
+                  {title}
+                </Typography>
+                <Typography variant="body" color="muted" className="mt-2 leading-relaxed">
+                  {message}
+                </Typography>
               </View>
             </View>
           </View>
           <View className="flex-row gap-3 px-6 pb-6">
-            <Pressable
-              accessibilityRole="button"
-              onPress={onCancel}
-              disabled={loading}
-              className={`flex-1 px-4 py-3 rounded-lg border border-border bg-white ${loading ? 'opacity-50' : ''}`}>
-              <Text className="text-center text-sm font-semibold text-gray-900">{cancelLabel}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
+            <Button variant="outline" fullWidth onPress={onCancel} disabled={loading}>
+              {cancelLabel}
+            </Button>
+            <Button
+              variant={destructive ? 'destructive' : 'primary'}
+              fullWidth
               onPress={onConfirm}
               disabled={loading}
-              className={`flex-1 px-4 py-3 rounded-lg ${
-                destructive
-                  ? loading
-                    ? 'bg-red-300'
-                    : 'bg-red-600'
-                  : loading
-                    ? 'bg-gray-300'
-                    : 'bg-gray-900'
-              }`}>
-              <Text className="text-center text-sm font-semibold text-white">
-                {loading ? 'Please wait...' : confirmLabel}
-              </Text>
-            </Pressable>
+              loading={loading}>
+              {loading ? 'Please wait...' : confirmLabel}
+            </Button>
           </View>
         </View>
       </View>

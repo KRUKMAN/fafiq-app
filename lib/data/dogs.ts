@@ -116,6 +116,60 @@ export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Do
     })
   );
 
+  // Enrich list rows with a signed dog photo URL from dog_photos (private bucket).
+  // This keeps list components relying on extra_fields.photo_url working without schema changes.
+  try {
+    const dogIds = parsed.map((d) => d.id).filter(Boolean);
+    if (dogIds.length > 0) {
+      const { data: photoRows, error: photosError } = await supabase
+        .from('dog_photos')
+        .select('dog_id, storage_path, is_primary, created_at')
+        .eq('org_id', orgId)
+        .in('dog_id', dogIds)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false, nullsFirst: false });
+
+      if (!photosError && photoRows?.length) {
+        const dogIdToPath = new Map<string, string>();
+        for (const row of photoRows) {
+          if (!dogIdToPath.has(row.dog_id) && row.storage_path) {
+            dogIdToPath.set(row.dog_id, row.storage_path);
+          }
+        }
+
+        const uniquePaths = Array.from(new Set(Array.from(dogIdToPath.values())));
+        // @ts-expect-error: createSignedUrls is available in supabase-js v2
+        const { data: signed, error: signedError } = await supabase.storage
+          .from('dog-photos')
+          .createSignedUrls(uniquePaths, 60 * 30);
+
+        if (!signedError && signed?.length) {
+          const pathToSigned = new Map<string, string>();
+          for (const item of signed) {
+            if (item?.path && item?.signedUrl) pathToSigned.set(item.path, item.signedUrl);
+          }
+
+          const enriched = parsed.map((dog) => {
+            const path = dogIdToPath.get(dog.id);
+            const signedUrl = path ? pathToSigned.get(path) : undefined;
+            if (!signedUrl) return dog;
+            return {
+              ...dog,
+              extra_fields: {
+                ...(dog.extra_fields ?? {}),
+                photo_url: signedUrl,
+              },
+            };
+          });
+
+          return filterDogs(enriched, filters);
+        }
+      }
+    }
+  } catch {
+    // best-effort; fall back to base list
+  }
+
   return filterDogs(parsed, filters);
 };
 
@@ -153,6 +207,73 @@ export const restoreDog = async (orgId: string, dogId: string): Promise<Dog> => 
   }
   if (!data) {
     throw new Error('Dog not found or restoration failed.');
+  }
+
+  return dogSchema.parse({
+    ...data,
+    location: data.location ?? '',
+    description: data.description ?? '',
+    medical_notes: data.medical_notes ?? '',
+    behavioral_notes: data.behavioral_notes ?? '',
+    extra_fields: data.extra_fields ?? {},
+  });
+};
+
+export const updateDog = async (
+  orgId: string,
+  dogId: string,
+  updates: Partial<
+    Pick<
+      Dog,
+      | 'name'
+      | 'stage'
+      | 'location'
+      | 'description'
+      | 'medical_notes'
+      | 'behavioral_notes'
+      | 'extra_fields'
+      | 'foster_contact_id'
+      | 'responsible_contact_id'
+      | 'foster_membership_id'
+      | 'responsible_membership_id'
+    >
+  >
+): Promise<Dog> => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; dog update requires Supabase env.');
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.stage !== undefined) payload.stage = updates.stage;
+  if (updates.location !== undefined) payload.location = updates.location;
+  if (updates.description !== undefined) payload.description = updates.description;
+  if (updates.medical_notes !== undefined) payload.medical_notes = updates.medical_notes;
+  if (updates.behavioral_notes !== undefined) payload.behavioral_notes = updates.behavioral_notes;
+  if (updates.foster_contact_id !== undefined) payload.foster_contact_id = updates.foster_contact_id ?? null;
+  if (updates.responsible_contact_id !== undefined) payload.responsible_contact_id = updates.responsible_contact_id ?? null;
+  if (updates.foster_membership_id !== undefined) payload.foster_membership_id = updates.foster_membership_id ?? null;
+  if (updates.responsible_membership_id !== undefined)
+    payload.responsible_membership_id = updates.responsible_membership_id ?? null;
+  if (updates.extra_fields !== undefined) payload.extra_fields = updates.extra_fields ?? {};
+
+  if (Object.keys(payload).length === 0) {
+    throw new Error('No updates provided for dog.');
+  }
+
+  const { data, error } = await supabase
+    .from('dogs')
+    .update(payload)
+    .eq('id', dogId)
+    .eq('org_id', orgId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to update dog'));
+  }
+  if (!data) {
+    throw new Error('Dog update returned no data.');
   }
 
   return dogSchema.parse({

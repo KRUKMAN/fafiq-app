@@ -12,6 +12,9 @@ This project has an authoritative system context: `Fafik_System_Context.md`. Do 
 7. Activity logging required (atomic): every meaningful mutation inserts into `activity_events` atomically (trigger/RPC/transactional backend), then invalidates relevant queries.
 8. Modular monolith: add new work under `features/<domain>`; avoid dumping into `lib/` or giant screens.
 9. Web-first: ensure React Native for Web compatibility; do not add native-only libraries without a web plan.
+10. UI components: screens must be composed from `components/ui/*` primitives and `components/patterns/*` patterns; do not create inline button/input/card styles in screens.
+11. No local component definitions: if a UI pattern is used in 2+ places, it must move into `components/`.
+12. Token-first styling: use semantic tokens (e.g. `bg-primary`, `bg-destructive`, `bg-surface`) instead of hardcoded `gray-*` or `#hex` in screens.
 
 ## Before coding
 - Read `docs/schema.md`, `docs/rls.md`, `docs/roles.md`, `docs/storage.md`.

@@ -1,6 +1,6 @@
+import { Eye, History, MoreHorizontal, Pencil, RotateCcw, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { MoreHorizontal, Pencil, Trash2, Eye, History, RotateCcw } from 'lucide-react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 export type RowAction = {
   key: string;
@@ -37,14 +37,39 @@ export const RowActionsMenu = ({ actions }: RowActionsMenuProps) => {
     action.onPress();
   };
 
+  // On web, use View with onClick (no role="button") to avoid nested button issue when inside a button-like element
+  // The View will render as a <div>, not a <button>, preventing nested button errors
+  const triggerButton = Platform.OS === 'web' ? (
+    <View
+      tabIndex={0}
+      // @ts-expect-error web-only (react-native-web) event prop
+      onClick={(e: any) => {
+        e?.stopPropagation?.();
+        handlePress(e);
+      }}
+      onKeyDown={(e: any) => {
+        if (e?.key === 'Enter' || e?.key === ' ') {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+          handlePress(e);
+        }
+      }}
+      className="p-2 rounded-md hover:bg-gray-100 cursor-pointer"
+      aria-label="More actions">
+      <MoreHorizontal size={18} color="#6B7280" />
+    </View>
+  ) : (
+    <Pressable
+      accessibilityRole="button"
+      onPress={handlePress}
+      className="p-2 rounded-md hover:bg-gray-100">
+      <MoreHorizontal size={18} color="#6B7280" />
+    </Pressable>
+  );
+
   return (
     <View className="relative">
-      <Pressable
-        accessibilityRole="button"
-        onPress={handlePress}
-        className="p-2 rounded-md hover:bg-gray-100">
-        <MoreHorizontal size={18} color="#6B7280" />
-      </Pressable>
+      {triggerButton}
 
       {open && (
         <>

@@ -15,3 +15,4 @@ React Native + Expo + React Native for Web client for the FAFIQ (RescueOps) dog 
 - Domain schemas live in `schemas/` (see `schemas/dog.ts` for the authoritative dog shape with `org_id` and `extra_fields`).
 - Mock data and data access helpers live in `lib/`.
 - Screens live under `app/`; the dog detail experience is in `app/(tabs)/index.tsx`.
+- UI is built using an **Atomic Design System**: read `docs/ui_system.md` and use `components/ui/*` + `components/patterns/*` instead of inline styling in screens.

@@ -1,15 +1,40 @@
-# Components Library
+# Component Library (Atomic Design)
 
-Use these shared primitives to avoid duplicating UI across the app.
+This folder is the **single source of truth** for reusable UI in fafiq-app.
 
-- `components/ui/EmptyState` — standard empty state (title + optional description).
-- `components/table/DataTable` — horizontal-scrollable table shell with sticky header.
-- `components/layout/PageHeader` — page title + actions wrapper.
-- `components/dogs/StatusBadge` — status pill for dog stages (move to `components/ui/Badge` when generalized).
-- `components/table/TableToolbar` — table toolbar (filters/search) used by list screens.
+Reference:
+- `docs/ui_system.md`
 
-Guidelines:
-- Prefer placing generic UI in `components/ui/`.
-- Keep domain-specific pieces inside their feature folder (e.g., `components/dogs/`).
-- Reuse the shared EmptyState for all list/detail empty views.
+## Folder structure
+
+- `components/ui/*`: primitives (atoms)
+- `components/patterns/*`: composed patterns (molecules/organisms)
+- `components/layout/*`: layout shell components
+- `components/table/*`: table and table-adjacent patterns
+- `components/<domain>/*`: domain-specific UI (dogs, transports, ...)
+
+## Primitives (`components/ui`)
+
+- `cn.ts`: className merging utility (`clsx` + `tailwind-merge`)
+- `Typography`: semantic text
+- `Button`: variants + loading + proper touch target sizing
+- `Input`: labeled input with helper/error support
+- `Spinner`: consistent loading indicator
+- `EmptyState`: standard empty state
+
+## Patterns (`components/patterns`)
+
+- `ScreenGuard`: centralizes session bootstrap + org/membership gating + loading/error UI
+- `DataView`: standard loading/error/empty wrapper for fetched data
+- `OrgSelector`: shared org dropdown pill
+- `Drawer`: shared side drawer
+- `TabBar`: shared horizontal tabs
+- `Pagination`: shared footer pagination
+
+## Rules (Non-negotiable)
+
+- Screens in `app/` should not define local UI components like `FormField`, `Drawer`, `TabsBar`, `Pagination`.
+- Prefer semantic tokens (`bg-primary`, `bg-destructive`, `bg-surface`) over hardcoded colors in screens.
+- Must work on React Native for Web (no native-only deps in `components/ui` / `components/patterns`).
+
 

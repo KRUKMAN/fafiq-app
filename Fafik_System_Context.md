@@ -171,6 +171,12 @@ Every meaningful mutation must:
 - Clear timelines and history
 - Designed for stressed users
 
+### 8.1 UI System (Atomic + Web-first)
+- Screens in `app/` must be composed from reusable components (no inline button/input/card styling).
+- Use `components/ui/*` primitives and `components/patterns/*` patterns as the default.
+- Styling is token-first via NativeWind semantic colors (`bg-primary`, `bg-destructive`, `bg-surface`, `border-border`).
+- Must work on React Native for Web: avoid native-only UI deps in shared UI components.
+
 ---
 
 ## 9. Coding Rules (Non-Negotiable)

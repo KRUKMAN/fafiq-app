@@ -1,6 +1,8 @@
 import React from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { Filter, Search } from 'lucide-react-native';
+
+import { Button } from '@/components/ui/Button';
 
 type TableToolbarProps = {
   searchValue: string;
@@ -31,30 +33,29 @@ export const TableToolbar = ({
           />
         </View>
 
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpenAdvancedFilters}
-            className="flex-row items-center gap-2 px-3 py-2 bg-white border border-border rounded-lg shadow-sm hover:bg-gray-50">
-            <Filter size={16} color="#374151" />
-            <Text className="text-sm font-medium text-gray-700">Filters</Text>
-          </Pressable>
-        </View>
+        {onOpenAdvancedFilters && (
+          <View className="flex-row items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Filter size={16} color="#374151" />}
+              onPress={onOpenAdvancedFilters}>
+              Filters
+            </Button>
+          </View>
+        )}
       </View>
 
       <View className="flex-row flex-wrap gap-2 mt-3">
         {filters.map((f) => (
-          <Pressable
+          <Button
             key={f.value}
-            accessibilityRole="button"
-            onPress={f.onPress}
-            className={`px-3 py-1.5 rounded-full border ${
-              f.active ? 'bg-gray-900 border-gray-900 shadow-sm' : 'bg-white border-border'
-            }`}>
-            <Text className={`text-sm ${f.active ? 'text-white font-semibold' : 'text-gray-700'}`}>
-              {f.label}
-            </Text>
-          </Pressable>
+            variant={f.active ? 'primary' : 'outline'}
+            size="sm"
+            className="rounded-full"
+            onPress={f.onPress}>
+            {f.label}
+          </Button>
         ))}
       </View>
     </View>

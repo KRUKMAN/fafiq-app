@@ -292,6 +292,34 @@ planned | in_progress | done | mocked | blocked
 
 ---
 
+## 3.4 UI System Foundation (Atomic Design + Web-first)
+
+Goal: reduce duplication and enforce a strict component system so **screens become composition-only**.
+
+Constraints:
+- Must work on **React Native + Expo + React Native for Web**
+- NativeWind-only styling; no new UI frameworks
+- Token-first styling: avoid hardcoded `gray-*` / `#hex` in screens
+
+Deliverables:
+- `docs/ui_system.md` becomes the authoritative design system reference.
+- `components/ui/*` primitives and `components/patterns/*` patterns are created and adopted.
+
+Core primitives:
+- `Button`, `Typography`, `Input`, `Spinner`, `cn`
+
+Core patterns:
+- `ScreenGuard` (org/session gating)
+- `DataView` (loading/error/empty)
+- `Drawer`, `TabBar`, `Pagination`, `OrgSelector`
+
+Definition of Done:
+- List screens (Dogs/People/Transports) use `ScreenGuard` + `DataView` + `Pagination`.
+- Duplicate local UI component definitions removed from screens.
+- Web build works: navigation, drawer interactions, and styling verified.
+
+---
+
 ## Phase 3 Definition of Done
 
 - Full dog lifecycle supported

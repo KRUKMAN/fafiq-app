@@ -1,20 +1,18 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import {
-  ChevronLeft,
-  ChevronRight,
-  DollarSign,
   Dog,
+  DollarSign,
   Grid,
   Settings,
   Truck,
   Users,
 } from 'lucide-react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useUIStore } from '@/stores/uiStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useUIStore } from '@/stores/uiStore';
 
 type NavItem = {
   href: string;

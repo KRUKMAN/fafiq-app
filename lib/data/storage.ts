@@ -124,3 +124,36 @@ export const uploadViaSignedUrl = async (signedUrl: string, file: Blob, contentT
     throw new Error(`Signed upload failed: ${response.status} ${text}`);
   }
 };
+
+export const fetchDogPhotos = async (orgId: string, dogId: string) => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; fetching dog photos requires Supabase env.');
+  }
+
+  const { data, error } = await supabase
+    .from('dog_photos')
+    .select('id, org_id, dog_id, storage_bucket, storage_path, caption, is_primary, created_at')
+    .eq('org_id', orgId)
+    .eq('dog_id', dogId)
+    .order('is_primary', { ascending: false })
+    .order('created_at', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch dog photos: ${error.message}`);
+  }
+
+  return data ?? [];
+};
+
+export const createSignedReadUrl = async (bucket: string, path: string, expiresInSeconds = 3600) => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; signed URLs require Supabase env.');
+  }
+
+  // @ts-expect-error: createSignedUrl is available in supabase-js v2
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
+  if (error) {
+    throw new Error(`Failed to create signed URL: ${error.message}`);
+  }
+  return data?.signedUrl ?? null;
+};

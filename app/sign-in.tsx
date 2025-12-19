@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Typography } from '@/components/ui/Typography';
 import { useSessionStore } from '@/stores/sessionStore';
 
 export default function SignInScreen() {
@@ -57,67 +60,52 @@ export default function SignInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={64}>
         <View className="w-full max-w-md mx-auto">
-          <Text className="text-2xl font-bold text-gray-900">RescueOps</Text>
-          <Text className="mt-2 text-base text-gray-600">
+          <Typography variant="h1" className="text-2xl font-bold text-gray-900">
+            RescueOps
+          </Typography>
+          <Typography variant="body" color="muted" className="mt-2">
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account'}
-          </Text>
+          </Typography>
 
           <View className="mt-8 space-y-4">
             {mode === 'signup' ? (
-              <View>
-                <Text className="text-sm font-medium text-gray-700 mb-1">Full name</Text>
-                <TextInput
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder="Full name"
-                  autoCapitalize="words"
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-                />
-              </View>
+              <Input
+                label="Full name"
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Full name"
+                autoCapitalize="words"
+              />
             ) : null}
 
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-1">Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.org"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-              />
-            </View>
-
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-1">Password</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry
-              className="border border-gray-300 rounded-lg px-3 py-2 text-base"
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.org"
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
-          </View>
 
-            {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
-            {info ? <Text className="text-sm text-green-700">{info}</Text> : null}
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              secureTextEntry
+            />
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={onSubmit}
-              disabled={submitting}
-              className={`mt-2 px-4 py-3 rounded-lg ${submitting ? 'bg-gray-400' : 'bg-gray-900'}`}>
-              <Text className="text-center text-white text-sm font-semibold">
-                {mode === 'signin' ? 'Sign in' : 'Create account'}
-              </Text>
-            </Pressable>
+            {error ? <Typography variant="caption" color="error">{error}</Typography> : null}
+            {info ? <Typography variant="caption" color="success">{info}</Typography> : null}
+
+            <Button variant="primary" fullWidth onPress={onSubmit} disabled={submitting} loading={submitting} className="mt-2">
+              {mode === 'signin' ? 'Sign in' : 'Create account'}
+            </Button>
 
             <View className="flex-row items-center justify-between pt-2">
-              <Pressable accessibilityRole="button" onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
-                <Text className="text-sm text-gray-700 font-semibold">
-                  {mode === 'signin' ? "Don't have an account? Create one" : 'Have an account? Sign in'}
-                </Text>
-              </Pressable>
+              <Button variant="ghost" size="sm" onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
+                {mode === 'signin' ? "Don't have an account? Create one" : 'Have an account? Sign in'}
+              </Button>
 
               <Link href="/" replace className="text-sm text-gray-600">
                 Back to app
@@ -125,8 +113,9 @@ export default function SignInScreen() {
             </View>
 
             <View className="pt-2">
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 disabled={submitting}
                 onPress={async () => {
                   setError(null);
@@ -141,14 +130,15 @@ export default function SignInScreen() {
                     setSubmitting(false);
                   }
                 }}>
-                <Text className="text-xs text-gray-700 font-semibold">Forgot password? Send reset email</Text>
-              </Pressable>
+                Forgot password? Send reset email
+              </Button>
             </View>
 
             <View className="pt-4 border-t border-gray-200 space-y-3">
-              <Text className="text-xs text-gray-500">Need a quick demo?</Text>
-              <Pressable
-                accessibilityRole="button"
+              <Typography variant="caption" color="muted">Need a quick demo?</Typography>
+              <Button
+                variant="outline"
+                size="sm"
                 onPress={async () => {
                   setError(null);
                   setSubmitting(true);
@@ -158,10 +148,9 @@ export default function SignInScreen() {
                   } finally {
                     setSubmitting(false);
                   }
-                }}
-                className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-50">
-                <Text className="text-center text-sm font-semibold text-gray-800">Use mock data</Text>
-              </Pressable>
+                }}>
+                Use mock data
+              </Button>
             </View>
           </View>
         </View>

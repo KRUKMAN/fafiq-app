@@ -1,12 +1,13 @@
-import React from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
 import { MapPin, User } from 'lucide-react-native';
+import React from 'react';
+import { Image, Platform, Pressable, View } from 'react-native';
 
+import { RowAction, RowActionsMenu } from '@/components/ui/RowActionsMenu';
+import { Typography } from '@/components/ui/Typography';
+import { formatLastUpdate } from '@/lib/formatters';
 import { AlertIcons } from './AlertIcons';
 import { StatusBadge } from './StatusBadge';
 import { DOG_TABLE_COLUMNS } from './TableConfig';
-import { RowActionsMenu, RowAction } from '@/components/ui/RowActionsMenu';
-import { formatLastUpdate } from '@/lib/formatters';
 
 export type DogListItem = {
   id: string;
@@ -56,12 +57,8 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
     actions.push({ key: 'delete', label: 'Delete', icon: 'delete', destructive: true, onPress: onDelete });
   }
 
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={{ minWidth: '100%' }}
-      className="flex-row items-center bg-white hover:bg-gray-50">
+  const content = (
+    <>
       <View
         style={{
           flex: COL_BY_KEY.details.flex,
@@ -77,21 +74,21 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
             />
           ) : (
             <View className="w-12 h-12 rounded-lg bg-gray-100 border border-border items-center justify-center">
-              <Text className="text-xs text-gray-500">No photo</Text>
+              <Typography variant="caption" color="muted">No photo</Typography>
             </View>
           )}
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
-              <Text className="text-sm font-bold text-gray-900" numberOfLines={1}>
+              <Typography variant="body" className="text-sm font-bold text-gray-900" numberOfLines={1}>
                 {item.name}
-              </Text>
-              <Text className="text-xs font-mono text-gray-400" numberOfLines={1}>
+              </Typography>
+              <Typography variant="caption" className="text-xs font-mono text-gray-400" numberOfLines={1}>
                 {item.internalId || '-'}
-              </Text>
+              </Typography>
             </View>
-            <Text className="text-xs text-gray-500" numberOfLines={1}>
+            <Typography variant="caption" color="muted" numberOfLines={1}>
               {[item.breed, item.sex, item.age].filter(Boolean).join(' • ') || 'No details'}
-            </Text>
+            </Typography>
           </View>
         </View>
       </View>
@@ -115,15 +112,15 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
         className="py-4">
         <View className="flex-row items-center gap-1.5">
           <MapPin size={14} color="#9CA3AF" />
-          <Text className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+          <Typography variant="body" className="text-sm font-semibold text-gray-900" numberOfLines={1}>
             {item.location || 'Unknown location'}
-          </Text>
+          </Typography>
         </View>
         <View className="flex-row items-center gap-1.5 mt-1">
           <User size={12} color="#9CA3AF" />
-          <Text className="text-xs text-gray-600" numberOfLines={1}>
+          <Typography variant="caption" color="muted" numberOfLines={1}>
             {item.responsiblePerson || 'Unassigned'}
-          </Text>
+          </Typography>
         </View>
       </View>
 
@@ -134,16 +131,18 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
           paddingHorizontal: 12,
         }}
         className="py-4">
-        <Text className="text-sm font-semibold text-gray-900">
+        <Typography variant="body" className="text-sm font-semibold text-gray-900">
           {lastUpdate}
-        </Text>
+        </Typography>
         <View className="w-28 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
           <View
             style={{ width: `${budgetPct}%` }}
             className={`h-full rounded-full ${budgetPct > 50 ? 'bg-orange-400' : 'bg-green-400'}`}
           />
         </View>
-        <Text className="text-[10px] text-gray-400 mt-1">${budget} spent</Text>
+        <Typography variant="caption" className="text-[10px] text-gray-400 mt-1">
+          ${budget} spent
+        </Typography>
       </View>
 
       <View
@@ -165,6 +164,38 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
         className="py-4 items-end justify-center">
         <RowActionsMenu actions={actions} />
       </View>
+    </>
+  );
+
+  // On web, nested Pressables can render as nested <button>s (<button><button>...) which is invalid HTML and breaks hydration.
+  // Render the row container as a non-button element on web, while keeping proper button semantics on native.
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        role="button"
+        tabIndex={0}
+        // @ts-expect-error web-only (react-native-web) event prop
+        onClick={() => onPress()}
+        onKeyDown={(e: any) => {
+          if (e?.key === 'Enter' || e?.key === ' ') {
+            e.preventDefault?.();
+            onPress();
+          }
+        }}
+        style={{ minWidth: '100%' }}
+        className="flex-row items-center bg-white hover:bg-gray-50">
+        {content}
+      </View>
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={{ minWidth: '100%' }}
+      className="flex-row items-center bg-white hover:bg-gray-50">
+      {content}
     </Pressable>
   );
 });

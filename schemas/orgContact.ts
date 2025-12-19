@@ -12,6 +12,7 @@ export const orgContactSchema = z.object({
   linked_membership_id: z.string().nullable().optional(),
   address: z.record(z.string(), z.any()).default({}),
   extra_fields: z.record(z.string(), z.any()).default({}),
+  deleted_at: z.string().nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   created_by_membership_id: z.string().nullable().optional(),
