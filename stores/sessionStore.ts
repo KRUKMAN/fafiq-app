@@ -5,6 +5,7 @@ import { getMockOrgs } from '@/lib/mocks/orgs';
 import { getMockProfiles } from '@/lib/mocks/profiles';
 import { supabase } from '@/lib/supabase';
 import { getQueryClient } from '@/lib/queryClient';
+import { acceptInvitesForCurrentUser } from '@/lib/data/invites';
 
 type User = {
   id: string;
@@ -214,6 +215,13 @@ const bootstrapSupabaseSession = async (
   }
 
   const userId = sessionData.session.user.id;
+  // Attempt to accept any pending invites for the signed-in user before loading memberships.
+  try {
+    await acceptInvitesForCurrentUser();
+  } catch (err) {
+    console.warn('Skipping invite acceptance (RPC missing?)', err);
+  }
+
   const [{ data: membershipsData, error: membershipsError }, { data: profileData }] = await Promise.all([
     supabase
       .from('memberships')

@@ -2,10 +2,20 @@ sequenceDiagram
   participant User
   participant App
   participant Session as SessionStore
+  participant Supabase
   participant Mocks
   User->>App: open app
   App->>Session: bootstrap()
-  Session->>Mocks: fetch memberships/orgs/profiles
-  Mocks-->>Session: mock datasets
-  Session-->>App: set ready + activeOrgId
+  alt Supabase env present
+    Session->>Supabase: getSession()
+    Supabase-->>Session: session or none
+    Session->>Supabase: accept_org_invites_for_current_user()
+    Session->>Supabase: fetch memberships (org_id + roles)
+    Supabase-->>Session: memberships
+    Session-->>App: set ready + activeOrgId
+  else no Supabase env
+    Session->>Mocks: fetch memberships/orgs/profiles
+    Mocks-->>Session: mock datasets
+    Session-->>App: set ready + activeOrgId
+  end
   App-->>User: render tabs with guard

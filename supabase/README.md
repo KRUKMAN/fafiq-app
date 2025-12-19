@@ -9,9 +9,12 @@ Follow these steps to align the Supabase project with the app:
    - Expo picks up `EXPO_PUBLIC_*` automatically when present in your shell or `.env.local`.
 
 2) **Apply schema + RLS + audit:**
-   - Open Supabase Dashboard → SQL Editor.
-   - Paste and run `supabase/migrations/20251218_schema_rls_audit.sql` (contains tables from `docs/schema.md`, RLS policies from `docs/rls.md`, helper functions, audit triggers, and `updated_at`/org settings triggers).
-   - If you prefer CLI: `supabase link --project-ref ixavruhkfwkunkzetovp` then `supabase db push` after placing the migration under `supabase/migrations/` (already done).
+   - Open Supabase Dashboard -> SQL Editor.
+   - Run `supabase/migrations/20251218_schema_rls_audit.sql` (tables from `docs/schema.md`, RLS policies from `docs/rls.md`, helper functions, audit triggers, and `updated_at`/org settings triggers).
+   - Then run `supabase/migrations/20251219_member_contact_view.sql` (admin-only member contact view + RPC that exposes email for the Settings panel).
+   - Run `supabase/migrations/20251220_invites.sql` (email-based invite flow: org_invites table + admin invite/accept RPCs).
+   - Run `supabase/migrations/20251221_storage_buckets.sql` (creates `dog-photos`/`documents` buckets + storage policies).
+   - If you prefer CLI (already linked): `npx supabase db push` from repo root to apply pending migrations.
 
 3) **Storage (next):**
    - Buckets: `dog-photos` and `documents` with path patterns `{org_id}/dogs/{dog_id}/...` and `{org_id}/{entity_type}/{entity_id}/...`.
@@ -20,8 +23,55 @@ Follow these steps to align the Supabase project with the app:
 4) **Verification checks (post-migration):**
    - Confirm RLS helpers exist: `select public.is_active_org_member('<org_uuid>');`
    - Confirm policies: `select policyname, tablename from pg_policies where schemaname = 'public';`
+   - Confirm admin membership email RPC exists: `select * from public.admin_list_org_memberships('<org_uuid>');` (should error when not an org admin)
+   - Confirm invite RPC exists: `select * from public.admin_invite_member_by_email('<org_uuid>', '<email>', array['admin'], 'Name');`
+   - Confirm storage buckets: `select id from storage.buckets;`
    - Smoke fetch via SQL: `select * from public.orgs limit 1;` (should return rows only when the session user has a membership).
 
 5) **Run the app:**
    - `npm install` (if not already), then `npm start`.
    - With env vars set, the Supabase client in `lib/supabase.ts` will initialize instead of mocks.
+   - Regenerate types after migrations: `npx supabase gen types typescript --linked --schema public > database.types.ts`.
+
+## User management (manual admin steps)
+
+Until we ship an invite UI, use these SQL snippets in the Supabase SQL Editor:
+
+- **Find user id:** `select id from auth.users where email = 'you@example.com';`
+- **Add membership (admin):**
+  ```sql
+  insert into public.memberships (org_id, user_id, roles, active)
+  values ('<org_id>', '<user_id>', array['admin'], true)
+  on conflict (org_id, user_id) do update
+    set roles = excluded.roles, active = excluded.active;
+  ```
+- **Set profile name (optional):**
+  ```sql
+  insert into public.profiles (user_id, full_name)
+  values ('<user_id>', 'Your Name')
+  on conflict (user_id) do update set full_name = excluded.full_name;
+  ```
+- **Mark email verified (dev shortcut):**
+  ```sql
+  update auth.users
+  set email_confirmed_at = now(), confirmed_at = now()
+  where email = 'you@example.com';
+  ```
+- **Change user email safely:**
+  ```sql
+  -- 1) Update auth.users
+  update auth.users
+  set email = 'new@example.com', email_confirmed_at = null, confirmed_at = null
+  where id = '<user_id>';
+  -- 2) Update auth.identities to match
+  update auth.identities
+  set email = 'new@example.com',
+      identity_data = jsonb_set(identity_data, '{email}', to_jsonb('new@example.com'))
+  where user_id = '<user_id>';
+  -- 3) Re-verify (dev shortcut)
+  update auth.users set email_confirmed_at = now(), confirmed_at = now() where id = '<user_id>';
+  ```
+- **List members with email (admin-only RPC used by Settings panel):**
+  ```sql
+  select * from public.admin_list_org_memberships('<org_id>');
+  ```

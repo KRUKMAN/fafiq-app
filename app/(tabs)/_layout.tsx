@@ -35,7 +35,7 @@ export default function TabLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const { isSidebarOpen, toggleSidebar } = useUIStore();
-  const { ready, isAuthenticated, bootstrap } = useSessionStore();
+  const { ready, isAuthenticated, activeOrgId, memberships, bootstrap, signOut } = useSessionStore();
 
   useEffect(() => {
     if (!ready) {
@@ -48,6 +48,33 @@ export default function TabLayout() {
       router.replace('/sign-in');
     }
   }, [ready, isAuthenticated, router]);
+
+  if (ready && isAuthenticated && !activeOrgId) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface px-6">
+        <View className="items-center space-y-3">
+          <Text className="text-base font-semibold text-gray-900">No organization selected</Text>
+          <Text className="text-sm text-gray-600 text-center">
+            Your account has no active memberships. Ask an admin to add you, or sign out and switch accounts.
+          </Text>
+          <View className="flex-row gap-3">
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.replace('/settings')}
+              className="px-4 py-2 rounded-lg border border-gray-300 bg-white">
+              <Text className="text-sm font-semibold text-gray-800">Go to Settings</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={signOut}
+              className="px-4 py-2 rounded-lg bg-gray-900">
+              <Text className="text-sm font-semibold text-white">Sign out</Text>
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!ready) {
     return (
@@ -66,6 +93,7 @@ export default function TabLayout() {
           onNavigate={(href) => router.push(href as never)}
           isOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
+          onSignOut={signOut}
         />
 
         <View className="flex-1 bg-white">
@@ -81,11 +109,13 @@ const Sidebar = ({
   onNavigate,
   isOpen,
   toggleSidebar,
+  onSignOut,
 }: {
   pathname: string;
   onNavigate: (href: string) => void;
   isOpen: boolean;
   toggleSidebar: () => void;
+  onSignOut: () => void;
 }) => {
   return (
     <View
@@ -139,6 +169,14 @@ const Sidebar = ({
             <Text className="text-sm font-semibold text-gray-900">Stray Found</Text>
             <Text className="text-xs text-gray-500">Admin</Text>
           </View>
+        ) : null}
+        {isOpen ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onSignOut}
+            className="ml-auto px-2 py-1 rounded-md border border-gray-300 bg-white">
+            <Text className="text-xs font-semibold text-gray-800">Sign out</Text>
+          </Pressable>
         ) : null}
       </View>
     </View>

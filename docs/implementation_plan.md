@@ -5,9 +5,11 @@ This plan is aligned to `Fafik_System_Context.md` and cross-checked against the 
 ## Current Codebase Reality (Delta to Target)
 - Domain naming is aligned to `org_id` in the app code; Supabase schema + RLS + audit triggers are applied per `docs/schema.md` / `docs/rls.md`.
 - Tenant resolution is **mock-first** with a Supabase bootstrap fallback: sessionStore uses mock memberships/org selection when no Supabase session/env is available.
-- RLS and audit functions/triggers are live in the DB; frontend mutations still pending.
-- NativeWind v4 + metro config are in place; Expo Router shell + sidebar tabs are stable.
-- Dogs/Transports hooks now fetch from Supabase when env/session is present (mock fallback remains); dog detail drawer has Financial/People & Housing/Chat mock tabs; transports include list + detail shells.
+- RLS and audit functions/triggers are live in the DB; frontend mutations partially wired (auth, invites, transport create/update).
+- NativeWind v4 + metro config are in place; Expo Router shell + sidebar tabs are stable with org guards on list/detail/placeholder tabs.
+- Dogs/Transports/Activity hooks now fetch from Supabase when env/session is present (mock fallback remains); dog detail drawer has Financial/People & Housing/Chat mock tabs; transports include list + detail shells.
+- Org settings include membership list + email view + invite flow (email-based) with resend/cancel; invites auto-accept on session bootstrap.
+- Storage buckets/policies for dog photos/documents are applied; path helpers and upload helpers exist (UI integration pending).
 - Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
 
 
@@ -87,7 +89,7 @@ Requirements:
 | Component | Status |
 |---|---|
 | Mock auth guard | done |
-| Org guard (org selector redirect) | in_progress |
+| Org guard (org selector redirect) | done |
 | Responsive sidebar / tabs | done |
 
 ---
@@ -176,8 +178,8 @@ planned | in_progress | done | mocked | blocked
 
 | Task | Status |
 |---|---|
-| Supabase auth integration | in_progress |
-| Replace sessionStore mocks | planned |
+| Supabase auth integration | done |
+| Replace sessionStore mocks | in_progress |
 | Persist last_org_id | done |
 | Org-aware query cache invalidation on org switch | done |
 
@@ -187,9 +189,9 @@ planned | in_progress | done | mocked | blocked
 
 | Hook | Status |
 |---|---|
-| useDogs -> Supabase | in_progress |
-| useDogDetail -> Supabase | in_progress |
-| useTransports -> Supabase | in_progress |
+| useDogs -> Supabase | done |
+| useDogDetail -> Supabase | done |
+| useTransports -> Supabase | done |
 
 Rule:
 - UI code must not change
@@ -200,10 +202,10 @@ Rule:
 
 | Task | Status |
 |---|---|
-| Supabase email/password login screen | in_progress |
-| Create account (sign-up) flow | in_progress |
+| Supabase email/password login screen | done |
+| Create account (sign-up) flow | done |
 | Session boot: Supabase session -> memberships -> org guard | in_progress |
-| Sign-out + cache invalidation | planned |
+| Sign-out + cache invalidation | done |
 | Password reset hook (MVP) | planned |
 
 Flow notes:
@@ -214,7 +216,22 @@ Flow notes:
 
 ---
 
-## 2.6 Atomic Audit Logging (Hard Rule)
+## 2.6 Org Management UI
+
+| Task | Status |
+|---|---|
+| Membership list for active org | done |
+| Add member by user_id + roles | done (via admin RPC / invite flow) |
+| Show profile name/email safely | done (admin RPC + view for emails) |
+| Invite flow (email-based) | done (includes resend/cancel + auto-accept on bootstrap) |
+
+Notes:
+- Membership add currently expects existing Supabase user_id; roles are comma-separated (`admin`, `volunteer`, `foster`, `transport`).
+- Email display needs a safe server-side view or RPC (auth schema not accessible via anon key).
+
+---
+
+## 2.7 Atomic Audit Logging (Hard Rule)
 
 | Entity | Mechanism | Status |
 |---|---|---|
@@ -248,8 +265,8 @@ planned | in_progress | done | mocked | blocked
 
 | Task | Status |
 |---|---|
-| dog-photos bucket | planned |
-| Upload integration | planned |
+| dog-photos bucket | done (bucket + policies + path helpers) |
+| Upload integration | in_progress (helpers only; UI wiring pending) |
 | Optimistic updates | planned |
 
 ---

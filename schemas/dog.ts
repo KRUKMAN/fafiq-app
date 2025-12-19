@@ -38,10 +38,26 @@ export const dogSchema = z.object({
   org_id: z.string(),
   stage: z.string(),
   name: z.string(),
-  location: z.string(),
-  description: z.string(),
-  medical_notes: z.string().optional().default(''),
-  behavioral_notes: z.string().optional().default(''),
+  location: z
+    .string()
+    .nullish()
+    .transform((val) => val ?? '')
+    .default(''),
+  description: z
+    .string()
+    .nullish()
+    .transform((val) => val ?? '')
+    .default(''),
+  medical_notes: z
+    .string()
+    .nullish()
+    .transform((val) => val ?? '')
+    .default(''),
+  behavioral_notes: z
+    .string()
+    .nullish()
+    .transform((val) => val ?? '')
+    .default(''),
   responsible_membership_id: z.string().nullable().optional(),
   foster_membership_id: z.string().nullable().optional(),
   budget_limit: z.number().nullable().optional(),
