@@ -64,7 +64,7 @@ export function TimelineFeed({
       <TimelineFilterBar filters={filters} onChange={onChangeFilters} />
 
       {visible.length === 0 ? (
-        <View className="items-center justify-center py-10">
+        <View className="items-center justify-center py-8">
           <Typography variant="body" color="muted">
             No timeline items match your filters.
           </Typography>

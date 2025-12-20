@@ -2,6 +2,9 @@ import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { DEFAULT_TIMELINE_FILTERS, TimelineFeed, type TimelineFilters } from '@/components/patterns/TimelineFeed';
+import { Button } from '@/components/ui/Button';
+import { Typography } from '@/components/ui/Typography';
 import { IMPORTANT_AUDIT_EVENT_TYPES, IMPORTANT_SCHEDULE_SOURCE_TYPES } from '@/constants/timeline';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useContactTimeline } from '@/hooks/useContactTimeline';
@@ -10,9 +13,6 @@ import { useMemberActivity } from '@/hooks/useMemberActivity';
 import { useTransportTimeline } from '@/hooks/useTransportTimeline';
 import { mergeTimelineItems, toAuditTimelineItem, toScheduleTimelineItem } from '@/lib/viewModels/timeline';
 import type { TimelineItem } from '@/schemas/timelineItem';
-import { TimelineFeed, DEFAULT_TIMELINE_FILTERS, type TimelineFilters } from '@/components/patterns/TimelineFeed';
-import { Button } from '@/components/ui/Button';
-import { Typography } from '@/components/ui/Typography';
 
 type Scope =
   | { kind: 'dog'; dogId: string }
@@ -104,7 +104,7 @@ export function EntityTimeline({
       <TimelineFeed items={items} filters={filters} onChangeFilters={setFilters} scrollable={scrollable} />
 
       {canLoadMore ? (
-        <View className="pt-4">
+        <View className="mt-4">
           <Button variant="outline" onPress={() => setLimit((prev) => prev + 200)}>
             Load more activity
           </Button>

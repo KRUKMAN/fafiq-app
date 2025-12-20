@@ -1,54 +1,53 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  AlertCircle,
-  AlertTriangle,
-  Check,
-  ChevronDown,
-  Clock,
-  DollarSign,
-  Home as HomeIcon,
-  MapPin,
-  User,
-  X,
+    AlertCircle,
+    AlertTriangle,
+    Check,
+    Clock,
+    DollarSign,
+    Home as HomeIcon,
+    MapPin,
+    User,
+    X
 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
-import * as Linking from 'expo-linking';
 
-import { UI_COLORS } from '@/constants/uiColors';
-import { LAYOUT_STYLES } from '@/constants/layout';
-import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { NoteModal } from '@/components/dogs/NoteModal';
 import { Drawer } from '@/components/patterns/Drawer';
+import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
 import { TabBar } from '@/components/patterns/TabBar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
+import { LAYOUT_STYLES } from '@/constants/layout';
+import { UI_COLORS } from '@/constants/uiColors';
+import { useDocuments } from '@/hooks/useDocuments';
 import { useDog } from '@/hooks/useDog';
 import { useDogPhotos } from '@/hooks/useDogPhotos';
-import { useDocuments } from '@/hooks/useDocuments';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
-import { formatDateOnly, formatTimestampShort } from '@/lib/formatters/dates';
-import { updateDog } from '@/lib/data/dogs';
 import { createDocumentRecord, deleteDocumentRecord } from '@/lib/data/documents';
+import { updateDog } from '@/lib/data/dogs';
 import {
-  addDogPhotoRecord,
-  createSignedReadUrl,
-  formatBytes,
-  getObjectMetadata,
-  uploadDocument,
-  uploadDogPhoto,
+    addDogPhotoRecord,
+    createSignedReadUrl,
+    formatBytes,
+    getObjectMetadata,
+    uploadDocument,
+    uploadDogPhoto,
 } from '@/lib/data/storage';
+import { formatDateOnly, formatTimestampShort } from '@/lib/formatters/dates';
 import {
-  type DogProfileFileItem as FileItem,
-  type DogProfileMedicalRecord as MedicalRecord,
-  type DogProfileNote as Note,
-  type DogProfileView,
-  toDogProfileView,
+    type DogProfileView,
+    type DogProfileFileItem as FileItem,
+    type DogProfileMedicalRecord as MedicalRecord,
+    type DogProfileNote as Note,
+    toDogProfileView,
 } from '@/lib/viewModels/dogProfile';
 import { useSessionStore } from '@/stores/sessionStore';
 import { TABS, useUIStore } from '@/stores/uiStore';
@@ -383,7 +382,7 @@ export default function DogDetailScreen() {
                   }
                 />
 
-                <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} className="mb-8" />
+                <TabBar tabs={TABS} active={activeTab} onChange={setActiveTab} className="mb-6" />
 
                 {saveError ? <Typography variant="caption" color="error" className="mb-2">{saveError}</Typography> : null}
 
@@ -589,8 +588,6 @@ const TopBar = ({
         </Pressable>
       </View>
     </View>
-
-    <View className="h-1" />
   </View>
 );
 
