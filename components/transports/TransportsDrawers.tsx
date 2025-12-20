@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { z } from 'zod';
 
 import { LAYOUT_STYLES } from '@/constants/layout';
@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { updateTransport } from '@/lib/data/transports';
 import { Transport } from '@/schemas/transport';
+import { useDocuments } from '@/hooks/useDocuments';
+import { createSignedReadUrl, formatBytes, getObjectMetadata } from '@/lib/data/storage';
+import * as Linking from 'expo-linking';
 
 export const TRANSPORT_STATUS_OPTIONS = ['Requested', 'Scheduled', 'In Progress', 'Done', 'Canceled'] as const;
 
@@ -80,6 +83,7 @@ export function TransportEditorDrawer({
   onSubmit,
   submitting,
   error,
+  statusOptions,
   transporters,
   contactTransporters,
 }: {
@@ -90,19 +94,30 @@ export function TransportEditorDrawer({
   onSubmit: (values: TransportMutationInput) => Promise<void>;
   submitting: boolean;
   error: string | null;
+  statusOptions: string[];
   transporters: { id: string; name: string; status: string }[];
   contactTransporters: { id: string; name: string; status: string }[];
 }) {
-  const [formState, setFormState] = useState<TransportFormValues>(toFormState(null));
+  const effectiveStatusOptions = useMemo(() => {
+    const base = statusOptions.length ? statusOptions : [...TRANSPORT_STATUS_OPTIONS];
+    const current = transport?.status ? [transport.status] : [];
+    return Array.from(new Set([...current, ...base]));
+  }, [statusOptions, transport?.status]);
+
+  const [formState, setFormState] = useState<TransportFormValues>(() => {
+    const seed = toFormState(null);
+    return { ...seed, status: effectiveStatusOptions[0] ?? seed.status };
+  });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!mode) return;
     const next = mode === 'edit' ? toFormState(transport ?? null) : toFormState(null);
+    if (mode === 'create') next.status = effectiveStatusOptions[0] ?? next.status;
     if (mode === 'create' && prefillDogId) next.dog_id = prefillDogId;
     setFormState((prev) => (shallowEqual(prev, next) ? prev : next));
     setFieldErrors((prev) => (Object.keys(prev).length ? {} : prev));
-  }, [mode, transport, prefillDogId]);
+  }, [mode, transport, prefillDogId, effectiveStatusOptions]);
 
   if (!mode) return null;
   if (mode === 'edit' && !transport) return null;
@@ -202,7 +217,7 @@ export function TransportEditorDrawer({
         <View className="gap-2">
           <Typography className="text-sm font-medium text-gray-800">Status</Typography>
           <View className="flex-row flex-wrap gap-2">
-            {TRANSPORT_STATUS_OPTIONS.map((status) => {
+            {effectiveStatusOptions.map((status) => {
               const active = formState.status === status;
               return (
                 <Pressable
@@ -336,23 +351,41 @@ export function TransportDetailDrawer({
   transports,
   onClose,
   onEdit,
+  statusOptions,
+  orgId,
+  supabaseReady,
 }: {
   transportId: string | null;
   transports: Transport[];
   onClose: () => void;
   onEdit: (transport: Transport) => void;
+  statusOptions: string[];
+  orgId?: string | null;
+  supabaseReady?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<(typeof TRANSPORT_DETAIL_TABS)[number]>('Overview');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const transport = useMemo(() => transports.find((t) => t.id === transportId) ?? null, [transports, transportId]);
+  const effectiveStatusOptions = useMemo(() => {
+    const base = statusOptions.length ? statusOptions : [...TRANSPORT_STATUS_OPTIONS];
+    const current = transport?.status ? [transport.status] : [];
+    return Array.from(new Set([...current, ...base]));
+  }, [statusOptions, transport?.status]);
   const [draft, setDraft] = useState({
     from_location: '',
     to_location: '',
-    status: TRANSPORT_STATUS_OPTIONS[0],
+    status: effectiveStatusOptions[0] ?? TRANSPORT_STATUS_OPTIONS[0],
     notes: '',
   });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const transport = useMemo(() => transports.find((t) => t.id === transportId) ?? null, [transports, transportId]);
+  const { data: documents, isLoading: docsLoading, error: docsError } = useDocuments(
+    orgId ?? undefined,
+    'transport',
+    transportId ?? undefined
+  );
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [sizes, setSizes] = useState<Record<string, number | null>>({});
 
   useEffect(() => {
     if (!transport) return;
@@ -373,6 +406,36 @@ export function TransportDetailDrawer({
     setEditing((prev) => (prev ? false : prev));
     setStatusMessage((prev) => (prev !== null ? null : prev));
   }, [transport]);
+
+  useEffect(() => {
+    const loadSizes = async () => {
+      if (!documents || !documents.length) return;
+      const entries = await Promise.all(
+        documents.map(async (doc) => {
+          const meta = await getObjectMetadata(doc.storage_bucket ?? 'documents', doc.storage_path);
+          return [doc.id, meta?.size ?? null] as const;
+        })
+      );
+      setSizes((prev) => {
+        const next = { ...prev };
+        entries.forEach(([id, size]) => {
+          next[id] = size;
+        });
+        return next;
+      });
+    };
+    void loadSizes();
+  }, [documents]);
+
+  const iconForMime = (mime?: string | null, name?: string) => {
+    const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? '';
+    const m = (mime ?? '').toLowerCase();
+    if (m.includes('pdf') || ext === 'pdf') return 'đź§ľ';
+    if (m.includes('image') || ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return 'đź–Ľď¸Ź';
+    if (m.includes('word') || ['doc', 'docx'].includes(ext)) return 'đź“ť';
+    if (['txt', 'md', 'rtf'].includes(ext) || m.includes('text')) return 'đź“„';
+    return 'đź“Ž';
+  };
 
   if (!transportId || !transport) return null;
 
@@ -452,7 +515,7 @@ export function TransportDetailDrawer({
                   <EditableSelect
                     label="Status"
                     value={draft.status}
-                    options={TRANSPORT_STATUS_OPTIONS as unknown as string[]}
+                    options={effectiveStatusOptions}
                     onSelect={(val) => setDraft((p) => ({ ...p, status: val as any }))}
                   />
                   <EditableRow
@@ -468,6 +531,55 @@ export function TransportDetailDrawer({
                   <KeyValueCard label="To" value={transport.to_location || 'Unknown'} />
                   <KeyValueCard label="Assigned" value={transport.assigned_membership_id || 'Unassigned'} />
                   <KeyValueCard label="Dog" value={transport.dog_id || 'Unlinked'} />
+                  <View className="w-full bg-white border border-border rounded-lg shadow-sm p-3 gap-2">
+                    <Typography className="text-sm font-semibold text-gray-900">Documents</Typography>
+                    {!supabaseReady ? (
+                      <Typography variant="caption" color="muted">Supabase not configured.</Typography>
+                    ) : docsLoading ? (
+                      <View className="flex-row items-center gap-2">
+                        <ActivityIndicator size="small" />
+                        <Typography variant="caption" color="muted">Loading documents...</Typography>
+                      </View>
+                    ) : docsError ? (
+                      <Typography variant="caption" className="text-red-600">{String((docsError as any)?.message ?? docsError)}</Typography>
+                    ) : (documents ?? []).length === 0 ? (
+                      <Typography variant="caption" color="muted">No documents yet.</Typography>
+                    ) : (
+                      <View className="gap-2">
+                        {(documents ?? []).map((doc) => (
+                          <View key={doc.id} className="flex-row items-center justify-between">
+                            <View className="flex-1 pr-2">
+                              <Typography variant="body" className="text-sm font-semibold text-gray-900" numberOfLines={1}>
+                                {iconForMime(doc.mime_type, doc.filename)} {doc.filename || doc.storage_path.split('/').slice(-1)[0] || 'document'}
+                              </Typography>
+                              <Typography variant="caption" color="muted">
+                                {doc.mime_type || 'unknown'} · {formatBytes(sizes[doc.id])} · {new Date(doc.created_at).toLocaleString()}
+                              </Typography>
+                            </View>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={openingId === doc.id}
+                              loading={openingId === doc.id}
+                              onPress={async () => {
+                                setOpeningId(doc.id);
+                                try {
+                                  const url = await createSignedReadUrl('documents', doc.storage_path);
+                                  if (!url) throw new Error('Signed URL unavailable');
+                                  await Linking.openURL(url);
+                                } catch (e: any) {
+                                  setStatusMessage(e?.message ?? 'Open failed');
+                                } finally {
+                                  setOpeningId(null);
+                                }
+                              }}>
+                              Open / Download
+                            </Button>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </>
               )}
             </View>
@@ -658,5 +770,8 @@ export const formatDateRange = (start?: string | null, end?: string | null) => {
   if (startStr && endStr) return `${startStr} to ${endStr}`;
   return startStr || endStr || 'Not scheduled';
 };
+
+
+
 
 

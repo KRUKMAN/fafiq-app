@@ -20,14 +20,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { STRINGS, formatDogDeleteMessage } from '@/constants/strings';
 import { UI_COLORS } from '@/constants/uiColors';
+import { useOrgSettings } from '@/hooks/useOrgSettings';
 import { useDogs } from '@/hooks/useDogs';
 import { softDeleteDog } from '@/lib/data/dogs';
 import { getPagination } from '@/lib/pagination';
 import { Dog } from '@/schemas/dog';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUIStore } from '@/stores/uiStore';
-
-const STAGE_FILTERS = STRINGS.dogs.stageFilters;
 
 export default function DogsListScreen() {
   const { dogList, setDogList } = useUIStore();
@@ -41,6 +40,11 @@ export default function DogsListScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const session = useSessionStore();
   const { activeOrgId, memberships, ready, switchOrg } = session;
+  const { dogStages } = useOrgSettings(activeOrgId ?? undefined);
+  const stageFilters = useMemo(() => {
+    const selected = dogList.stage && dogList.stage !== 'All' ? [dogList.stage] : [];
+    return Array.from(new Set(['All', ...selected, ...dogStages]));
+  }, [dogStages, dogList.stage]);
 
   const deleteMutation = useMutation({
     mutationFn: async ({ orgId, dogId }: { orgId: string; dogId: string }) => {
@@ -154,7 +158,7 @@ export default function DogsListScreen() {
           searchValue={searchInput}
           onSearchChange={setSearchInput}
           onOpenAdvancedFilters={() => setDogList({ advancedOpen: true })}
-          filters={STAGE_FILTERS.map((label) => ({
+          filters={stageFilters.map((label) => ({
             label,
             value: label,
             active: dogList.stage === label,
@@ -208,7 +212,7 @@ export default function DogsListScreen() {
                 renderRow={({ item }) => (
                   <DogRow
                     item={item}
-                    onPress={() => handlePressRow(item.id)}
+                    onPress={handlePressRow}
                     onEdit={() => handleEditDog(item.id)}
                     onDelete={() => handleDeleteDog(item.id, item.name)}
                     onViewHistory={() => handleViewDogHistory(item.id)}

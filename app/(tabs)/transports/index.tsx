@@ -21,6 +21,7 @@ import { STRINGS } from '@/constants/strings';
 import { UI_COLORS } from '@/constants/uiColors';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { useOrgMemberships } from '@/hooks/useOrgMemberships';
+import { useOrgSettings } from '@/hooks/useOrgSettings';
 import { useTransports } from '@/hooks/useTransports';
 import { getPagination } from '@/lib/pagination';
 import { Transport } from '@/schemas/transport';
@@ -39,6 +40,7 @@ import {
 export default function TransportsScreen() {
   const session = useSessionStore();
   const { ready, activeOrgId, memberships, switchOrg } = session;
+  const supabaseReady = useMemo(() => Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL), []);
   const params = useLocalSearchParams<{ createDogId?: string }>();
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<'transports' | 'transporters'>('transports');
@@ -56,6 +58,7 @@ export default function TransportsScreen() {
   const [transportToDelete, setTransportToDelete] = useState<{ id: string } | null>(null);
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useTransports(activeOrgId ?? undefined);
+  const { transportStatuses } = useOrgSettings(activeOrgId ?? undefined);
   const {
     data: memberData,
     isLoading: membersLoading,
@@ -378,6 +381,9 @@ export default function TransportsScreen() {
                 setEditingTransportId(transport.id);
                 setEditorMode('edit');
               }}
+              orgId={activeOrgId}
+              supabaseReady={supabaseReady}
+              statusOptions={transportStatuses}
             />
             <TransportEditorDrawer
               mode={editorMode}
@@ -387,6 +393,7 @@ export default function TransportsScreen() {
               onSubmit={handleSubmitTransport}
               submitting={mutationInFlight}
               error={formError}
+              statusOptions={transportStatuses}
               transporters={transporterOptions}
               contactTransporters={contactTransporterOptions}
             />

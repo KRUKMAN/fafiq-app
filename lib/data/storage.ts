@@ -157,3 +157,35 @@ export const createSignedReadUrl = async (bucket: string, path: string, expiresI
   }
   return data?.signedUrl ?? null;
 };
+
+export const getObjectMetadata = async (
+  bucket: string,
+  path: string
+): Promise<{ size: number | null; name: string } | null> => {
+  if (!supabase) {
+    return null;
+  }
+  if (!path) return null;
+  const parts = path.split('/');
+  const filename = parts.pop();
+  if (!filename) return null;
+  const prefix = parts.join('/');
+  const { data, error } = await supabase.storage.from(bucket).list(prefix, {
+    search: filename,
+    limit: 1,
+  });
+  if (error || !data || !data.length) return null;
+  const match = data.find((item) => item.name === filename);
+  if (!match) return null;
+  return { size: typeof match.metadata?.size === 'number' ? match.metadata.size : null, name: match.name };
+};
+
+export const formatBytes = (bytes?: number | null) => {
+  if (bytes === undefined || bytes === null || Number.isNaN(bytes)) return 'Unknown size';
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = Number((bytes / Math.pow(k, i)).toFixed(1));
+  return `${value} ${sizes[i]}`;
+};

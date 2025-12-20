@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import * as Linking from 'expo-linking';
 
 import { UI_COLORS } from '@/constants/uiColors';
 import { LAYOUT_STYLES } from '@/constants/layout';
@@ -30,9 +31,18 @@ import { Typography } from '@/components/ui/Typography';
 import { useDog } from '@/hooks/useDog';
 import { useDogPhotos } from '@/hooks/useDogPhotos';
 import { useDogTimeline } from '@/hooks/useDogTimeline';
+import { useDocuments } from '@/hooks/useDocuments';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { updateDog } from '@/lib/data/dogs';
-import { addDogPhotoRecord, createSignedReadUrl, uploadDocument, uploadDogPhoto } from '@/lib/data/storage';
+import { createDocumentRecord, deleteDocumentRecord } from '@/lib/data/documents';
+import {
+  addDogPhotoRecord,
+  createSignedReadUrl,
+  formatBytes,
+  getObjectMetadata,
+  uploadDocument,
+  uploadDogPhoto,
+} from '@/lib/data/storage';
 import {
   type DogProfileFileItem as FileItem,
   type DogProfileMedicalRecord as MedicalRecord,
@@ -84,7 +94,6 @@ export default function DogDetailScreen() {
       }
     : null;
   const [notes, setNotes] = useState<Note[]>([]);
-  const [files, setFiles] = useState<FileItem[]>([]);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
@@ -123,7 +132,6 @@ export default function DogDetailScreen() {
   useEffect(() => {
     if (dog) {
       setNotes(dog.notes ?? []);
-      setFiles(dog.files ?? []);
       setDogDraft({
         name: dog.name,
         stage: dog.stage,
@@ -383,9 +391,9 @@ export default function DogDetailScreen() {
                   activeTab,
                   dog,
                   activeOrgId,
+                  supabaseReady,
+                  memberships,
                   notes,
-                  files,
-                  setFiles,
                   () => setNoteModalOpen(true),
                   editing,
                   dogDraft,
@@ -484,9 +492,9 @@ const renderTab = (
   tab: (typeof TABS)[number],
   dog: DogProfileView,
   activeOrgId: string | null,
+  supabaseReady: boolean,
+  memberships: { id: string; org_id: string; roles: string[]; active: boolean }[],
   notes: Note[],
-  files: FileItem[],
-  setFiles: (files: FileItem[] | ((prev: FileItem[]) => FileItem[])) => void,
   onAddNote: () => void,
   editing: boolean,
   dogDraft: {
@@ -539,7 +547,7 @@ const renderTab = (
     case 'Medical':
       return <MedicalTab history={dog.medicalHistory} />;
     case 'Documents':
-      return <FilesTab orgId={activeOrgId} dogId={dog.id} files={files} setFiles={setFiles} />;
+      return <FilesTab orgId={activeOrgId} dogId={dog.id} memberships={memberships} supabaseReady={supabaseReady} />;
     case 'Financial':
       return <FinancialTab spent={dog.budgetSpent} limit={dog.budgetLimit} />;
     case 'People & Housing':
@@ -1104,16 +1112,73 @@ const MedicalTab = ({ history }: { history: MedicalRecord[] }) => {
 const FilesTab = ({
   orgId,
   dogId,
-  files,
-  setFiles,
+  memberships,
+  supabaseReady,
 }: {
   orgId: string | null;
   dogId: string;
-  files: FileItem[];
-  setFiles: (files: FileItem[] | ((prev: FileItem[]) => FileItem[])) => void;
+  memberships: { id: string; org_id: string; roles: string[]; active: boolean }[];
+  supabaseReady: boolean;
 }) => {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [sizes, setSizes] = useState<Record<string, number | null>>({});
+  const queryClient = useQueryClient();
+  const { data: documents, isLoading, error } = useDocuments(orgId ?? undefined, 'dog', dogId);
+
+  const activeMembership = useMemo(
+    () => memberships.find((m) => m.org_id === orgId && m.active) ?? null,
+    [memberships, orgId]
+  );
+
+  const files = useMemo<FileItem[]>(() => {
+    return (documents ?? []).map((doc) => ({
+      id: doc.id,
+      name: doc.filename ?? doc.storage_path.split('/').slice(-1)[0] ?? 'document',
+      type: doc.mime_type ?? 'unknown',
+      uploadedAt: doc.created_at,
+      uploadedBy:
+        activeMembership && doc.created_by_membership_id && doc.created_by_membership_id === activeMembership.id
+          ? 'You'
+          : doc.created_by_membership_id
+            ? 'Member'
+            : undefined,
+      size: sizes[doc.id],
+    }));
+  }, [documents, activeMembership, sizes]);
+
+  useEffect(() => {
+    const loadSizes = async () => {
+      if (!documents || !documents.length) return;
+      const entries = await Promise.all(
+        documents.map(async (doc) => {
+          const meta = await getObjectMetadata(doc.storage_bucket ?? 'documents', doc.storage_path);
+          return [doc.id, meta?.size ?? null] as const;
+        })
+      );
+      setSizes((prev) => {
+        const next = { ...prev };
+        entries.forEach(([id, size]) => {
+          next[id] = size;
+        });
+        return next;
+      });
+    };
+    void loadSizes();
+  }, [documents]);
+
+  const iconForMime = (mime?: string | null, name?: string) => {
+    const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? '';
+    const m = (mime ?? '').toLowerCase();
+    if (m.includes('pdf') || ext === 'pdf') return '🧾';
+    if (m.includes('image') || ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return '🖼️';
+    if (m.includes('word') || ['doc', 'docx'].includes(ext)) return '📝';
+    if (['txt', 'md', 'rtf'].includes(ext) || m.includes('text')) return '📄';
+    return '📎';
+  };
 
   return (
     <View className="gap-3">
@@ -1124,10 +1189,10 @@ const FilesTab = ({
         <Button
           variant="outline"
           size="sm"
-          disabled={uploading || !orgId}
+          disabled={uploading || !orgId || !supabaseReady}
           loading={uploading}
           onPress={async () => {
-            if (!orgId) return;
+            if (!orgId || !supabaseReady) return;
             setUploading(true);
             setStatus(null);
             try {
@@ -1138,15 +1203,17 @@ const FilesTab = ({
                 filename,
                 contentType: 'text/plain',
               });
-              const uploaded: FileItem = {
-                id: `uploaded-${Date.now()}`,
-                name: filename,
-                type: 'text/plain',
-                uploadedAt: new Date().toISOString(),
-                uploadedBy: 'You',
-              };
-              setFiles((prev) => [...prev, uploaded]);
-              setStatus(`Uploaded to ${path}`);
+              await createDocumentRecord({
+                org_id: orgId,
+                entity_type: 'dog',
+                entity_id: dogId,
+                storage_path: path,
+                filename,
+                mime_type: 'text/plain',
+              });
+              await queryClient.invalidateQueries({ queryKey: ['documents', orgId, 'dog', dogId] });
+              await queryClient.invalidateQueries({ queryKey: ['dog-timeline', orgId, dogId] });
+              setStatus(`Uploaded and recorded (${filename})`);
             } catch (e: any) {
               setStatus(e?.message ?? 'Upload failed');
             } finally {
@@ -1157,13 +1224,24 @@ const FilesTab = ({
         </Button>
       </View>
       {status ? <Typography variant="caption" color="muted">{status}</Typography> : null}
-      {files.length === 0 ? (
+      {error ? (
+        <Typography variant="caption" className="text-red-600">
+          {String((error as any)?.message ?? error)}
+        </Typography>
+      ) : null}
+      {isLoading ? (
+        <View className="items-center justify-center py-6">
+          <ActivityIndicator />
+        </View>
+      ) : files.length === 0 ? (
         <View className="items-center justify-center py-6">
           <Typography variant="body" color="muted">No files uploaded yet.</Typography>
         </View>
       ) : (
         files.map((file) => (
-          <View key={file.id} className="flex-row items-center justify-between bg-white border border-border rounded-lg p-3 shadow-sm">
+          <View
+            key={file.id}
+            className="flex-row items-center justify-between bg-white border border-border rounded-lg p-3 shadow-sm">
             <View>
               <Typography variant="body" className="text-sm font-semibold text-gray-900">
                 {file.name}
@@ -1172,7 +1250,84 @@ const FilesTab = ({
                 {file.type} - Uploaded {formatTimestamp(file.uploadedAt)}
               </Typography>
             </View>
-            <Typography variant="caption" color="muted">{file.uploadedBy ?? 'Unknown uploader'}</Typography>
+            <View className="flex-row items-center gap-3">
+              <Typography variant="caption" color="muted">
+                {iconForMime(file.type, file.name)} {file.uploadedBy ?? 'Unknown uploader'} · {formatBytes(file.size)}
+              </Typography>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!orgId || !supabaseReady || openingId === file.id}
+              loading={openingId === file.id}
+                onPress={async () => {
+                  if (!orgId || !supabaseReady) return;
+                  setOpeningId(file.id);
+                  setStatus(null);
+                  try {
+                    const doc = documents?.find((d) => d.id === file.id);
+                    if (!doc?.storage_path) throw new Error('Document path missing');
+                    const url = await createSignedReadUrl('documents', doc.storage_path);
+                    if (!url) throw new Error('Signed URL unavailable');
+                    await Linking.openURL(url);
+                  } catch (e: any) {
+                    setStatus(e?.message ?? 'Open failed');
+                  } finally {
+                    setOpeningId(null);
+                  }
+                }}>
+                Open
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!orgId || !supabaseReady || openingId === file.id}
+                loading={openingId === file.id}
+                onPress={async () => {
+                  if (!orgId || !supabaseReady) return;
+                  setOpeningId(file.id);
+                  setStatus(null);
+                  try {
+                    const doc = documents?.find((d) => d.id === file.id);
+                    if (!doc?.storage_path) throw new Error('Document path missing');
+                    const url = await createSignedReadUrl('documents', doc.storage_path);
+                    if (!url) throw new Error('Signed URL unavailable');
+                    await Linking.openURL(url);
+                  } catch (e: any) {
+                    setStatus(e?.message ?? 'Download failed');
+                  } finally {
+                    setOpeningId(null);
+                  }
+                }}>
+                Download
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!orgId || deletingId === file.id}
+                loading={deletingId === file.id}
+                onPress={async () => {
+                  if (!orgId) return;
+                  if (confirmingId !== file.id) {
+                    setConfirmingId(file.id);
+                    setStatus('Tap delete again to confirm.');
+                    return;
+                  }
+                  setDeletingId(file.id);
+                  setStatus(null);
+                  try {
+                    await deleteDocumentRecord(orgId, file.id);
+                    await queryClient.invalidateQueries({ queryKey: ['documents', orgId, 'dog', dogId] });
+                    await queryClient.invalidateQueries({ queryKey: ['dog-timeline', orgId, dogId] });
+                    setConfirmingId(null);
+                  } catch (e: any) {
+                    setStatus(e?.message ?? 'Delete failed');
+                  } finally {
+                    setDeletingId(null);
+                  }
+                }}>
+                {confirmingId === file.id ? 'Confirm delete' : 'Delete'}
+              </Button>
+            </View>
           </View>
         ))
       )}

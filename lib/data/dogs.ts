@@ -3,6 +3,17 @@ import { Dog, dogSchema } from '@/schemas/dog';
 import { getMockDogById, getMockDogs } from '@/lib/mocks/dogs';
 import { formatSupabaseError } from '@/lib/data/errors';
 
+type NewDogInput = {
+  org_id: string;
+  name: string;
+  stage: string;
+  location: string;
+  description: string;
+  medical_notes?: string | null;
+  behavioral_notes?: string | null;
+  extra_fields?: Record<string, unknown> | null;
+};
+
 type DogFilters = {
   stage?: string;
   search?: string;
@@ -207,6 +218,43 @@ export const restoreDog = async (orgId: string, dogId: string): Promise<Dog> => 
   }
   if (!data) {
     throw new Error('Dog not found or restoration failed.');
+  }
+
+  return dogSchema.parse({
+    ...data,
+    location: data.location ?? '',
+    description: data.description ?? '',
+    medical_notes: data.medical_notes ?? '',
+    behavioral_notes: data.behavioral_notes ?? '',
+    extra_fields: data.extra_fields ?? {},
+  });
+};
+
+export const createDog = async (input: NewDogInput): Promise<Dog> => {
+  if (!supabase) {
+    throw new Error('Supabase not configured; dog creation requires Supabase env.');
+  }
+
+  const { data, error } = await supabase
+    .from('dogs')
+    .insert({
+      org_id: input.org_id,
+      name: input.name,
+      stage: input.stage,
+      location: input.location,
+      description: input.description,
+      medical_notes: input.medical_notes ?? null,
+      behavioral_notes: input.behavioral_notes ?? null,
+      extra_fields: input.extra_fields ?? {},
+    })
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to create dog'));
+  }
+  if (!data) {
+    throw new Error('Dog creation returned no data.');
   }
 
   return dogSchema.parse({

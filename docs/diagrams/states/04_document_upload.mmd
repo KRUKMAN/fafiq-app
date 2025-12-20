@@ -3,7 +3,6 @@ stateDiagram-v2
   Idle --> PickingFile : pick/select file
   PickingFile --> Uploading : upload to Storage (direct or signed URL)
   Uploading --> Stored : object saved
-  Stored --> Recorded : insert dog_photos row (dog photos)
+  Stored --> Recorded : insert dog_photos/documents row
   Recorded --> Visible : queries invalidated (dog-photos, dog, dogs)
-  Stored --> Visible : visible in UI list only (documents; DB row TODO)
   Visible --> Idle

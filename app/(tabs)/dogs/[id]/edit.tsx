@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { z } from 'zod';
 
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
@@ -12,6 +12,9 @@ import { Typography } from '@/components/ui/Typography';
 import { LAYOUT_STYLES } from '@/constants/layout';
 import { STRINGS } from '@/constants/strings';
 import { useDog } from '@/hooks/useDog';
+import { useOrgSettings } from '@/hooks/useOrgSettings';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { updateDog } from '@/lib/data/dogs';
 import { useSessionStore } from '@/stores/sessionStore';
 
 const dogFormSchema = z.object({
@@ -24,25 +27,68 @@ const dogFormSchema = z.object({
 
 type DogFormState = z.infer<typeof dogFormSchema>;
 
-const STAGES = STRINGS.dogs.formStages;
-
 export default function EditDogScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dogId = Array.isArray(id) ? id[0] : id;
   const session = useSessionStore();
+  const { dogStages } = useOrgSettings(session.activeOrgId ?? undefined);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const stages = dogStages.length ? dogStages : STRINGS.dogs.formStages;
   const { data, isLoading } = useDog(session.activeOrgId ?? undefined, dogId ?? undefined);
 
   const [form, setForm] = useState<DogFormState>({
     name: '',
-    stage: STAGES[0],
+    stage: stages[0] ?? '',
     location: '',
     description: '',
     responsible_person: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<{ variant: 'success' | 'error'; message: string } | null>(null);
+  const supabaseReady = Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
 
-  const stageHelper = useMemo(() => `${STRINGS.dogs.form.stageOptionsHelperPrefix} ${STAGES.join(', ')}`, []);
+  const stageHelper = useMemo(
+    () => `${STRINGS.dogs.form.stageOptionsHelperPrefix} ${stages.join(', ')}`,
+    [stages]
+  );
+
+  useEffect(() => {
+    if (!form.stage && stages[0]) {
+      setForm((prev) => ({ ...prev, stage: stages[0] }));
+    }
+  }, [form.stage, stages]);
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!session.activeOrgId) throw new Error('Select an organization before saving.');
+      if (!dogId) throw new Error('Dog id missing.');
+      if (stages.length && !stages.includes(form.stage.trim())) {
+        throw new Error('Stage must be one of the organization stages.');
+      }
+      return updateDog(session.activeOrgId, dogId, {
+        name: form.name.trim(),
+        stage: form.stage.trim(),
+        location: form.location.trim(),
+        description: form.description.trim(),
+        extra_fields: {
+          ...data?.extra_fields,
+          responsible_person: form.responsible_person?.trim() || undefined,
+        },
+      });
+    },
+    onSuccess: async (dog) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['dogs', session.activeOrgId || ''] }),
+        queryClient.invalidateQueries({ queryKey: ['dog', session.activeOrgId || '', dog.id] }),
+      ]);
+      setStatus({ variant: 'success', message: 'Dog updated. Returning to detail...' });
+      setTimeout(() => router.back(), 400);
+    },
+    onError: (err: any) => {
+      setStatus({ variant: 'error', message: err?.message ?? 'Failed to update dog.' });
+    },
+  });
 
   useEffect(() => {
     if (data) {
@@ -69,8 +115,13 @@ export default function EditDogScreen() {
       setStatus({ variant: 'error', message: 'Fix the highlighted fields and try again.' });
       return;
     }
+    if (!supabaseReady) {
+      setStatus({ variant: 'error', message: 'Supabase env vars missing. Configure Supabase to save.' });
+      return;
+    }
     setErrors({});
-    setStatus({ variant: 'success', message: STRINGS.dogs.mockSaved });
+    setStatus(null);
+    updateMutation.mutate();
   };
 
   return (
@@ -78,7 +129,7 @@ export default function EditDogScreen() {
       <ScreenGuard session={session} isLoading={isLoading || !data} loadingLabel="Loading dog...">
         <ScrollView contentContainerStyle={LAYOUT_STYLES.scrollScreenPadded}>
           <View className="gap-4">
-            <Typography variant="h3">{STRINGS.dogs.mockEditTitle}</Typography>
+            <Typography variant="h3">Edit Dog</Typography>
 
             <StatusMessage variant={status?.variant} message={status?.message ?? null} />
 
@@ -119,11 +170,12 @@ export default function EditDogScreen() {
               className="min-h-24"
             />
 
-            <Button onPress={submit}>{STRINGS.dogs.mockSaveChanges}</Button>
+            <Button onPress={submit} loading={updateMutation.isPending}>
+              {updateMutation.isPending ? STRINGS.common.pleaseWait : 'Save changes'}
+            </Button>
           </View>
         </ScrollView>
       </ScreenGuard>
     </SafeAreaView>
   );
 }
-

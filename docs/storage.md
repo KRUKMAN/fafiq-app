@@ -42,16 +42,18 @@ Implemented pieces:
 - Client helpers exist in `lib/data/storage.ts` for:
   - direct uploads (`uploadDogPhoto`, `uploadDocument`)
   - signed upload URLs (`createSignedUploadUrl` + `uploadViaSignedUrl`) (available, not required by current UI)
+  - signed read URLs + storage metadata (`createSignedReadUrl`, `getObjectMetadata`) to open files and show sizes
 
 Dog photos (implemented end-to-end):
 1) Upload to Storage (`dog-photos` bucket, org-scoped path).
 2) Insert a `dog_photos` row with `org_id` + `storage_path`.
 3) Activity event is written by the database audit trigger on `dog_photos` (no client-side audit inserts).
 
-Documents (partially implemented):
+Documents (implemented end-to-end for dog and transport documents):
 1) Upload to Storage (`documents` bucket, org-scoped path).
-2) UI currently shows an in-memory list item (no `documents` row insert yet).
-3) Because there is no `documents` row insert, the audit trigger on `documents` is not exercised by the current UI.
+2) Insert a `documents` row with `org_id` + entity fields + `storage_path`.
+3) Activity event is written by the database audit trigger on `documents` (no client-side audit inserts).
+4) UI lists documents with type icon + size (via storage metadata), supports open/download via signed URL, and delete (admin per RLS).
 
 ## Retention / deletion
 - Prefer immutable objects (new UUID path per upload).

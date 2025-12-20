@@ -1,5 +1,6 @@
 import React from 'react';
-import { FlatList, ScrollView, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { ScrollView, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -34,7 +35,7 @@ export function DataTable<T>({
       showsHorizontalScrollIndicator
       className="flex-1 bg-card"
       contentContainerStyle={{ minWidth, flexGrow: 1 }}>
-      <FlatList
+      <FlashList
         style={{ flex: 1, width: '100%' }}
         data={data}
         keyExtractor={(_, idx) => String(idx)}
@@ -47,6 +48,7 @@ export function DataTable<T>({
         ListEmptyComponent={ListEmptyComponent ?? <EmptyState title="No records to display." />}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        estimatedItemSize={80}
       />
     </ScrollView>
   );

@@ -15,7 +15,9 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Save: `updateDog(orgId, dogId, updates)` → invalidates `['dog', orgId, dogId]` + `['dogs']`
 - Cancel: resets draft (no write)
 - Upload photo: image picker → `uploadDogPhoto` + `addDogPhotoRecord` → invalidates `['dog-photos', orgId, dogId]`
-- Upload document: Documents tab upload is storage-only right now (no `documents` table insert yet)
+- Upload document: Documents tab uploads to Storage and inserts a `documents` row (audit trigger logs activity)
+- Open document: signed URL (documents bucket) → external viewer
+- Delete document: delete `documents` row (admin per RLS) with inline confirm
 - Assign foster: updates `dogs.foster_contact_id` via `updateDog` (also mirrors `extra_fields.foster_name` for now)
 - Create transport: deep-links to Transports tab create drawer with `createDogId` param prefilled
 
@@ -30,6 +32,12 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Edit inline: toggles draft fields
 - Save: `updateTransport` → invalidates `['transports', orgId]`
 - Cancel: resets draft
+- Documents: list + open via signed URL (read-only; upload lives in transport detail screen)
+
+### Transport detail screen (`app/(tabs)/transports/[id].tsx`)
+- Upload document: storage upload + `documents` insert (transport entity)
+- Open document: signed URL
+- Delete document: delete `documents` row (admin per RLS) with inline confirm
 
 ## People / Contacts
 

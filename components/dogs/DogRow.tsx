@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import { MapPin, User } from 'lucide-react-native';
 import React from 'react';
-import { Image, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { UI_COLORS } from '@/constants/uiColors';
 import { RowAction, RowActionsMenu } from '@/components/ui/RowActionsMenu';
@@ -28,7 +29,7 @@ export type DogListItem = {
 
 type DogRowProps = {
   item: DogListItem;
-  onPress: () => void;
+  onPress: (id: string) => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onViewHistory?: () => void;
@@ -46,6 +47,7 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
   const budget = item.budgetSpent ?? 0;
   const budgetPct = Math.min(Math.max((budget / 2000) * 100, 0), 100);
   const lastUpdate = formatLastUpdate(item.lastUpdate);
+  const handlePress = React.useCallback(() => onPress(item.id), [item.id, onPress]);
 
   const actions: RowAction[] = [];
   if (onEdit) {
@@ -72,6 +74,7 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
             <Image
               source={{ uri: item.photoUrl }}
               className="w-12 h-12 rounded-lg bg-surface border border-border"
+              contentFit="cover"
             />
           ) : (
             <View className="w-12 h-12 rounded-lg bg-surface border border-border items-center justify-center">
@@ -176,11 +179,11 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
         role="button"
         tabIndex={0}
         // @ts-expect-error web-only (react-native-web) event prop
-        onClick={() => onPress()}
+        onClick={handlePress}
         onKeyDown={(e: any) => {
           if (e?.key === 'Enter' || e?.key === ' ') {
             e.preventDefault?.();
-            onPress();
+            handlePress();
           }
         }}
         style={{ minWidth: '100%' }}
@@ -193,7 +196,7 @@ export const DogRow = React.memo(({ item, onPress, onEdit, onDelete, onViewHisto
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={handlePress}
       style={{ minWidth: '100%' }}
       className="flex-row items-center bg-card hover:bg-surface">
       {content}
