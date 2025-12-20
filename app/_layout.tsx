@@ -11,6 +11,7 @@ import { useNotificationSync } from '@/hooks/useNotificationSync';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getQueryClient } from '@/lib/queryClient';
 import { useSessionStore } from '@/stores/sessionStore';
+import { AppErrorBoundary } from '@/components/patterns/AppErrorBoundary';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -21,7 +22,9 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemedLayout />
+      <AppErrorBoundary>
+        <ThemedLayout />
+      </AppErrorBoundary>
     </QueryClientProvider>
   );
 }

@@ -6,27 +6,27 @@ flowchart TD
   subgraph DB["Supabase (RLS org-scoped)"]
     CE[(calendar_events)]
     REM[(calendar_reminders)]
+    TASKS[(tasks)]
     DOGS[(dogs)]
     MED[(medical_records)]
     TRANS[(transports)]
     ORGSETTINGS[(orgs.settings\nquarantine_days)]
     RPC["RPC: get_calendar_events\nfilters: range, source_type[], dog, contact, stage, visibility, search"]
-    AUTO["automation: handle_calendar_workflows()\n(stage -> foster check-in task + reminder)"]
   end
 
   CAL -->|React Query fetch| RPC
   CAL -->|createCalendarEvent (manual)| CE
+  CAL -->|createTask| TASKS
   CE --> REM
   RPC --> CAL
 
   DOGS --> RPC
   MED --> RPC
   TRANS --> RPC
-  DOGS --> AUTO
+  TASKS --> RPC
   ORGSETTINGS --> RPC
-  AUTO --> CE
-  AUTO --> REM
 
   CE -. reminders .-> RPC
   CE -. manual artifacts .-> RPC
+  TASKS -. projected as task events .-> RPC
   DOGS -. quarantine projection .-> RPC

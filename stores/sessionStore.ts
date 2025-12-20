@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { getQueryClient } from '@/lib/queryClient';
 import { acceptInvitesForCurrentUser } from '@/lib/data/invites';
 import { linkMyContactInOrg } from '@/lib/data/contacts';
+import { logger } from '@/lib/logger';
 
 type User = {
   id: string;
@@ -242,14 +243,19 @@ const bootstrapSupabaseSession = async (set: StoreSetter) => {
     const maybeMissingRpc =
       lower.includes('does not exist') && lower.includes('accept_org_invites_for_current_user');
     const maybeRls = lower.includes('rls') || err?.code === '42501';
-    console.warn(
-      'Skipping invite acceptance',
-      maybeMissingRpc
-        ? 'RPC missing - run supabase/migrations/20251220_invites.sql and 20251224_accept_invites_fix2.sql'
+    logger.warn('Skipping invite acceptance', {
+      reason: maybeMissingRpc
+        ? 'rpc_missing'
         : maybeRls
-          ? 'Invite acceptance blocked by RLS - ensure invite policies are applied'
-          : err
-    );
+          ? 'rls'
+          : 'unknown',
+      hint: maybeMissingRpc
+        ? 'Run supabase/migrations/20251220_invites.sql and 20251224_accept_invites_fix2.sql'
+        : maybeRls
+          ? 'Ensure invite policies are applied'
+          : undefined,
+      err,
+    });
   }
 
   const [{ data: membershipsData, error: membershipsError }, { data: profileData, error: profileError }] =
@@ -263,7 +269,7 @@ const bootstrapSupabaseSession = async (set: StoreSetter) => {
     ]);
 
   if (membershipsError || !membershipsData) {
-    console.warn('Membership fetch failed; staying signed-in without org context', membershipsError);
+    logger.warn('Membership fetch failed; staying signed-in without org context', { err: membershipsError });
     set({
       ready: true,
       isAuthenticated: true,
@@ -299,11 +305,11 @@ const bootstrapSupabaseSession = async (set: StoreSetter) => {
       await linkMyContactInOrg(membership.org_id);
     }
   } catch (err) {
-    console.warn('Contact linking skipped', err);
+    logger.warn('Contact linking skipped', { err });
   }
 
   if (profileError) {
-    console.warn('Profile fetch failed; using auth user data only', profileError);
+    logger.warn('Profile fetch failed; using auth user data only', { err: profileError });
   }
 
   const currentUserWithProfile: User = {

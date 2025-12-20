@@ -66,8 +66,8 @@ Org-scoped business tables (examples: `dogs`, `transports`, `medical_records`, `
 - Deletes are admin-only in the current migrations.
 
 `activity_events`
-- Members can read/insert within their org.
-- Treat as append-only at application level (no UPDATE/DELETE flows).
+- Members can read within their org.
+- Client writes are disabled; audit events are append-only via DB triggers / security-definer code paths.
 
 ## Soft delete (implemented)
 

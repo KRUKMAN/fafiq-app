@@ -6,6 +6,7 @@ This folder contains the authoritative execution roadmap for the project.
 - Fafik_System_Context.md
 - project_context.md
 - implementation_plan.md
+- audit_events.md
 - rls.md
 - schema.md
 - storage.md

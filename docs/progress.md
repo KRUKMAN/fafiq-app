@@ -27,12 +27,14 @@ Reference: `docs/implementation_plan.md`
 - Added password reset flow on sign-in and verified Supabase-first session boot persists org selection; added dog detail document upload using Supabase Storage helpers (documents bucket).
 - Added `org_contacts` model + People & Homes contacts directory (supports offline contacts, invite/link flows, and assigning transports to contacts); updated schema/RLS docs and diagrams.
 - Round 3 deep polish (UI + architecture): introduced semantic tokens `bg-background/bg-card/text-foreground` (+ status colors), centralized copy in `constants/strings.ts`, standardized inline feedback with `components/ui/StatusMessage.tsx` (no toasts), extracted `lib/pagination.ts` and `lib/viewModels/dogProfile.ts`, and replaced RowActionsMenu overlay hack with a `Modal`-based implementation; lint clean.
+- Calendar/tasks refactor staged: added `tasks` table + org-scoped indexes/RLS, removed legacy `handle_calendar_workflows` trigger/function, cleaned `system_task` artifacts, updated `get_calendar_events` to surface tasks with inline reminders, refreshed Zod enum/docs/diagrams.
 
 
 ## Watch-outs / Next Steps
 - Compare regenerated `database.types.ts` with Zod and resolve any drift after recent migrations. (Done; keep checking after future migrations.)
 - Audit triggers are already in place; ensure any new mutations rely on them (no client-side audit writes).
 - Session boot is Supabase-first; keep an eye on membership fetch failures and org selection persistence when switching orgs or reloading.
+- Run the new tasks/calendar migration and regenerate Supabase types to remove manual edits to `database.types.ts`.
 
 ## Next Steps (short-term)
 - Invites remain settings-only; add other invite surfaces only if the product needs them (reuse existing RPCs).

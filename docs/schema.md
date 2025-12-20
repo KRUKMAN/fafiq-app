@@ -164,6 +164,39 @@ create index transports_org_id_idx on public.transports(org_id);
 create index transports_org_status_idx on public.transports(org_id, status);
 ```
 
+### `tasks` (actionable checklists, separate from calendar slots)
+
+```sql
+create table public.tasks (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.orgs(id) on delete cascade,
+
+  title text not null,
+  description text,
+
+  status text not null default 'todo' check (status in ('todo','in_progress','done','canceled')),
+  priority text default 'normal',
+  due_at timestamptz,
+
+  link_type text,
+  link_id uuid,
+  assigned_membership_id uuid references public.memberships(id),
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index tasks_org_id_idx on public.tasks(org_id);
+create index tasks_org_status_idx on public.tasks(org_id, status);
+create index tasks_org_due_at_idx on public.tasks(org_id, due_at);
+create index tasks_org_assigned_membership_idx on public.tasks(org_id, assigned_membership_id);
+```
+
+Notes:
+- Tasks are distinct from calendar slots; `get_calendar_events` aggregates tasks by projecting `due_at` (or `created_at` fallback) into a visual time window.
+- Workflow automation triggers on `dogs` were removed; task creation is explicit in application code or future automation modules.
+- RLS uses `is_active_org_member(org_id)` for read/write; deletes follow the same org membership rule.
+
 ### `medical_records` (structured medical timeline)
 
 ```sql
@@ -287,6 +320,10 @@ create index activity_events_org_created_idx on public.activity_events(org_id, c
 create index activity_events_entity_idx on public.activity_events(org_id, entity_type, entity_id, created_at desc);
 ```
 
+Feed linkage (recommended):
+- Triggers/RPCs should populate `related.dog_id` (UUID string) for events relevant to a dog timeline.
+- For performance, an expression index on `related->>'dog_id'` can be added.
+
 Atomicity rule (MVP):
 - Do not rely on the client to do “write row then insert activity event” as two separate requests.
 - Require atomic write + audit event via Postgres triggers for simple CRUD and/or Supabase RPCs (stored procedures) for complex mutations (e.g., assign foster, stage transition).
@@ -331,7 +368,7 @@ create table public.org_contacts (
 ## Notes on current DB vs app usage
 
 - Soft delete is enforced in RLS read policies for `dogs`, `transports`, and `org_contacts` (admins can still read deleted rows for recovery).
-- `documents` table exists with RLS + audit trigger, but the current app UI uploads to the `documents` bucket without inserting `documents` rows yet.
+- `documents` table exists with RLS + audit trigger, and the app creates `documents` rows after uploads (list/open/delete is wired).
 
 ## Schema Verification
 

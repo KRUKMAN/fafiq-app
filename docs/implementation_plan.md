@@ -10,6 +10,7 @@ This plan is aligned to `Fafik_System_Context.md` and cross-checked against the 
 - Dogs/Transports/Activity hooks now fetch from Supabase when env/session is present (mock fallback remains); dog detail drawer has Financial/People & Housing/Chat mock tabs; transports include list + detail shells.
 - Org settings include membership list + email view + invite flow (email-based) with resend/cancel; invites auto-accept on session bootstrap.
 - Storage buckets/policies for dog photos/documents are applied; dog photo upload + list (signed read URL) and dog/transport document upload + list/open/delete (via `documents` table, with size/icon) are integrated.
+- Calendar refactor staged: tasks table + org-scoped indexes/RLS added, legacy dog-stage calendar trigger removed, `get_calendar_events` aggregates tasks with reminders; Zod enum updated to include `task`.
 - Create/Edit Dog now write to Supabase (org-scoped), validate stage against org settings, and invalidate caches (Create redirects to new dog detail).
 - Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
 
@@ -238,9 +239,16 @@ Notes:
 |---|---|---|
 | Dogs | Trigger (`audit_activity`) | done |
 | Transports | Trigger (`audit_activity`) | done |
+| Medical records | Trigger (`audit_activity`) | done |
+| Expenses | Trigger (`audit_activity`) | done |
 | Photos | Trigger (`audit_activity`) | done |
+| Documents | Trigger (`audit_activity`) | done |
+| Memberships | Trigger (`audit_activity`) | done |
 
-Client-side audit inserts are forbidden.
+Client-side audit inserts are forbidden (enforced at DB level).
+
+Audit contracts:
+- `docs/audit_events.md` defines `event_type` taxonomy and `related.dog_id` linkage used by timeline RPCs.
 
 ---
 
@@ -288,8 +296,9 @@ planned | in_progress | done | mocked | blocked
 | Task | Status |
 |---|---|
 | Empty states | planned |
-| Error boundaries | planned |
+| Error boundaries | done (basic global boundary) |
 | Offline indicators | planned |
+| Structured logger wrapper | done (client-side) |
 
 ---
 
@@ -338,6 +347,8 @@ Definition of Done:
 - 2025-12-18: Added transport detail shell + navigation, filled remaining dog mock tabs (Financial/People & Housing/Chat), generated `database.types.ts`, and added org-aware cache invalidation + Supabase bootstrap fallback in session store.
 - 2025-12-18: Cleaned encoding/ternary corruption in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now stable); remaining mocks unchanged.
 - 2026-01-05: Added calendar_events/calendar_reminders tables with RLS/audit, centralized automation trigger, refactored get_calendar_events aggregator (reminders + filters), and refreshed calendar UI/notification sync per `docs/calendar_workflows_plan.md`.
+- 2026-01-08: Split tasks from calendar artifacts: added `tasks` table with RLS/indexes, dropped `handle_calendar_workflows` trigger/function, removed legacy system_task rows, and updated `get_calendar_events` + Zod schema to surface tasks with reminders.
+- 2026-01-09: Implemented server-side Dog timeline aggregation (`get_dog_timeline`), hardened audit integrity (clients can’t insert audit rows), and added structured logging + a global error boundary.
 
 
 # Phase 4 â€” Scheduling & Reliability (Calendar, Notifications, Sync)
@@ -366,6 +377,7 @@ planned | in_progress | done | mocked | blocked
 | Migration: Add `get_calendar_events` RPC | done |
 | RPC Logic: Dynamic Quarantine calculation (via `orgs.settings`) | done |
 | RPC Logic: Unified JSON return shape (Medical + Quarantine + Transport) | done |
+| Add `tasks` table, drop legacy dog-stage trigger, include tasks in RPC | done (migration staged; run locally) |
 | Zod Schema: `schemas/calendarEvent.ts` (Authoritative shape) | done |
 
 **Technical constraint:** The RPC must handle `org_id` security (RLS) internally or via `SECURITY INVOKER`. Quarantines must be calculated using `orgs.settings.quarantine_days` (defaulting to 14), not stored in a column.

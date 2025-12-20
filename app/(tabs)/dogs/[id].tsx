@@ -20,6 +20,7 @@ import * as Linking from 'expo-linking';
 
 import { UI_COLORS } from '@/constants/uiColors';
 import { LAYOUT_STYLES } from '@/constants/layout';
+import { ActivityTimeline } from '@/components/dogs/ActivityTimeline';
 import { NoteModal } from '@/components/dogs/NoteModal';
 import { Drawer } from '@/components/patterns/Drawer';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
@@ -30,9 +31,9 @@ import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { useDog } from '@/hooks/useDog';
 import { useDogPhotos } from '@/hooks/useDogPhotos';
-import { useDogTimeline } from '@/hooks/useDogTimeline';
 import { useDocuments } from '@/hooks/useDocuments';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
+import { formatDateOnly, formatTimestampShort } from '@/lib/formatters/dates';
 import { updateDog } from '@/lib/data/dogs';
 import { createDocumentRecord, deleteDocumentRecord } from '@/lib/data/documents';
 import {
@@ -543,7 +544,7 @@ const renderTab = (
         />
       );
     case 'Timeline':
-      return activeOrgId ? <TimelineTab orgId={activeOrgId} dogId={dog.id} /> : null;
+      return activeOrgId ? <ActivityTimeline orgId={activeOrgId} dogId={dog.id} /> : null;
     case 'Medical':
       return <MedicalTab history={dog.medicalHistory} />;
     case 'Documents':
@@ -1015,66 +1016,6 @@ const OverviewTab = ({
   );
 };
 
-const TimelineTab = ({ orgId, dogId }: { orgId: string; dogId: string }) => {
-  const { data, isLoading, error } = useDogTimeline(orgId, dogId);
-
-  if (isLoading) {
-    return (
-      <View className="items-center justify-center py-6">
-        <ActivityIndicator />
-        <Typography variant="body" color="muted" className="mt-2">Loading timeline...</Typography>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View className="items-center justify-center py-6">
-        <Typography variant="body" className="text-sm font-semibold text-gray-900">
-          Failed to load timeline
-        </Typography>
-        <Typography variant="caption" color="muted" className="mt-1">
-          {(error as Error).message || 'Please try again shortly.'}
-        </Typography>
-      </View>
-    );
-  }
-
-  if (!data?.length) {
-    return (
-      <View className="items-center justify-center py-6">
-        <Typography variant="body" color="muted">No activity yet for this dog.</Typography>
-      </View>
-    );
-  }
-
-  return (
-    <View className="gap-4">
-      {data.map((event, idx) => {
-        const isLast = idx === data.length - 1;
-        return (
-          <View key={event.id} className="flex-row gap-3">
-            <View className="items-center">
-              <View className="w-3 h-3 rounded-full bg-gray-900 mt-1" />
-              {!isLast ? <View className="flex-1 w-px bg-border mt-1" /> : null}
-            </View>
-            <View className="flex-1 bg-white border border-border rounded-lg p-3 shadow-sm">
-              <Typography variant="caption" color="muted">{formatTimestamp(event.created_at)}</Typography>
-              <Typography variant="body" className="text-sm font-semibold text-gray-900 mt-1">
-                {event.summary}
-              </Typography>
-              <Typography variant="label" color="muted" className="text-[11px] uppercase tracking-wide mt-1">
-                {event.event_type}
-              </Typography>
-              {renderPayload(event.payload)}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-};
-
 const MedicalTab = ({ history }: { history: MedicalRecord[] }) => {
   if (!history.length) {
     return (
@@ -1087,13 +1028,13 @@ const MedicalTab = ({ history }: { history: MedicalRecord[] }) => {
   return (
     <View className="gap-3">
       {history.map((record) => (
-        <View key={record.id} className="bg-white border border-border rounded-lg p-4 shadow-sm">
-          <View className="flex-row justify-between items-center mb-1">
-            <Typography variant="body" className="text-sm font-semibold text-gray-900">
-              {record.title}
-            </Typography>
-            <Typography variant="caption" color="muted">{formatDateOnly(record.date)}</Typography>
-          </View>
+          <View key={record.id} className="bg-white border border-border rounded-lg p-4 shadow-sm">
+            <View className="flex-row justify-between items-center mb-1">
+              <Typography variant="body" className="text-sm font-semibold text-gray-900">
+                {record.title}
+              </Typography>
+              <Typography variant="caption" color="muted">{formatDateOnly(record.date)}</Typography>
+            </View>
           <Typography variant="bodySmall" className="text-xs font-medium text-gray-600 mb-2">
             {record.status}
           </Typography>
@@ -1247,7 +1188,7 @@ const FilesTab = ({
                 {file.name}
               </Typography>
               <Typography variant="caption" color="muted">
-                {file.type} - Uploaded {formatTimestamp(file.uploadedAt)}
+                {file.type} - Uploaded {formatTimestampShort(file.uploadedAt)}
               </Typography>
             </View>
             <View className="flex-row items-center gap-3">
@@ -1430,7 +1371,7 @@ const NotesList = ({ notes, onAddNote }: { notes: Note[]; onAddNote: () => void 
             <Typography variant="body" className="text-sm font-semibold text-gray-900">
               {note.author}
             </Typography>
-            <Typography variant="caption" color="muted">{formatTimestamp(note.createdAt)}</Typography>
+            <Typography variant="caption" color="muted">{formatTimestampShort(note.createdAt)}</Typography>
           </View>
           <Typography variant="body" className="text-sm text-gray-700">{note.body}</Typography>
         </View>
@@ -1445,43 +1386,7 @@ const PlaceholderTab = ({ label }: { label: string }) => (
   </View>
 );
 
-const renderPayload = (payload: Record<string, unknown>) => {
-  const entries = Object.entries(payload ?? {});
-  if (!entries.length) return null;
-  return (
-    <View className="mt-3 gap-1">
-      {entries.map(([key, value]) => (
-        <View key={key} className="flex-row justify-between">
-          <Typography variant="caption" color="muted">{key}</Typography>
-          <Typography variant="caption" className="text-xs font-medium text-gray-800">
-            {String(value)}
-          </Typography>
-        </View>
-      ))}
-    </View>
-  );
-};
-
-const formatTimestamp = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const formatDateOnly = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
+// Dates are centralized in lib/formatters/dates.ts
 
 
 

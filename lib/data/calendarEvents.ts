@@ -2,14 +2,9 @@ import dayjs from 'dayjs';
 
 import { getMockCalendarEvents } from '@/lib/mocks/calendarEvents';
 import { supabase } from '@/lib/supabase';
-import {
-  CalendarEvent,
-  calendarEventSchema,
-  calendarReminderSchema,
-  CalendarReminder,
-  CalendarSourceType,
-} from '@/schemas/calendarEvent';
+import { CalendarEvent, CalendarReminder, CalendarSourceType } from '@/schemas/calendarEvent';
 import { formatSupabaseError } from './errors';
+import { logger } from '@/lib/logger';
 
 type FetchCalendarEventsParams = {
   orgId: string;
@@ -47,28 +42,84 @@ type NewCalendarEventInput = {
   reminders?: CalendarReminderInput[];
 };
 
-const normalizeReminder = (reminder: any): CalendarReminder =>
-  calendarReminderSchema.parse({
-    ...reminder,
-    offset_minutes: typeof reminder?.offset_minutes === 'number' ? reminder.offset_minutes : Number(reminder?.offset_minutes ?? 0),
-    scheduled_at: reminder?.scheduled_at ?? reminder?.scheduledAt ?? '',
-    deterministic_key: reminder?.deterministic_key ?? reminder?.deterministicKey ?? '',
-    payload: reminder?.payload ?? {},
-  });
+const normalizeReminder = (reminder: any): CalendarReminder | null => {
+  if (!reminder || typeof reminder !== 'object') return null;
+  const scheduled =
+    typeof reminder.scheduled_at === 'string'
+      ? reminder.scheduled_at
+      : typeof reminder.scheduledAt === 'string'
+        ? reminder.scheduledAt
+        : null;
+  if (!scheduled) return null;
 
-const normalizeEvent = (event: any): CalendarEvent =>
-  calendarEventSchema.parse({
-    ...event,
-    source_type: event.source_type ?? event.type ?? 'general',
-    source_id: event.source_id ?? event.id ?? null,
+  const offset =
+    typeof reminder.offset_minutes === 'number'
+      ? reminder.offset_minutes
+      : Number(reminder.offset_minutes ?? reminder.offsetMinutes ?? 0);
+
+  const deterministic =
+    reminder.deterministic_key ??
+    reminder.deterministicKey ??
+    reminder.id ??
+    (scheduled ? `rem_${scheduled}` : null);
+
+  return {
+    id: String(reminder.id ?? deterministic ?? ''),
+    type: typeof reminder.type === 'string' ? reminder.type : 'local',
+    offset_minutes: Number.isFinite(offset) ? offset : 0,
+    scheduled_at: scheduled,
+    deterministic_key: deterministic ? String(deterministic) : '',
+    payload: typeof reminder.payload === 'object' && reminder.payload !== null ? reminder.payload : {},
+  };
+};
+
+const normalizeEvent = (event: any): CalendarEvent | null => {
+  if (!event || typeof event !== 'object') return null;
+  const reminders = Array.isArray(event?.reminders)
+    ? event.reminders
+        .map((reminder: any) => {
+          try {
+            return normalizeReminder(reminder);
+          } catch (err) {
+            logger.warn('Invalid calendar reminder, skipping', { err, reminder });
+            return null;
+          }
+        })
+        .filter(Boolean)
+    : [];
+
+  const startAt = typeof event.start_at === 'string' ? event.start_at : null;
+  const endAt = typeof event.end_at === 'string' ? event.end_at : null;
+  if (!startAt || !endAt) return null;
+
+  const sourceType = typeof event.source_type === 'string' ? event.source_type : event.type ?? 'general';
+  const eventId = event.event_id ?? event.id;
+  const orgId = event.org_id;
+  if (!eventId || !orgId) return null;
+
+  return {
+    event_id: String(eventId),
+    org_id: String(orgId),
+    source_type: sourceType as CalendarSourceType,
+    source_id: event.source_id ? String(event.source_id) : null,
+    title: event.title ?? 'Event',
+    start_at: startAt,
+    end_at: endAt,
+    location: event.location ?? null,
+    status: event.status ?? null,
     link_type: event.link_type ?? 'none',
     link_id: event.link_id ?? null,
     visibility: event.visibility ?? 'org',
-    location: event.location ?? null,
-    status: event.status ?? null,
     meta: event.meta ?? {},
-    reminders: Array.isArray(event?.reminders) ? event.reminders.map(normalizeReminder) : [],
-  });
+    reminders: reminders as CalendarReminder[],
+  };
+};
+
+const normalizeList = (raw: any[]): CalendarEvent[] =>
+  raw
+    .map(normalizeEvent)
+    .filter(Boolean)
+    .sort((a, b) => (a?.start_at ?? '').localeCompare(b?.start_at ?? '')) as CalendarEvent[];
 
 export const fetchCalendarEvents = async (params: FetchCalendarEventsParams): Promise<CalendarEvent[]> => {
   const start = dayjs(params.startDate ?? undefined).isValid()
@@ -86,7 +137,7 @@ export const fetchCalendarEvents = async (params: FetchCalendarEventsParams): Pr
       throw new Error('Supabase env vars missing; calendar sync requires a live backend.');
     }
     const mockEvents = await getMockCalendarEvents(params.orgId, startIso, endIso);
-    return mockEvents.map(normalizeEvent).sort((a, b) => a.start_at.localeCompare(b.start_at));
+    return normalizeList(mockEvents);
   }
 
   const { data, error } = await supabase.rpc('get_calendar_events', {
@@ -102,14 +153,20 @@ export const fetchCalendarEvents = async (params: FetchCalendarEventsParams): Pr
   });
 
   if (!error) {
-    return (data ?? []).map(normalizeEvent).sort((a, b) => a.start_at.localeCompare(b.start_at));
+    const normalized = normalizeList(data ?? []);
+    if ((data?.length ?? 0) > 0 && normalized.length === 0) {
+      logger.warn('Calendar events received but none parsed successfully', {
+        sample: data?.slice(0, 3),
+      });
+    }
+    return normalized;
   }
 
   const message = formatSupabaseError(error, 'Failed to load calendar events');
   if (params.fallbackToMockOnError && !params.requireLive) {
-    console.warn(message, 'Falling back to mock calendar events.');
+    logger.warn('Failed to load calendar events; falling back to mock', { message });
     const mockEvents = await getMockCalendarEvents(params.orgId, startIso, endIso);
-    return mockEvents.map(normalizeEvent).sort((a, b) => a.start_at.localeCompare(b.start_at));
+    return normalizeList(mockEvents);
   }
 
   throw new Error(message);

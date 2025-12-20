@@ -11,6 +11,7 @@ erDiagram
   ORGS ||--o{ DOG_PHOTOS : owns
   ORGS ||--o{ DOCUMENTS : owns
   ORGS ||--o{ ACTIVITY_EVENTS : owns
+  ORGS ||--o{ TASKS : owns
   DOGS ||--o{ TRANSPORTS : may_include
   DOGS ||--o{ MEDICAL_RECORDS : tracks
   DOGS ||--o{ EXPENSES : costs
@@ -19,6 +20,7 @@ erDiagram
   ORG_CONTACTS ||--o{ TRANSPORTS : assigns_driver
   MEMBERSHIPS ||--o{ DOGS : assigns_responsible
   MEMBERSHIPS ||--o{ TRANSPORTS : assigns_driver
+  MEMBERSHIPS ||--o{ TASKS : may_assign
   MEMBERSHIPS ||--o{ ACTIVITY_EVENTS : actor
   TRANSPORTS ||--o{ ACTIVITY_EVENTS : logged
   DOCUMENTS ||--o{ ACTIVITY_EVENTS : logged
@@ -105,6 +107,20 @@ erDiagram
     text entity_type
     uuid entity_id
     text storage_path
+  }
+  TASKS {
+    uuid id PK
+    uuid org_id FK
+    text title
+    text description
+    text status
+    text priority
+    timestamptz due_at
+    text link_type
+    uuid link_id
+    uuid assigned_membership_id FK
+    timestamptz created_at
+    timestamptz updated_at
   }
   ACTIVITY_EVENTS {
     uuid id PK

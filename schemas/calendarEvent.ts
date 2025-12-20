@@ -12,7 +12,9 @@ export const calendarReminderSchema = z.object({
 export const calendarEventSchema = z.object({
   event_id: z.string(),
   org_id: z.string(),
-  source_type: z.enum(['medical', 'transport', 'quarantine', 'general', 'system_task', 'finance', 'external', 'quarantine_artifact']).or(z.string()),
+  source_type: z
+    .enum(['medical', 'transport', 'quarantine', 'general', 'system_task', 'finance', 'external', 'quarantine_artifact', 'task'])
+    .or(z.string()),
   source_id: z.string().nullable(),
   title: z.string(),
   start_at: z.string(),

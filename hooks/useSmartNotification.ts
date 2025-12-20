@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { logger } from '@/lib/logger';
+
 export type SmartMessage = { variant: 'info' | 'success' | 'error'; text: string };
 
 export const useSmartNotification = (defaultToast?: boolean) => {
@@ -29,7 +31,7 @@ export const useSmartNotification = (defaultToast?: boolean) => {
         }
       } catch (err) {
         // Toast is best-effort; keep inline StatusMessage as primary UX.
-        console.warn('Toast notification unavailable', err);
+        logger.warn('Toast notification unavailable', { err });
       }
     },
     [defaultToast]
@@ -39,4 +41,3 @@ export const useSmartNotification = (defaultToast?: boolean) => {
 
   return { message, notify, clear };
 };
-
