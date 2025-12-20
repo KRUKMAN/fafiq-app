@@ -10,7 +10,6 @@ import {
   DollarSign,
   Home as HomeIcon,
   MapPin,
-  MoreHorizontal,
   User,
   X,
 } from 'lucide-react-native';
@@ -645,13 +644,12 @@ const DogHeader = ({
         <Typography variant="body" color="muted" className="text-sm font-mono mb-3">
           Internal ID: {dog.internalId || '-'}
         </Typography>
-        <Pressable className="flex-row items-center gap-2 bg-white border border-border py-1.5 px-3 rounded-full self-start">
+        <View className="flex-row items-center gap-2 bg-white border border-border py-1.5 px-3 rounded-full self-start">
           <HomeIcon size={14} color={UI_COLORS.foreground} />
           <Typography variant="body" className="text-[13px] font-semibold text-gray-900">
             {dog.stage}
           </Typography>
-          <ChevronDown size={12} color={UI_COLORS.muted} />
-        </Pressable>
+        </View>
       </View>
     </View>
 
@@ -673,9 +671,6 @@ const DogHeader = ({
         disabled={!supabaseReady || photoUploading}
       />
       <ActionButton label="Upload document" onPress={onUploadDocument} />
-      <Pressable className="w-10 h-10 items-center justify-center border border-border rounded-md bg-white">
-        <MoreHorizontal size={20} color={UI_COLORS.muted} />
-      </Pressable>
     </View>
     {photoStatus ? <Typography variant="caption" color="muted" className="text-xs">{photoStatus}</Typography> : null}
   </View>
