@@ -1,4 +1,4 @@
-# Implementation Plan (Phased Roadmap)
+﻿# Implementation Plan (Phased Roadmap)
 
 This plan is aligned to `Fafik_System_Context.md` and cross-checked against the current codebase.
 
@@ -14,7 +14,7 @@ This plan is aligned to `Fafik_System_Context.md` and cross-checked against the 
 - Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
 
 
-# Phase 1 — Visual MVP (Frontend-First, Mocked)
+# Phase 1 â€” Visual MVP (Frontend-First, Mocked)
 
 Goal: fully clickable app validating UX, navigation, and data density.
 No database. No auth. No persistence.
@@ -67,7 +67,7 @@ Rules:
 | useTransports() | done |
 
 Requirements:
-- Simulated latency (300–800ms)
+- Simulated latency (300â€“800ms)
 - Loading + error states visible
 
 ---
@@ -136,7 +136,7 @@ Note: Dog list must include filters (stage) and search; selecting a dog opens it
 - Timeline renders mock activity
 - Deep links work on web
 
-# Phase 2 — Backend Integration (Zero UI Rewrite)
+# Phase 2 â€” Backend Integration (Zero UI Rewrite)
 
 Goal: replace mocks with Supabase without touching UI components.
 
@@ -251,7 +251,7 @@ Client-side audit inserts are forbidden.
 - Timeline shows real audit events
 - Phase 1 UI unchanged
 
-# Phase 3 — Operations & Production Readiness
+# Phase 3 â€” Operations & Production Readiness
 
 Goal: enable real-world NGO operations and harden the app.
 
@@ -337,6 +337,97 @@ Definition of Done:
 - 2025-12-18: Realigned Dog Zod schema to `schema.md` (stage + audit fields), refreshed mocks and UI to use stage-based filters/badges, and documented dependency audit for Phase 2 wiring.
 - 2025-12-18: Added transport detail shell + navigation, filled remaining dog mock tabs (Financial/People & Housing/Chat), generated `database.types.ts`, and added org-aware cache invalidation + Supabase bootstrap fallback in session store.
 - 2025-12-18: Cleaned encoding/ternary corruption in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now stable); remaining mocks unchanged.
+- 2026-01-05: Added calendar_events/calendar_reminders tables with RLS/audit, centralized automation trigger, refactored get_calendar_events aggregator (reminders + filters), and refreshed calendar UI/notification sync per `docs/calendar_workflows_plan.md`.
+
+
+# Phase 4 â€” Scheduling & Reliability (Calendar, Notifications, Sync)
+
+> For the detailed calendar/workflow design and UI polish plan, see `docs/calendar_workflows_plan.md`.
+
+Goal: Implement a robust, offline-first scheduling system for Admins (Web) and Volunteers (Mobile), backed by a self-healing reconciliation engine.
+
+**Critical Architecture Decisions:**
+1.  **Single Source of Truth:** A unified Supabase RPC (`get_calendar_events`) aggregates Medical Records, Transports, and dynamically calculated Quarantines.
+2.  **Platform Split:** Mobile uses `expo-notifications` (Local); Web uses `sonner` (Toasts).
+3.  **Idempotent Sync:** Notifications are scheduled via a "Pull" model on App Resume using deterministic IDs (e.g., `med_{uuid}_{date}`), not a "Push" model on record creation.
+4.  **Reconciliation:** The app auto-heals state (data & notifications) when returning from the background.
+
+---
+
+## Status Legend
+planned | in_progress | done | mocked | blocked
+
+---
+
+## 4.1 Database & RPC Layer
+
+| Task | Status |
+|---|---|
+| Migration: Add `get_calendar_events` RPC | done |
+| RPC Logic: Dynamic Quarantine calculation (via `orgs.settings`) | done |
+| RPC Logic: Unified JSON return shape (Medical + Quarantine + Transport) | done |
+| Zod Schema: `schemas/calendarEvent.ts` (Authoritative shape) | done |
+
+**Technical constraint:** The RPC must handle `org_id` security (RLS) internally or via `SECURITY INVOKER`. Quarantines must be calculated using `orgs.settings.quarantine_days` (defaulting to 14), not stored in a column.
+Assumption applied: quarantine start derives from `dogs.extra_fields.quarantine_start` when present, otherwise `dogs.created_at`.
+
+---
+
+## 4.2 Notification Infrastructure (Platform-Aware)
+
+| Task | Status |
+|---|---|
+| Install `expo-notifications` & `sonner-native` | done |
+| Hook: `useNotificationSync.ts` (The Logic Engine) | done |
+| Feature: Idempotent scheduling loop (fetch RPC -> schedule with deterministic ID) | done |
+| Hook: `useSmartNotification` (The UI helper for immediate feedback) | done |
+| Config: `app/_layout.tsx` handler configuration | done |
+
+**Logic:**
+- **Mobile:** On `AppState.active`, fetch the next 14 days of events from RPC. Schedule local notifications using `identifier: type_id_date` to prevent duplicates.
+- **Web:** Skip local scheduling. Use Toasts for immediate user feedback only.
+
+---
+
+## 4.3 Calendar UI Module
+
+| Component | Status |
+|---|---|
+| Install `react-native-big-calendar` & `dayjs` | done |
+| Screen: `app/(tabs)/calendar/index.tsx` | done |
+| Helper: `useCalendarEvents` hook (React Query wrapper around RPC) | done |
+| Component: `CalendarHeader` (View switcher: Day/Week/Month) | done |
+| UX: Event color coding (Red=Medical, Orange=Quarantine) | done |
+| Interaction: Tap event -> Deep link to Dog/Transport Detail | done |
+
+**UI System Compliance:**
+- Wrap screen in `ScreenGuard` (Org/Session check).
+- Use `PageHeader` for the top nav.
+- Use `constants/uiColors.ts` for event colors (do not hardcode hex values if possible).
+- Ensure `react-native-big-calendar` is responsive on Web.
+
+---
+
+## 4.4 Data Reconciliation (The Reliability Engine)
+
+| Task | Status |
+|---|---|
+| Hook: `useAppReconciliation.ts` | done |
+| Logic: Invalidate React Query cache on App Resume | done |
+| Logic: Trigger `useNotificationSync` on App Resume | done |
+| Wiring: Attach to `app/_layout.tsx` | done |
+
+**Goal:** Prevent "Ghost Notifications" (alerts for deleted tasks) and stale UI data.
+
+---
+
+## Phase 4 Definition of Done
+- [x] **Database:** RPC returns unified events and respects `org_settings` for quarantine duration.
+- [x] **Mobile:** App schedules notifications for the next 14 days immediately upon launch.
+- [x] **Resilience:** Changing `org_settings.quarantine_days` instantly updates the Calendar UI and re-schedules notifications on the next sync.
+- [x] **UI:** Calendar view works on Web and Mobile; clicking an event navigates to the correct detail screen.
+- [x] **Web:** Does not crash on `expo-notifications` imports.
+
 
 
 

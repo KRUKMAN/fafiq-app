@@ -1,5 +1,6 @@
 import { Slot, usePathname, useRouter } from 'expo-router';
 import {
+  Calendar,
   Dog,
   DollarSign,
   Grid,
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: Grid },
   { href: '/dogs', label: 'Dogs', icon: Dog },
   { href: '/transports', label: 'Transports', icon: Truck },
+  { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/people', label: 'People & Homes', icon: Users },
   { href: '/finance', label: 'Finance', icon: DollarSign },
   { href: '/settings', label: 'Settings', icon: Settings },

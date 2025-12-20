@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant App as AppState
+  participant Reco as useAppReconciliation
+  participant Query as React Query
+  participant RPC as get_calendar_events (Supabase)
+  participant Notify as useNotificationSync
+  participant OS as Expo Notifications
+
+  App->>Reco: App resumes (state = active)
+  Reco->>Query: Invalidate dogs/transports/calendar-events
+  Reco->>Notify: syncNotifications()
+  Notify->>RPC: fetch calendar events (org_id, date range, filters)
+  RPC-->>Notify: unified events + reminders[]
+  alt Platform != web
+    Notify->>OS: cancel scheduled notifications not in reminders.deterministic_key
+    Notify->>OS: schedule reminders (scheduled_at, deterministic_key)
+    OS-->>Notify: scheduled identifiers
+  else Platform = web
+    Notify-->>Notify: skip local scheduling (StatusMessage / toast)
+  end
+  Notify-->>App: surface status (StatusMessage + optional toast)

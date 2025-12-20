@@ -88,6 +88,78 @@ export const STRINGS = {
     emptyTransporters: 'No transporters found for this org.',
     emptyTransports: 'No transports scheduled for this org.',
   },
+  calendar: {
+    title: 'Calendar',
+    subtitle: 'Schedule across medical, transports, and quarantine windows.',
+    syncNow: 'Sync notifications',
+    syncing: 'Syncing notifications...',
+    empty: 'No events scheduled in this range.',
+    viewDay: 'Day',
+    viewWeek: 'Week',
+    viewMonth: 'Month',
+    today: 'Today',
+    previous: 'Prev',
+    next: 'Next',
+    loading: 'Loading calendar...',
+    filters: {
+      searchPlaceholder: 'Search events, dogs, or locations...',
+      typeLabel: 'Types',
+      dogLabel: 'Dog',
+      contactLabel: 'Contact / Foster',
+      stageLabel: 'Stage',
+      anyStage: 'Any',
+      dateRangeLabel: 'Date range',
+      startPlaceholder: 'Start (YYYY-MM-DD)',
+      endPlaceholder: 'End (YYYY-MM-DD)',
+      clear: 'Clear filters',
+    },
+    addEvent: {
+      cta: 'Add Event',
+      general: 'General event',
+      medical: 'Log medical record',
+      transport: 'Schedule transport',
+      titleLabel: 'Title',
+      startLabel: 'Start',
+      endLabel: 'End',
+      locationLabel: 'Location',
+      typeLabel: 'Type',
+      datetimePlaceholder: 'YYYY-MM-DDTHH:mm',
+      reminderOffsetLabel: 'Reminder offset (minutes)',
+      linkDogLabel: 'Link to dog (optional)',
+      createSuccess: 'Event created.',
+      createError: 'Unable to create event.',
+      openTransports: 'Open transport scheduler',
+      openDogs: 'Open dogs directory',
+      validation: {
+        missingOrg: 'Select an organization before creating an event.',
+        invalidDates: 'Enter valid start and end times.',
+        endBeforeStart: 'End time must be after start.',
+      },
+    },
+    detail: {
+      heading: 'Event details',
+      reminders: 'Reminders',
+      noReminders: 'No reminders scheduled for this event.',
+      openLink: 'Open linked record',
+      statusLabel: 'Status',
+      whenLabel: 'When',
+    },
+    typeLabels: {
+      transport: 'Transport',
+      medical: 'Medical',
+      quarantine: 'Quarantine',
+      general: 'General',
+      system_task: 'System task',
+      finance: 'Finance',
+      external: 'External',
+    },
+  },
+  notifications: {
+    permissionMissing: 'Notification permission is required to schedule reminders.',
+    webNotice: 'Web uses inline feedback; local notifications are mobile-only.',
+    noOrg: 'No active organization to sync notifications.',
+    syncFailure: 'Failed to sync notifications.',
+  },
   filters: {
     searchPlaceholderGeneric: 'Search by name, ID, or foster...',
     advancedFiltersTitle: 'Advanced Filters',
@@ -108,4 +180,8 @@ export const STRINGS = {
 export function formatDogDeleteMessage(dogName?: string | null) {
   const name = dogName?.trim() ? `"${dogName.trim()}"` : 'this dog';
   return `Are you sure you want to delete ${name}? This action can be undone by an administrator.`;
+}
+
+export function formatNotificationSyncSuccess(days: number) {
+  return `Notifications synced for the next ${days} days.`;
 }

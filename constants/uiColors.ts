@@ -9,7 +9,13 @@ export const UI_COLORS = {
   warning: '#B45309',
   success: '#16A34A',
   white: '#FFFFFF',
+  calendarMedical: '#DC2626',
+  calendarQuarantine: '#EA580C',
+  calendarTransport: '#2563EB',
+  calendarGeneral: '#0891B2',
+  calendarSystemTask: '#16A34A',
+  calendarFinance: '#0F766E',
+  calendarExternal: '#6B7280',
 } as const;
 
 export const PLACEHOLDER_TEXT_COLOR = UI_COLORS.mutedForeground;
-
