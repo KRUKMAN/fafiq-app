@@ -28,6 +28,7 @@ Reference: `docs/implementation_plan.md`
 - Added `org_contacts` model + People & Homes contacts directory (supports offline contacts, invite/link flows, and assigning transports to contacts); updated schema/RLS docs and diagrams.
 - Round 3 deep polish (UI + architecture): introduced semantic tokens `bg-background/bg-card/text-foreground` (+ status colors), centralized copy in `constants/strings.ts`, standardized inline feedback with `components/ui/StatusMessage.tsx` (no toasts), extracted `lib/pagination.ts` and `lib/viewModels/dogProfile.ts`, and replaced RowActionsMenu overlay hack with a `Modal`-based implementation; lint clean.
 - Calendar/tasks refactor staged: added `tasks` table + org-scoped indexes/RLS, removed legacy `handle_calendar_workflows` trigger/function, cleaned `system_task` artifacts, updated `get_calendar_events` to surface tasks with inline reminders, refreshed Zod enum/docs/diagrams.
+- UX review and spacing standardization: fixed TabBar alignment (wrapped ScrollView in View container to prevent vertical misalignment), standardized spacing across detail views (`mb-6` for TabBar, `py-8` for timeline empty states, `mt-4` for load more buttons), removed unwired button and unnecessary spacers from Dog detail view, ensured all timeline components have consistent formatting across Dogs/Transports/People views; updated `docs/ui_system.md` and `docs/architecture_round3_polish.md` with spacing standards.
 
 
 ## Watch-outs / Next Steps

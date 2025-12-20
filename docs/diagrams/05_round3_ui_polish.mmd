@@ -20,4 +20,9 @@ graph TD
   ViewModels --> Screen
 
   Screen --> Pagination[lib/pagination.ts]
+  
+  Patterns --> TabBar[TabBar<br/>View wrapper + ScrollView<br/>mb-6 spacing]
+  Patterns --> Timeline[EntityTimeline/TimelineFeed<br/>py-8 empty, mt-4 load more<br/>scrollable=false in drawers]
+  
+  StyleNote[Spacing Standards:<br/>- TabBar: mb-6<br/>- Timeline empty: py-8<br/>- Timeline load more: mt-4<br/>- Filter bar: mb-4]
 

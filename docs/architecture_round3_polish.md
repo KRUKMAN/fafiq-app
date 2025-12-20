@@ -86,13 +86,37 @@ Rationale:
 
 ### 6) Web-first fix: RowActionsMenu overlay
 Decision:
-- Replace the previous “-1000 backdrop hack” with a `Modal`-based overlay (RN-safe and web-safe).
+- Replace the previous "-1000 backdrop hack" with a `Modal`-based overlay (RN-safe and web-safe).
 
 Updated:
 - `components/ui/RowActionsMenu.tsx` now:
   - uses `Modal` + `StyleSheet.absoluteFill` backdrop
   - anchors menu position when possible via `measureInWindow`
   - keeps web nested-button avoidance
+
+### 7) UX Review: Spacing and Component Alignment (Post-Round 3)
+Decision:
+- Standardize spacing across all detail views for consistent visual rhythm.
+- Fix component alignment issues that caused tabs and timelines to appear misaligned.
+
+Applied fixes:
+- **TabBar structure**: Wrapped ScrollView in View container to fix vertical alignment issues that made tabs appear "invisibly lower"
+  - Border and spacing now applied to outer container
+  - Prevents ScrollView from creating unwanted vertical space
+- **TabBar spacing**: Standardized to `mb-6` across all detail views (Dogs, Transports, People)
+- **Timeline spacing**:
+  - Empty state: `py-8` (reduced from `py-10` for consistency)
+  - Load more button: `mt-4` (changed from `pt-4` for proper margin semantics)
+  - Filter bar: `mb-4` (internal spacing)
+- **Detail view cleanup**:
+  - Removed unnecessary spacer (`h-1`) from Dog detail TopBar
+  - Removed unwired button (MoreHorizontal) from Dog detail header
+  - All timeline usages verified with `scrollable={false}` for drawer consistency
+
+Rationale:
+- Consistent spacing creates visual rhythm and reduces cognitive load
+- Proper component structure prevents alignment bugs that degrade UX
+- Standardized values make future maintenance easier
 
 ---
 

@@ -103,6 +103,15 @@ Standard side drawer wrapper for detail/edit flows.
 ### `TabBar`
 Standard horizontal tab selector.
 
+Structure:
+- Wrapped in a `View` container for proper alignment (ScrollView inside handles horizontal scrolling only)
+- Border and spacing applied to outer container to prevent vertical alignment issues
+- Uses `LAYOUT_STYLES.tabBarContent` for consistent internal padding
+
+Spacing:
+- Standard margin below: `mb-6` (applied via className prop in detail views)
+- Internal padding: `pb-3` on tab text + `paddingBottom: 12` from `LAYOUT_STYLES.tabBarContent`
+
 ### `Pagination`
 Standard pagination footer for list/table pages.
 
@@ -115,6 +124,12 @@ Rules:
 - Default to **Important** mode (high-signal audit + schedule items).
 - Do not re-implement timeline rendering per screen; reuse these components.
 - `EntityTimeline` exposes a simple **Load more activity** control (increments audit fetch limit by 200).
+
+Spacing standards:
+- Empty state padding: `py-8` (consistent across all timeline views)
+- Load more button margin: `mt-4` (top margin for proper spacing from timeline content)
+- Filter bar margin: `mb-4` (internal to TimelineFeed)
+- All timeline usages in detail views use `scrollable={false}` for consistent rendering within drawers
 
 ### Detail drawer headers
 All detail drawers (Dog/Transport/Member/Contact) should mirror the Dog header layout:

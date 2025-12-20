@@ -33,4 +33,5 @@ This project has an authoritative system context: `Fafik_System_Context.md`. Do 
 - Confirm web build still works (routing, styling, dependencies).
 
 ## Recent architecture notes
-- `docs/architecture_round3_polish.md` captures the current UI/token/string conventions and the “Round 3” structural changes (StatusMessage, strings module, layout/pagination helpers, view-model extraction).
+- `docs/architecture_round3_polish.md` captures the current UI/token/string conventions and the "Round 3" structural changes (StatusMessage, strings module, layout/pagination helpers, view-model extraction).
+- **Spacing standards**: TabBar uses `mb-6` in detail views, Timeline empty states use `py-8`, Timeline load more buttons use `mt-4`. TabBar structure uses View wrapper around ScrollView for proper alignment. See `docs/ui_system.md` for details.
