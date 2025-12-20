@@ -256,7 +256,7 @@ Audit contracts:
 
 - Auth persists across reloads
 - RLS blocks cross-org access
-- Timeline shows real audit events
+- Timeline tabs show real audit + schedule items (Dog/Transport/People detail), defaulting to "Important"
 - Phase 1 UI unchanged
 
 # Phase 3 â€” Operations & Production Readiness
@@ -349,6 +349,7 @@ Definition of Done:
 - 2026-01-05: Added calendar_events/calendar_reminders tables with RLS/audit, centralized automation trigger, refactored get_calendar_events aggregator (reminders + filters), and refreshed calendar UI/notification sync per `docs/calendar_workflows_plan.md`.
 - 2026-01-08: Split tasks from calendar artifacts: added `tasks` table with RLS/indexes, dropped `handle_calendar_workflows` trigger/function, removed legacy system_task rows, and updated `get_calendar_events` + Zod schema to surface tasks with reminders.
 - 2026-01-09: Implemented server-side Dog timeline aggregation (`get_dog_timeline`), hardened audit integrity (clients can’t insert audit rows), and added structured logging + a global error boundary.
+- 2026-01-10: Expanded timelines across detail views (Dog/Transport/People & Homes), added default “Important” filters, and extended audit/schedule RPCs to support per-entity timeline queries.
 
 
 # Phase 4 â€” Scheduling & Reliability (Calendar, Notifications, Sync)

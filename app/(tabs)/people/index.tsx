@@ -384,7 +384,12 @@ export default function PeopleScreen() {
           }}
         />
 
-        <MemberDetailDrawer memberId={selectedMemberId} members={userRows} onClose={() => setSelectedMemberId(null)} />
+        <MemberDetailDrawer
+          memberId={selectedMemberId}
+          members={userRows}
+          onClose={() => setSelectedMemberId(null)}
+          orgId={activeOrgId}
+        />
 
         <ContactDetailDrawer
           contactId={selectedContactId}

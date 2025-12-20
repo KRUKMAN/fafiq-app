@@ -321,8 +321,12 @@ create index activity_events_entity_idx on public.activity_events(org_id, entity
 ```
 
 Feed linkage (recommended):
-- Triggers/RPCs should populate `related.dog_id` (UUID string) for events relevant to a dog timeline.
-- For performance, an expression index on `related->>'dog_id'` can be added.
+- Triggers/RPCs should populate:
+  - `related.dog_id` (UUID string) for dog timelines
+  - `related.transport_id` (UUID string) for transport timelines
+  - `related.contact_ids` (JSON array of UUID strings) for contact/home timelines
+  - `related.membership_id` (UUID string) for membership-scoped activity
+- For performance, expression/GiN indexes can be added on these keys (see latest migrations in `supabase/migrations/`).
 
 Atomicity rule (MVP):
 - Do not rely on the client to do “write row then insert activity event” as two separate requests.

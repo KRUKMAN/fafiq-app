@@ -334,6 +334,9 @@ const invalidateOrgScopedQueries = () => {
   client.invalidateQueries({ queryKey: ['dogs'] });
   client.invalidateQueries({ queryKey: ['dog'] });
   client.invalidateQueries({ queryKey: ['dog-timeline'] });
+  client.invalidateQueries({ queryKey: ['transport-timeline'] });
+  client.invalidateQueries({ queryKey: ['contact-timeline'] });
+  client.invalidateQueries({ queryKey: ['member-activity'] });
   client.invalidateQueries({ queryKey: ['transports'] });
   client.invalidateQueries({ queryKey: ['calendar-events'] });
 };

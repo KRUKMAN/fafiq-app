@@ -20,7 +20,7 @@ import * as Linking from 'expo-linking';
 
 import { UI_COLORS } from '@/constants/uiColors';
 import { LAYOUT_STYLES } from '@/constants/layout';
-import { ActivityTimeline } from '@/components/dogs/ActivityTimeline';
+import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { NoteModal } from '@/components/dogs/NoteModal';
 import { Drawer } from '@/components/patterns/Drawer';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
@@ -544,7 +544,7 @@ const renderTab = (
         />
       );
     case 'Timeline':
-      return activeOrgId ? <ActivityTimeline orgId={activeOrgId} dogId={dog.id} /> : null;
+      return activeOrgId ? <EntityTimeline orgId={activeOrgId} scope={{ kind: 'dog', dogId: dog.id }} scrollable={false} /> : null;
     case 'Medical':
       return <MedicalTab history={dog.medicalHistory} />;
     case 'Documents':

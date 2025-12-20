@@ -277,7 +277,7 @@ Production expectation: clients should not be able to forge audit events.
     `activity_events`.
 
 Deliverables:
-- Documented taxonomy + coverage checklist (either in this file or a dedicated `docs/audit_events.md`).
+- [x] Documented taxonomy + coverage checklist (`docs/audit_events.md`).
 - Docs drift fixups: update `docs/schema.md`, `docs/rls.md`, and `docs/implementation_plan.md` where they no longer match reality.
 
 ### Phase 1 (1-2 days): Make Timeline functional (correctness first)
@@ -289,7 +289,10 @@ Deliverables:
 2) Add server-side timeline RPC (dog first):
 [x] Add `supabase/migrations/20260109_dog_timeline_rpc.sql` implementing `get_dog_timeline(...)` (see example above).
 [x] Add indexes if needed to keep timeline queries fast (especially on join keys).
-[ ] (Optional) Add `get_transport_timeline(...)` and/or `get_org_activity_feed(...)` using the same pattern (so audit is not "dog-only").
+[x] Add timeline RPCs for other detail views:
+- `get_transport_timeline(...)`
+- `get_contact_timeline(...)`
+- `get_member_activity(...)`
 
 3) Wire UI to the RPC:
 [x] Extend `lib/data/activityEvents.ts` to call the new RPC.
@@ -310,8 +313,8 @@ Validation:
 [x] Keep audit append-only:
 - no UPDATE/DELETE policies exist for `activity_events`, and privileges are revoked from `anon`/`authenticated`.
 
-[ ] Add explicit "system actor" support (optional but recommended):
-- when running under `service_role`, allow `actor_user_id`/`actor_membership_id` to be NULL but mark the event as system-generated.
+[x] Add explicit "system actor" support (optional but recommended):
+- when running under `service_role`, mark the event as system-generated (via `related.system=true`).
 
 Validation:
 - Attempted client insert into `activity_events` fails.
@@ -326,7 +329,7 @@ Validation:
 [ ] Persist dog notes (new table + RLS + triggers/RPC) and log `dog.note_added`.
 
 2) Improve semantics for soft deletes:
-[ ] Replace "soft delete = update" ambiguity:
+[x] Replace "soft delete = update" ambiguity (dogs/transports):
 - log explicit domain events when `deleted_at` transitions from null -> non-null (e.g., `dog.archived`, `transport.archived`)
 - log explicit domain events on restore.
 

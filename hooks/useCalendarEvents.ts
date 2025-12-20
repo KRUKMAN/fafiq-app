@@ -12,6 +12,9 @@ type CalendarFilters = {
   sourceTypes?: CalendarSourceType[];
   dogId?: string | null;
   contactId?: string | null;
+  linkType?: string | null;
+  linkId?: string | null;
+  assignedMembershipId?: string | null;
   stage?: string | null;
   visibility?: string | null;
   search?: string;
@@ -29,6 +32,9 @@ export const useCalendarEvents = (orgId?: string, params?: CalendarQuery) =>
       (params?.sourceTypes ?? []).slice().sort().join(','),
       params?.dogId ?? '',
       params?.contactId ?? '',
+      params?.linkType ?? '',
+      params?.linkId ?? '',
+      params?.assignedMembershipId ?? '',
       params?.stage ?? '',
       params?.visibility ?? '',
       params?.search ?? '',
@@ -41,6 +47,9 @@ export const useCalendarEvents = (orgId?: string, params?: CalendarQuery) =>
         sourceTypes: params?.sourceTypes,
         dogId: params?.dogId ?? undefined,
         contactId: params?.contactId ?? undefined,
+        linkType: params?.linkType ?? undefined,
+        linkId: params?.linkId ?? undefined,
+        assignedMembershipId: params?.assignedMembershipId ?? undefined,
         stage: params?.stage ?? undefined,
         visibility: params?.visibility ?? undefined,
         search: params?.search ?? undefined,

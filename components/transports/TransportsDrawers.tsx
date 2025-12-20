@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { LAYOUT_STYLES } from '@/constants/layout';
 import { Drawer } from '@/components/patterns/Drawer';
+import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { TabBar } from '@/components/patterns/TabBar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -343,8 +344,8 @@ export function TransportEditorDrawer({
   );
 }
 
-const TRANSPORT_DETAIL_TABS = ['Overview', 'Notes', 'Activity'] as const;
-const PERSON_DETAIL_TABS = ['Overview', 'Contact', 'Activity'] as const;
+const TRANSPORT_DETAIL_TABS = ['Overview', 'Notes', 'Timeline'] as const;
+const PERSON_DETAIL_TABS = ['Overview', 'Contact', 'Timeline'] as const;
 
 export function TransportDetailDrawer({
   transportId,
@@ -594,11 +595,8 @@ export function TransportDetailDrawer({
             </View>
           ) : null}
 
-          {activeTab === 'Activity' ? (
-            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
-              <Typography className="text-sm font-semibold text-gray-900">Activity</Typography>
-              <Typography color="muted">No activity yet.</Typography>
-            </View>
+          {activeTab === 'Timeline' ? (
+            <EntityTimeline orgId={transport.org_id} scope={{ kind: 'transport', transportId: transport.id }} scrollable={false} />
           ) : null}
 
           <View className="mt-6">
@@ -616,10 +614,12 @@ export function TransporterDetailDrawer({
   memberId,
   members,
   onClose,
+  orgId,
 }: {
   memberId: string | null;
   members: { id: string; name: string; email: string; userId: string; roles: string; status: string }[];
   onClose: () => void;
+  orgId: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<(typeof PERSON_DETAIL_TABS)[number]>('Overview');
   const member = useMemo(() => members.find((m) => m.id === memberId) ?? null, [members, memberId]);
@@ -674,11 +674,8 @@ export function TransporterDetailDrawer({
             </View>
           ) : null}
 
-          {activeTab === 'Activity' ? (
-            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
-              <Typography className="text-sm font-semibold text-gray-900">Activity</Typography>
-              <Typography color="muted">No activity yet.</Typography>
-            </View>
+          {activeTab === 'Timeline' ? (
+            orgId ? <EntityTimeline orgId={orgId} scope={{ kind: 'membership', membershipId: member.id }} scrollable={false} /> : null
           ) : null}
         </View>
       </ScrollView>

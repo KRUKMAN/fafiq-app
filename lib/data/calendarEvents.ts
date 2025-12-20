@@ -16,6 +16,9 @@ type FetchCalendarEventsParams = {
   stage?: string;
   visibility?: string;
   search?: string;
+  linkType?: string;
+  linkId?: string;
+  assignedMembershipId?: string;
   fallbackToMockOnError?: boolean;
   requireLive?: boolean;
 };
@@ -140,7 +143,8 @@ export const fetchCalendarEvents = async (params: FetchCalendarEventsParams): Pr
     return normalizeList(mockEvents);
   }
 
-  const { data, error } = await supabase.rpc('get_calendar_events', {
+  // Database types may lag behind migrations; keep the cast contained here.
+  const { data, error } = await (supabase as any).rpc('get_calendar_events', {
     p_org_id: params.orgId,
     p_start: startIso,
     p_end: endIso,
@@ -150,6 +154,9 @@ export const fetchCalendarEvents = async (params: FetchCalendarEventsParams): Pr
     p_stage: params.stage ?? null,
     p_visibility: params.visibility ?? null,
     p_search: params.search ?? null,
+    p_link_type: params.linkType ?? null,
+    p_link_id: params.linkId ?? null,
+    p_assigned_membership_id: params.assignedMembershipId ?? null,
   });
 
   if (!error) {

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { LAYOUT_STYLES } from '@/constants/layout';
 import { Drawer } from '@/components/patterns/Drawer';
+import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { TabBar } from '@/components/patterns/TabBar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -12,16 +13,19 @@ import { OrgContact } from '@/schemas/orgContact';
 
 import type { ContactDraft, MemberRow } from './types';
 
-const MEMBER_TABS = ['Overview', 'Contact', 'Activity'] as const;
+const MEMBER_TABS = ['Overview', 'Contact', 'Timeline'] as const;
+const CONTACT_TABS = ['Overview', 'Timeline'] as const;
 
 export function MemberDetailDrawer({
   memberId,
   members,
   onClose,
+  orgId,
 }: {
   memberId: string | null;
   members: MemberRow[];
   onClose: () => void;
+  orgId: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<(typeof MEMBER_TABS)[number]>('Overview');
   const member = useMemo(() => members.find((m) => m.id === memberId) ?? null, [members, memberId]);
@@ -77,11 +81,8 @@ export function MemberDetailDrawer({
             </View>
           ) : null}
 
-          {activeTab === 'Activity' ? (
-            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
-              <Typography className="text-sm font-semibold text-gray-900">Activity</Typography>
-              <Typography color="muted">No activity yet.</Typography>
-            </View>
+          {activeTab === 'Timeline' ? (
+            orgId ? <EntityTimeline orgId={orgId} scope={{ kind: 'membership', membershipId: member.id }} scrollable={false} /> : null
           ) : null}
         </View>
       </ScrollView>
@@ -106,6 +107,7 @@ export function ContactDetailDrawer({
   onInvite: (contact: OrgContact) => Promise<void>;
   onAdminLink: (contact: OrgContact, userId: string) => Promise<void>;
 }) {
+  const [activeTab, setActiveTab] = useState<(typeof CONTACT_TABS)[number]>('Overview');
   const [inviting, setInviting] = useState(false);
   const [linking, setLinking] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -131,6 +133,7 @@ export function ContactDetailDrawer({
       roles: contact.roles ?? [],
     });
     setEditing(false);
+    setActiveTab('Overview');
     setEditMessage(null);
   }, [contact]);
 
@@ -209,123 +212,131 @@ export function ContactDetailDrawer({
         <View className="w-full max-w-5xl self-center px-4 md:px-8 py-6">
           {editMessage ? <Typography variant="caption" className="text-gray-600 mb-2">{editMessage}</Typography> : null}
 
-          <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
-            <Typography className="text-sm font-semibold text-gray-900">Details</Typography>
+          <TabBar tabs={CONTACT_TABS} active={activeTab} onChange={setActiveTab} className="mb-6" />
 
-            {editing ? (
-              <View className="gap-3">
-                <Input
-                  label="Display name"
-                  value={draft.display_name}
-                  onChangeText={(val) => setDraft((p) => ({ ...p, display_name: val }))}
-                  placeholder="Name"
-                />
-                <Input
-                  label="Email"
-                  value={draft.email}
-                  onChangeText={(val) => setDraft((p) => ({ ...p, email: val }))}
-                  placeholder="person@example.org"
-                />
-                <Input
-                  label="Phone"
-                  value={draft.phone}
-                  onChangeText={(val) => setDraft((p) => ({ ...p, phone: val }))}
-                  placeholder="+1 555 123 456"
-                />
+          {activeTab === 'Timeline' ? (
+            orgId ? <EntityTimeline orgId={orgId} scope={{ kind: 'contact', contactId: contact.id }} scrollable={false} /> : null
+          ) : (
+            <>
+              <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
+                <Typography className="text-sm font-semibold text-gray-900">Details</Typography>
 
-                <View className="gap-2">
-                  <Typography className="text-sm font-semibold text-gray-900">Roles</Typography>
-                  <View className="flex-row flex-wrap gap-2">
-                    {['admin', 'volunteer', 'foster', 'transport'].map((role) => {
-                      const active = draft.roles.includes(role);
-                      return (
-                        <Pressable
-                          key={role}
-                          accessibilityRole="button"
-                          onPress={() => toggleRole(role)}
-                          className={`px-3 py-2 rounded-md border ${
-                            active ? 'bg-primary border-primary' : 'bg-white border-border'
-                          }`}>
-                          <Typography className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
-                            {role}
-                          </Typography>
-                        </Pressable>
-                      );
-                    })}
+                {editing ? (
+                  <View className="gap-3">
+                    <Input
+                      label="Display name"
+                      value={draft.display_name}
+                      onChangeText={(val) => setDraft((p) => ({ ...p, display_name: val }))}
+                      placeholder="Name"
+                    />
+                    <Input
+                      label="Email"
+                      value={draft.email}
+                      onChangeText={(val) => setDraft((p) => ({ ...p, email: val }))}
+                      placeholder="person@example.org"
+                    />
+                    <Input
+                      label="Phone"
+                      value={draft.phone}
+                      onChangeText={(val) => setDraft((p) => ({ ...p, phone: val }))}
+                      placeholder="+1 555 123 456"
+                    />
+
+                    <View className="gap-2">
+                      <Typography className="text-sm font-semibold text-gray-900">Roles</Typography>
+                      <View className="flex-row flex-wrap gap-2">
+                        {['admin', 'volunteer', 'foster', 'transport'].map((role) => {
+                          const active = draft.roles.includes(role);
+                          return (
+                            <Pressable
+                              key={role}
+                              accessibilityRole="button"
+                              onPress={() => toggleRole(role)}
+                              className={`px-3 py-2 rounded-md border ${
+                                active ? 'bg-primary border-primary' : 'bg-white border-border'
+                              }`}>
+                              <Typography className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
+                                {role}
+                              </Typography>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
                   </View>
-                </View>
+                ) : (
+                  <>
+                    <DetailRow label="Kind" value={contact.kind} />
+                    <DetailRow label="Name" value={contact.display_name} />
+                    <DetailRow label="Email" value={(contact.email ?? '').toString() || '-'} />
+                    <DetailRow label="Phone" value={(contact.phone ?? '').toString() || '-'} />
+                    <DetailRow label="Roles" value={(contact.roles ?? []).join(', ') || '-'} />
+                    <DetailRow label="Linked user" value={contact.linked_user_id ?? '-'} />
+                  </>
+                )}
               </View>
-            ) : (
-              <>
-                <DetailRow label="Kind" value={contact.kind} />
-                <DetailRow label="Name" value={contact.display_name} />
-                <DetailRow label="Email" value={(contact.email ?? '').toString() || '-'} />
-                <DetailRow label="Phone" value={(contact.phone ?? '').toString() || '-'} />
-                <DetailRow label="Roles" value={(contact.roles ?? []).join(', ') || '-'} />
-                <DetailRow label="Linked user" value={contact.linked_user_id ?? '-'} />
-              </>
-            )}
-          </View>
 
-          {status ? <Typography variant="caption" className="text-gray-600 mt-3">{status}</Typography> : null}
+              {status ? <Typography variant="caption" className="text-gray-600 mt-3">{status}</Typography> : null}
 
-          {canAdmin && orgId ? (
-            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3 mt-4">
-              <Typography className="text-sm font-semibold text-gray-900">Admin actions</Typography>
+              {canAdmin && orgId ? (
+                <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3 mt-4">
+                  <Typography className="text-sm font-semibold text-gray-900">Admin actions</Typography>
 
-              <Button
-                variant="primary"
-                onPress={async () => {
-                  setInviting(true);
-                  setStatus(null);
-                  try {
-                    await onInvite(contact);
-                    setStatus('Invite sent (or membership added if user already exists).');
-                  } catch (e: any) {
-                    setStatus(e?.message ?? 'Invite failed');
-                  } finally {
-                    setInviting(false);
-                  }
-                }}
-                disabled={inviting || !contact.email}
-                loading={inviting}>
-                {contact.email ? 'Invite by email' : 'No email to invite'}
-              </Button>
-
-              {!contact.linked_user_id ? (
-                <View className="gap-2">
-                  <Typography variant="caption" className="text-xs text-gray-600">
-                    Link this contact to a user_id (auth.users.id)
-                  </Typography>
-                  <TextInput
-                    value={linkUserId}
-                    onChangeText={setLinkUserId}
-                    placeholder="user uuid"
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-                  />
                   <Button
                     variant="primary"
                     onPress={async () => {
-                      setLinking(true);
+                      setInviting(true);
                       setStatus(null);
                       try {
-                        await onAdminLink(contact, linkUserId.trim());
-                        setStatus('Linked contact to user.');
-                        setLinkUserId('');
+                        await onInvite(contact);
+                        setStatus('Invite sent (or membership added if user already exists).');
                       } catch (e: any) {
-                        setStatus(e?.message ?? 'Link failed');
+                        setStatus(e?.message ?? 'Invite failed');
                       } finally {
-                        setLinking(false);
+                        setInviting(false);
                       }
                     }}
-                    disabled={linking || !linkUserId.trim()}
-                    loading={linking}>
-                    Link to user
+                    disabled={inviting || !contact.email}
+                    loading={inviting}>
+                    {contact.email ? 'Invite by email' : 'No email to invite'}
                   </Button>
+
+                  {!contact.linked_user_id ? (
+                    <View className="gap-2">
+                      <Typography variant="caption" className="text-xs text-gray-600">
+                        Link this contact to a user_id (auth.users.id)
+                      </Typography>
+                      <TextInput
+                        value={linkUserId}
+                        onChangeText={setLinkUserId}
+                        placeholder="user uuid"
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-base"
+                      />
+                      <Button
+                        variant="primary"
+                        onPress={async () => {
+                          setLinking(true);
+                          setStatus(null);
+                          try {
+                            await onAdminLink(contact, linkUserId.trim());
+                            setStatus('Linked contact to user.');
+                            setLinkUserId('');
+                          } catch (e: any) {
+                            setStatus(e?.message ?? 'Link failed');
+                          } finally {
+                            setLinking(false);
+                          }
+                        }}
+                        disabled={linking || !linkUserId.trim()}
+                        loading={linking}>
+                        Link to user
+                      </Button>
+                    </View>
+                  ) : null}
                 </View>
               ) : null}
-            </View>
-          ) : null}
+            </>
+          )}
         </View>
       </ScrollView>
     </Drawer>

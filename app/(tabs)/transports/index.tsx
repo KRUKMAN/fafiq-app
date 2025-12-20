@@ -41,7 +41,7 @@ export default function TransportsScreen() {
   const session = useSessionStore();
   const { ready, activeOrgId, memberships, switchOrg } = session;
   const supabaseReady = useMemo(() => Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL), []);
-  const params = useLocalSearchParams<{ createDogId?: string }>();
+  const params = useLocalSearchParams<{ createDogId?: string; editTransportId?: string }>();
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<'transports' | 'transporters'>('transports');
   const [search, setSearch] = React.useState('');
@@ -152,6 +152,29 @@ export default function TransportsScreen() {
       // ignore
     }
   }, [params.createDogId, router]);
+
+  const handledEditTransportIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const editTransportId = Array.isArray(params.editTransportId) ? params.editTransportId[0] : params.editTransportId;
+    if (!editTransportId) {
+      handledEditTransportIdRef.current = null;
+      return;
+    }
+    if (handledEditTransportIdRef.current === editTransportId) return;
+    handledEditTransportIdRef.current = editTransportId;
+    setViewMode('transports');
+    setSelectedTransportId(null);
+    setSelectedTransporterId(null);
+    setFormError(null);
+    setPrefillDogId(null);
+    setEditingTransportId(editTransportId);
+    setEditorMode('edit');
+    try {
+      router.setParams({ editTransportId: undefined as any });
+    } catch {
+      // ignore
+    }
+  }, [params.editTransportId, router]);
 
   // Move all computations and useMemo hooks before conditional returns
   const transportRows = useMemo(() => (data || []).map(toTransportRow), [data]);
@@ -403,6 +426,7 @@ export default function TransportsScreen() {
             memberId={selectedTransporterId}
             members={transporterRows}
             onClose={() => setSelectedTransporterId(null)}
+            orgId={activeOrgId}
           />
         )}
 

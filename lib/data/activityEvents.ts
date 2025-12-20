@@ -2,7 +2,12 @@ import { supabase } from '@/lib/supabase';
 import { activityEventSchema, ActivityEvent } from '@/schemas/activityEvent';
 import { getMockActivityEventsByEntity } from '@/lib/mocks/activityEvents';
 import { formatSupabaseError } from '@/lib/data/errors';
-import { rpcGetDogTimeline } from '@/lib/supabaseRpc';
+import {
+  rpcGetContactTimeline,
+  rpcGetDogTimeline,
+  rpcGetMemberActivity,
+  rpcGetTransportTimeline,
+} from '@/lib/supabaseRpc';
 
 export const fetchDogTimeline = async (orgId: string, dogId: string): Promise<ActivityEvent[]> => {
   if (!supabase) {
@@ -18,6 +23,81 @@ export const fetchDogTimeline = async (orgId: string, dogId: string): Promise<Ac
 
   if (error) {
     throw new Error(formatSupabaseError(error, 'Failed to fetch dog timeline'));
+  }
+
+  return (data ?? []).map((event: any) =>
+    activityEventSchema.parse({
+      ...event,
+      payload: event.payload ?? {},
+      related: event.related ?? {},
+    })
+  );
+};
+
+export const fetchTransportTimeline = async (orgId: string, transportId: string): Promise<ActivityEvent[]> => {
+  if (!supabase) {
+    const events = await getMockActivityEventsByEntity(orgId, 'transport', transportId);
+    return events.map((event) => activityEventSchema.parse(event));
+  }
+
+  const { data, error } = await rpcGetTransportTimeline({
+    p_org_id: orgId,
+    p_transport_id: transportId,
+    p_limit: 200,
+  });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to fetch transport timeline'));
+  }
+
+  return (data ?? []).map((event: any) =>
+    activityEventSchema.parse({
+      ...event,
+      payload: event.payload ?? {},
+      related: event.related ?? {},
+    })
+  );
+};
+
+export const fetchContactTimeline = async (orgId: string, contactId: string): Promise<ActivityEvent[]> => {
+  if (!supabase) {
+    const events = await getMockActivityEventsByEntity(orgId, 'contact', contactId);
+    return events.map((event) => activityEventSchema.parse(event));
+  }
+
+  const { data, error } = await rpcGetContactTimeline({
+    p_org_id: orgId,
+    p_contact_id: contactId,
+    p_limit: 200,
+  });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to fetch contact timeline'));
+  }
+
+  return (data ?? []).map((event: any) =>
+    activityEventSchema.parse({
+      ...event,
+      payload: event.payload ?? {},
+      related: event.related ?? {},
+    })
+  );
+};
+
+export const fetchMemberActivity = async (orgId: string, membershipId: string): Promise<ActivityEvent[]> => {
+  if (!supabase) {
+    // Mock membership activity is not modeled yet; return empty.
+    return [];
+  }
+
+  const { data, error } = await rpcGetMemberActivity({
+    p_org_id: orgId,
+    p_membership_id: membershipId,
+    p_limit: 200,
+  });
+
+  if (error) {
+    throw new Error(formatSupabaseError(error, 'Failed to fetch member activity'));
   }
 
   return (data ?? []).map((event: any) =>

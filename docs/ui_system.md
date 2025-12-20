@@ -106,6 +106,15 @@ Standard horizontal tab selector.
 ### `Pagination`
 Standard pagination footer for list/table pages.
 
+### `EntityTimeline` / `TimelineFeed`
+Use Timeline tabs in detail views (Dogs, Transports, People/Homes) via:
+- `components/patterns/EntityTimeline.tsx` (data + merging)
+- `components/patterns/TimelineFeed.tsx` (filters + rendering)
+
+Rules:
+- Default to **Important** mode (high-signal audit + schedule items).
+- Do not re-implement timeline rendering per screen; reuse these components.
+
 ---
 
 ## Shared UI Constants & Helpers
