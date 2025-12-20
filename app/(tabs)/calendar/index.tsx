@@ -4,7 +4,7 @@ import { Href, useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
-import { Calendar as BigCalendar, type Event as BigCalendarEvent } from 'react-native-big-calendar';
+import { Calendar as BigCalendar, type ICalendarEventBase } from 'react-native-big-calendar';
 
 import { CalendarEventDrawer } from '@/components/calendar/CalendarEventDrawer';
 import { CalendarFilters, PickerDrawer } from '@/components/calendar/CalendarFilters';
@@ -32,7 +32,7 @@ import { createCalendarEvent } from '@/lib/data/calendarEvents';
 import { CalendarEvent, CalendarSourceType } from '@/schemas/calendarEvent';
 import { useSessionStore } from '@/stores/sessionStore';
 
-type CalendarDisplayEvent = BigCalendarEvent & {
+type CalendarDisplayEvent = ICalendarEventBase & {
   id: string;
   color: string;
   data: CalendarEvent;

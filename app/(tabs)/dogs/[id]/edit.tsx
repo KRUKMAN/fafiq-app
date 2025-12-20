@@ -34,7 +34,7 @@ export default function EditDogScreen() {
   const { dogStages } = useOrgSettings(session.activeOrgId ?? undefined);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const stages = dogStages.length ? dogStages : STRINGS.dogs.formStages;
+  const stages: string[] = dogStages.length ? dogStages : [...STRINGS.dogs.formStages];
   const { data, isLoading } = useDog(session.activeOrgId ?? undefined, dogId ?? undefined);
 
   const [form, setForm] = useState<DogFormState>({

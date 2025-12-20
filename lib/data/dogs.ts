@@ -149,7 +149,6 @@ export const fetchDogs = async (orgId: string, filters?: DogFilters): Promise<Do
         }
 
         const uniquePaths = Array.from(new Set(Array.from(dogIdToPath.values())));
-        // @ts-expect-error: createSignedUrls is available in supabase-js v2
         const { data: signed, error: signedError } = await supabase.storage
           .from('dog-photos')
           .createSignedUrls(uniquePaths, 60 * 30);
@@ -235,7 +234,7 @@ export const createDog = async (input: NewDogInput): Promise<Dog> => {
     throw new Error('Supabase not configured; dog creation requires Supabase env.');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('dogs')
     .insert({
       org_id: input.org_id,
@@ -245,7 +244,7 @@ export const createDog = async (input: NewDogInput): Promise<Dog> => {
       description: input.description,
       medical_notes: input.medical_notes ?? null,
       behavioral_notes: input.behavioral_notes ?? null,
-      extra_fields: input.extra_fields ?? {},
+      extra_fields: (input.extra_fields ?? {}) as any,
     })
     .select('*')
     .maybeSingle();

@@ -428,7 +428,7 @@ export function TransportDetailDrawer({
     void loadSizes();
   }, [documents]);
 
-  const iconForMime = (mime?: string | null, name?: string) => {
+  const iconForMime = (mime?: string | null, name?: string | null) => {
     const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? '';
     const m = (mime ?? '').toLowerCase();
     if (m.includes('pdf') || ext === 'pdf') return 'đź§ľ';

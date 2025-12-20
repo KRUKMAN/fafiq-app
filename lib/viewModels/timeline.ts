@@ -18,6 +18,7 @@ export const toAuditTimelineItem = (event: ActivityEvent): TimelineItem => {
     occurred_at: toIso(event.created_at),
     title: event.summary,
     subtitle: formatEventTypeLabel(event.event_type),
+    event_type: event.event_type,
     system,
     details: toActivityEventDetailRows(event),
   };
@@ -32,6 +33,7 @@ export const toScheduleTimelineItem = (event: CalendarEvent): TimelineItem => {
     occurred_at: toIso(event.start_at),
     title: event.title,
     subtitle: subtitleParts.join(' · '),
+    source_type: event.source_type,
     system: false,
     details: [
       { label: 'when', value: `${formatTimestampShort(event.start_at)} → ${formatTimestampShort(event.end_at)}` },
@@ -46,4 +48,3 @@ export const mergeTimelineItems = (items: TimelineItem[]) =>
   items
     .slice()
     .sort((a, b) => (b.occurred_at ?? '').localeCompare(a.occurred_at ?? ''));
-

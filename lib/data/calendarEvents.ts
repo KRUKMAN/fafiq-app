@@ -193,7 +193,7 @@ export const createCalendarEvent = async (input: NewCalendarEventInput): Promise
 
   const { reminders = [], ...eventInput } = input;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('calendar_events')
     .insert({
       org_id: eventInput.org_id,
@@ -206,7 +206,7 @@ export const createCalendarEvent = async (input: NewCalendarEventInput): Promise
       link_type: eventInput.link_type ?? 'none',
       link_id: eventInput.link_id ?? null,
       visibility: eventInput.visibility ?? 'org',
-      meta: eventInput.meta ?? {},
+      meta: (eventInput.meta ?? {}) as any,
     })
     .select('*')
     .maybeSingle();
@@ -226,12 +226,12 @@ export const createCalendarEvent = async (input: NewCalendarEventInput): Promise
       offset_minutes: reminder.offset_minutes ?? 60,
       deterministic_key:
         reminder.deterministic_key ?? `${eventInput.type}_${data.id}_${reminder.offset_minutes ?? 60}`,
-      payload: reminder.payload ?? {},
+      payload: (reminder.payload ?? {}) as any,
     }));
 
-    const { error: reminderError } = await supabase
+    const { error: reminderError } = await (supabase as any)
       .from('calendar_reminders')
-      .upsert(rows, { onConflict: 'org_id,deterministic_key' });
+      .upsert(rows as any, { onConflict: 'org_id,deterministic_key' });
 
     if (reminderError) {
       throw new Error(formatSupabaseError(reminderError, 'Failed to create calendar reminders'));
@@ -247,5 +247,16 @@ export const createCalendarEvent = async (input: NewCalendarEventInput): Promise
   });
 
   const created = events.find((evt) => evt.source_id === data.id || evt.event_id === `cal_${data.id}`);
-  return created ?? normalizeEvent({ ...data, event_id: `cal_${data.id}`, source_type: eventInput.type, reminders });
+  if (created) return created;
+
+  const normalized = normalizeEvent({
+    ...data,
+    event_id: `cal_${data.id}`,
+    source_type: eventInput.type,
+    reminders,
+  });
+  if (!normalized) {
+    throw new Error('Calendar event creation returned invalid data.');
+  }
+  return normalized;
 };

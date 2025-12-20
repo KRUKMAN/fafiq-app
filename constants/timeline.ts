@@ -26,8 +26,8 @@ export const IMPORTANT_AUDIT_EVENT_TYPES = [
 
 export const IMPORTANT_SCHEDULE_SOURCE_TYPES: CalendarSourceType[] = [
   'task',
+  'general',
   'transport',
   'medical',
   'quarantine',
 ];
-

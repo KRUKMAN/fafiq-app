@@ -97,13 +97,17 @@ export const uploadDocument = async (
   return { path: data?.path ?? path };
 };
 
-export const createSignedUploadUrl = async (bucket: string, path: string, expiresInSeconds = 3600) => {
+export const createSignedUploadUrl = async (
+  bucket: string,
+  path: string,
+  options?: { upsert?: boolean }
+) => {
   if (!supabase) {
     throw new Error('Supabase not configured; storage upload requires Supabase env.');
   }
 
-  // @ts-expect-error: createSignedUploadUrl is available in supabase-js v2
-  const { data, error } = await supabase.storage.from(bucket).createSignedUploadUrl(path, expiresInSeconds);
+  const uploadOptions = options ? { upsert: options.upsert ?? false } : undefined;
+  const { data, error } = await supabase.storage.from(bucket).createSignedUploadUrl(path, uploadOptions);
   if (error) {
     throw new Error(`Failed to create signed upload URL: ${error.message}`);
   }
@@ -150,7 +154,6 @@ export const createSignedReadUrl = async (bucket: string, path: string, expiresI
     throw new Error('Supabase not configured; signed URLs require Supabase env.');
   }
 
-  // @ts-expect-error: createSignedUrl is available in supabase-js v2
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
   if (error) {
     throw new Error(`Failed to create signed URL: ${error.message}`);

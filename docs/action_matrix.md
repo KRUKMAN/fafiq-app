@@ -27,7 +27,7 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Delete document: `deleteDocumentRecord(orgId, documentId)` (admin per RLS) with inline confirm -> invalidates `['documents', orgId, 'dog', dogId]` (+ dog timeline)
 - Assign foster: `updateDog(... foster_contact_id ...)` (also mirrors `extra_fields.foster_name` for now)
 - Create transport: navigate to `/transports?createDogId=:dogId` (prefills create drawer)
-- Timeline: `EntityTimeline(kind='dog')` -> audit RPC `get_dog_timeline(p_org_id, p_dog_id)` + schedule RPC `get_calendar_events(p_dog_id)`
+- Timeline: `EntityTimeline(kind='dog')` -> audit RPC `get_dog_timeline(p_org_id, p_dog_id)` + schedule RPC `get_calendar_events(p_dog_id)`; includes **Load more activity** (increments audit limit by 200)
 
 ## Transports
 
@@ -44,7 +44,7 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Save: `updateTransport` -> invalidates `['transports', orgId]`
 - Cancel: resets draft
 - Documents: list + open via signed URL (read-only; upload lives in transport detail screen)
-- Timeline: `EntityTimeline(kind='transport')` -> audit RPC `get_transport_timeline(p_org_id, p_transport_id)` + schedule RPC `get_calendar_events(p_link_type='transport', p_link_id)`
+- Timeline: `EntityTimeline(kind='transport')` -> audit RPC `get_transport_timeline(p_org_id, p_transport_id)` + schedule RPC `get_calendar_events(p_link_type='transport', p_link_id)`; includes **Load more activity** (increments audit limit by 200)
 
 ### Transport detail screen (`app/(tabs)/transports/[id].tsx`)
 - Uses the same drawer UI as the list (`TransportDetailDrawer`) and supports Timeline.
@@ -57,12 +57,12 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Admin link: `adminLinkContactToUser` (from Contact drawer)
 
 ### Member detail drawer (`app/(tabs)/people/index.tsx`)
-- Timeline: `EntityTimeline(kind='membership')` -> audit RPC `get_member_activity(p_org_id, p_membership_id)` + schedule RPC `get_calendar_events(p_assigned_membership_id)`
+- Timeline: `EntityTimeline(kind='membership')` -> audit RPC `get_member_activity(p_org_id, p_membership_id)` + schedule RPC `get_calendar_events(p_assigned_membership_id)`; includes **Load more activity** (increments audit limit by 200)
 
 ### Contact detail drawer (`app/(tabs)/people/index.tsx`)
 - Edit (admin): `updateOrgContact(orgId, contactId, updates)`
-- Save/Cancel: draft semantics (TODO: invalidate/refetch `useOrgContacts` after save)
-- Timeline: `EntityTimeline(kind='contact')` -> audit RPC `get_contact_timeline(p_org_id, p_contact_id)` + schedule RPC `get_calendar_events(p_contact_id)`
+- Save/Cancel: draft semantics; save invalidates `['org-contacts', orgId]` and `['contact-timeline', orgId, contactId]`
+- Timeline: `EntityTimeline(kind='contact')` -> audit RPC `get_contact_timeline(p_org_id, p_contact_id)` + schedule RPC `get_calendar_events(p_contact_id)`; includes **Load more activity** (increments audit limit by 200)
 
 ## Settings
 

@@ -106,7 +106,10 @@ export const useNotificationSync = (orgId?: string | null, windowDays = 14) => {
               reminderOffset: item.reminder.offset_minutes,
             },
           },
-          trigger: triggerDate,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+          },
         });
       }
 

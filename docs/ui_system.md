@@ -114,6 +114,13 @@ Use Timeline tabs in detail views (Dogs, Transports, People/Homes) via:
 Rules:
 - Default to **Important** mode (high-signal audit + schedule items).
 - Do not re-implement timeline rendering per screen; reuse these components.
+- `EntityTimeline` exposes a simple **Load more activity** control (increments audit fetch limit by 200).
+
+### Detail drawer headers
+All detail drawers (Dog/Transport/Member/Contact) should mirror the Dog header layout:
+- left: type label, primary title, optional subtitle
+- right: status pill + primary actions (edit/save/close)
+Keep spacing, borders, and typography consistent; extract a shared pattern when you need new header variants.
 
 ---
 

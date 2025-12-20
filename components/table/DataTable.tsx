@@ -48,7 +48,6 @@ export function DataTable<T>({
         ListEmptyComponent={ListEmptyComponent ?? <EmptyState title="No records to display." />}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        estimatedItemSize={80}
       />
     </ScrollView>
   );

@@ -24,10 +24,9 @@ export const useSmartNotification = (defaultToast?: boolean) => {
           else toast(text);
         } else {
           const { toast } = await import('sonner-native');
-          toast?.show({
-            description: text,
-            type: variant === 'error' ? 'error' : variant === 'success' ? 'success' : 'info',
-          });
+          if (variant === 'error') toast.error(text);
+          else if (variant === 'success') toast.success(text);
+          else toast.info(text);
         }
       } catch (err) {
         // Toast is best-effort; keep inline StatusMessage as primary UX.

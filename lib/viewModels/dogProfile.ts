@@ -22,6 +22,7 @@ export type DogProfileFileItem = {
   type: string;
   uploadedAt: string;
   uploadedBy?: string;
+  size?: number | null;
 };
 
 export type DogProfileView = {
@@ -88,4 +89,3 @@ export function toDogProfileView(dog: Dog): DogProfileView {
     files,
   };
 }
-

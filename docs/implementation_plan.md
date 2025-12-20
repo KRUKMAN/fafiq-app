@@ -348,8 +348,10 @@ Definition of Done:
 - 2025-12-18: Cleaned encoding/ternary corruption in `app/(tabs)/dogs/[id].tsx` (dog detail drawer now stable); remaining mocks unchanged.
 - 2026-01-05: Added calendar_events/calendar_reminders tables with RLS/audit, centralized automation trigger, refactored get_calendar_events aggregator (reminders + filters), and refreshed calendar UI/notification sync per `docs/calendar_workflows_plan.md`.
 - 2026-01-08: Split tasks from calendar artifacts: added `tasks` table with RLS/indexes, dropped `handle_calendar_workflows` trigger/function, removed legacy system_task rows, and updated `get_calendar_events` + Zod schema to surface tasks with reminders.
-- 2026-01-09: Implemented server-side Dog timeline aggregation (`get_dog_timeline`), hardened audit integrity (clients can’t insert audit rows), and added structured logging + a global error boundary.
-- 2026-01-10: Expanded timelines across detail views (Dog/Transport/People & Homes), added default “Important” filters, and extended audit/schedule RPCs to support per-entity timeline queries.
+- 2026-01-09: Implemented server-side Dog timeline aggregation (`get_dog_timeline`), hardened audit integrity (clients can't insert audit rows), and added structured logging + a global error boundary.
+- 2026-01-10: Expanded timelines across detail views (Dog/Transport/People & Homes), added default "Important" filters, and extended audit/schedule RPCs to support per-entity timeline queries.
+- 2026-01-11: Hardened Timeline filtering (explicit `event_type`/`source_type` fields) and aligned FlashList usage with installed types; contact edits now invalidate contacts + contact timeline queries.
+- 2026-01-12: Resolved remaining TypeScript errors, added load-more support for audit timelines, and documented shared drawer header expectations.
 
 
 # Phase 4 â€” Scheduling & Reliability (Calendar, Notifications, Sync)

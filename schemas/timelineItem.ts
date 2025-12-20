@@ -6,6 +6,9 @@ export const timelineItemSchema = z.object({
   occurred_at: z.string(), // ISO string used for sorting
   title: z.string(),
   subtitle: z.string().optional().default(''),
+  // Extra metadata used for filtering/grouping without parsing display strings.
+  event_type: z.string().optional(),
+  source_type: z.string().optional(),
   system: z.boolean().optional().default(false),
   details: z
     .array(
@@ -19,4 +22,3 @@ export const timelineItemSchema = z.object({
 });
 
 export type TimelineItem = z.infer<typeof timelineItemSchema>;
-

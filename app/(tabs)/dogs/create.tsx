@@ -31,7 +31,7 @@ export default function CreateDogScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { dogStages } = useOrgSettings(session.activeOrgId ?? undefined);
-  const stages = dogStages.length ? dogStages : STRINGS.dogs.formStages;
+  const stages: string[] = dogStages.length ? dogStages : [...STRINGS.dogs.formStages];
   const [form, setForm] = useState<DogFormState>({
     name: '',
     stage: stages[0] ?? '',

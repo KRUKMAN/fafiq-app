@@ -85,7 +85,11 @@ const emit = (level: LogLevel, message: string, fields?: LogFields) => {
     msg: message,
   };
 
-  const payload = fields ? { ...base, ...redact(fields) } : base;
+  const redacted = fields ? redact(fields) : null;
+  const payload =
+    redacted && typeof redacted === 'object' && !Array.isArray(redacted)
+      ? { ...base, ...(redacted as Record<string, unknown>) }
+      : base;
 
   if (__DEV__) {
     // Prefer readable dev output; keep structure as the last argument.
@@ -102,8 +106,8 @@ export const logger = {
   debug: (message: string, fields?: LogFields) => emit('debug', message, fields),
   info: (message: string, fields?: LogFields) => emit('info', message, fields),
   warn: (message: string, fields?: LogFields & { err?: unknown }) =>
-    emit('warn', message, { ...fields, err: fields?.err ? errorInfo(fields.err) : undefined }),
+    emit('warn', message, { ...(fields ?? {}), err: fields?.err ? errorInfo(fields.err) : undefined }),
   error: (message: string, fields?: LogFields & { err?: unknown }) =>
-    emit('error', message, { ...fields, err: fields?.err ? errorInfo(fields.err) : undefined }),
+    emit('error', message, { ...(fields ?? {}), err: fields?.err ? errorInfo(fields.err) : undefined }),
   errorInfo,
 };

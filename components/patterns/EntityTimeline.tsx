@@ -11,6 +11,7 @@ import { useTransportTimeline } from '@/hooks/useTransportTimeline';
 import { mergeTimelineItems, toAuditTimelineItem, toScheduleTimelineItem } from '@/lib/viewModels/timeline';
 import type { TimelineItem } from '@/schemas/timelineItem';
 import { TimelineFeed, DEFAULT_TIMELINE_FILTERS, type TimelineFilters } from '@/components/patterns/TimelineFeed';
+import { Button } from '@/components/ui/Button';
 import { Typography } from '@/components/ui/Typography';
 
 type Scope =
@@ -19,8 +20,8 @@ type Scope =
   | { kind: 'contact'; contactId: string }
   | { kind: 'membership'; membershipId: string };
 
-const IMPORTANT_AUDIT = new Set<string>(IMPORTANT_AUDIT_EVENT_TYPES as unknown as string[]);
-const IMPORTANT_SCHEDULE = new Set<string>(IMPORTANT_SCHEDULE_SOURCE_TYPES as unknown as string[]);
+const IMPORTANT_AUDIT = new Set<string>(IMPORTANT_AUDIT_EVENT_TYPES);
+const IMPORTANT_SCHEDULE = new Set<string>(IMPORTANT_SCHEDULE_SOURCE_TYPES);
 
 export function EntityTimeline({
   orgId,
@@ -32,6 +33,7 @@ export function EntityTimeline({
   scrollable?: boolean;
 }) {
   const [filters, setFilters] = useState<TimelineFilters>(DEFAULT_TIMELINE_FILTERS);
+  const [limit, setLimit] = useState(200);
 
   const range = useMemo(() => {
     const start = dayjs().subtract(60, 'day').startOf('day').toISOString();
@@ -39,10 +41,10 @@ export function EntityTimeline({
     return { startDate: start, endDate: end };
   }, []);
 
-  const dogAudit = useDogTimeline(orgId, scope.kind === 'dog' ? scope.dogId : undefined);
-  const transportAudit = useTransportTimeline(orgId, scope.kind === 'transport' ? scope.transportId : undefined);
-  const contactAudit = useContactTimeline(orgId, scope.kind === 'contact' ? scope.contactId : undefined);
-  const memberAudit = useMemberActivity(orgId, scope.kind === 'membership' ? scope.membershipId : undefined);
+  const dogAudit = useDogTimeline(orgId, scope.kind === 'dog' ? scope.dogId : undefined, limit);
+  const transportAudit = useTransportTimeline(orgId, scope.kind === 'transport' ? scope.transportId : undefined, limit);
+  const contactAudit = useContactTimeline(orgId, scope.kind === 'contact' ? scope.contactId : undefined, limit);
+  const memberAudit = useMemberActivity(orgId, scope.kind === 'membership' ? scope.membershipId : undefined, limit);
 
   const calendarParams = useMemo(() => {
     if (scope.kind === 'dog') return { ...range, dogId: scope.dogId };
@@ -66,11 +68,8 @@ export function EntityTimeline({
     if (filters.mode !== 'important') return merged;
 
     return merged.filter((item) => {
-      if (item.kind === 'audit') return IMPORTANT_AUDIT.has(item.subtitle);
-      if (item.kind === 'schedule') {
-        const type = (item.subtitle.split(' · ')[0] ?? '').trim();
-        return IMPORTANT_SCHEDULE.has(type);
-      }
+      if (item.kind === 'audit') return IMPORTANT_AUDIT.has(item.event_type ?? item.subtitle ?? '');
+      if (item.kind === 'schedule') return IMPORTANT_SCHEDULE.has(item.source_type ?? '');
       return true;
     });
   }, [auditQuery.data, scheduleQuery.data, filters.mode]);
@@ -98,5 +97,19 @@ export function EntityTimeline({
     );
   }
 
-  return <TimelineFeed items={items} filters={filters} onChangeFilters={setFilters} scrollable={scrollable} />;
+  const canLoadMore = (auditQuery.data?.length ?? 0) >= limit;
+
+  return (
+    <View className="flex-1">
+      <TimelineFeed items={items} filters={filters} onChangeFilters={setFilters} scrollable={scrollable} />
+
+      {canLoadMore ? (
+        <View className="pt-4">
+          <Button variant="outline" onPress={() => setLimit((prev) => prev + 200)}>
+            Load more activity
+          </Button>
+        </View>
+      ) : null}
+    </View>
+  );
 }

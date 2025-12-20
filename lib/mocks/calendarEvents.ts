@@ -1,6 +1,9 @@
 import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
 
 import { CalendarEvent } from '@/schemas/calendarEvent';
+
+dayjs.extend(isBetween);
 
 const buildMockEvents = (orgId: string): CalendarEvent[] => {
   const now = dayjs();

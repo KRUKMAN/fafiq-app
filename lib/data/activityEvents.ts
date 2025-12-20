@@ -9,16 +9,16 @@ import {
   rpcGetTransportTimeline,
 } from '@/lib/supabaseRpc';
 
-export const fetchDogTimeline = async (orgId: string, dogId: string): Promise<ActivityEvent[]> => {
+export const fetchDogTimeline = async (orgId: string, dogId: string, limit = 200): Promise<ActivityEvent[]> => {
   if (!supabase) {
     const events = await getMockActivityEventsByEntity(orgId, 'dog', dogId);
-    return events.map((event) => activityEventSchema.parse(event));
+    return events.slice(0, limit).map((event) => activityEventSchema.parse(event));
   }
 
   const { data, error } = await rpcGetDogTimeline({
     p_org_id: orgId,
     p_dog_id: dogId,
-    p_limit: 200,
+    p_limit: limit,
   });
 
   if (error) {
@@ -34,16 +34,20 @@ export const fetchDogTimeline = async (orgId: string, dogId: string): Promise<Ac
   );
 };
 
-export const fetchTransportTimeline = async (orgId: string, transportId: string): Promise<ActivityEvent[]> => {
+export const fetchTransportTimeline = async (
+  orgId: string,
+  transportId: string,
+  limit = 200
+): Promise<ActivityEvent[]> => {
   if (!supabase) {
     const events = await getMockActivityEventsByEntity(orgId, 'transport', transportId);
-    return events.map((event) => activityEventSchema.parse(event));
+    return events.slice(0, limit).map((event) => activityEventSchema.parse(event));
   }
 
   const { data, error } = await rpcGetTransportTimeline({
     p_org_id: orgId,
     p_transport_id: transportId,
-    p_limit: 200,
+    p_limit: limit,
   });
 
   if (error) {
@@ -59,16 +63,16 @@ export const fetchTransportTimeline = async (orgId: string, transportId: string)
   );
 };
 
-export const fetchContactTimeline = async (orgId: string, contactId: string): Promise<ActivityEvent[]> => {
+export const fetchContactTimeline = async (orgId: string, contactId: string, limit = 200): Promise<ActivityEvent[]> => {
   if (!supabase) {
     const events = await getMockActivityEventsByEntity(orgId, 'contact', contactId);
-    return events.map((event) => activityEventSchema.parse(event));
+    return events.slice(0, limit).map((event) => activityEventSchema.parse(event));
   }
 
   const { data, error } = await rpcGetContactTimeline({
     p_org_id: orgId,
     p_contact_id: contactId,
-    p_limit: 200,
+    p_limit: limit,
   });
 
   if (error) {
@@ -84,7 +88,11 @@ export const fetchContactTimeline = async (orgId: string, contactId: string): Pr
   );
 };
 
-export const fetchMemberActivity = async (orgId: string, membershipId: string): Promise<ActivityEvent[]> => {
+export const fetchMemberActivity = async (
+  orgId: string,
+  membershipId: string,
+  limit = 200
+): Promise<ActivityEvent[]> => {
   if (!supabase) {
     // Mock membership activity is not modeled yet; return empty.
     return [];
@@ -93,7 +101,7 @@ export const fetchMemberActivity = async (orgId: string, membershipId: string): 
   const { data, error } = await rpcGetMemberActivity({
     p_org_id: orgId,
     p_membership_id: membershipId,
-    p_limit: 200,
+    p_limit: limit,
   });
 
   if (error) {

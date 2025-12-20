@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { LAYOUT_STYLES } from '@/constants/layout';
 import { Drawer } from '@/components/patterns/Drawer';
@@ -114,6 +115,7 @@ export function ContactDetailDrawer({
   const [linkUserId, setLinkUserId] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
   const [draft, setDraft] = useState({
     display_name: '',
     email: '',
@@ -155,6 +157,10 @@ export function ContactDetailDrawer({
         phone: draft.phone,
         roles: draft.roles,
       });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['org-contacts', orgId] }),
+        queryClient.invalidateQueries({ queryKey: ['contact-timeline', orgId, contact.id] }),
+      ]);
       setEditMessage('Contact updated.');
       setEditing(false);
     } catch (e: any) {

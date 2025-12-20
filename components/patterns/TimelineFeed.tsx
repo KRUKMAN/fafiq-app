@@ -46,7 +46,6 @@ export function TimelineFeed({
     <FlashList
       data={visible}
       keyExtractor={(it) => it.id}
-      estimatedItemSize={140}
       renderItem={({ item, index }) => <TimelineRow item={item} isLast={index === visible.length - 1} />}
       contentContainerStyle={{ paddingBottom: 24 }}
       showsVerticalScrollIndicator={false}
@@ -166,4 +165,3 @@ function TimelineRow({ item, isLast }: { item: TimelineItem; isLast: boolean }) 
     </View>
   );
 }
-
