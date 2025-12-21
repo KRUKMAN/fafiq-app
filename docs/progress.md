@@ -33,11 +33,12 @@ Reference: `docs/implementation_plan.md`
 
 ## Watch-outs / Next Steps
 - Compare regenerated `database.types.ts` with Zod and resolve any drift after recent migrations. (Done; keep checking after future migrations.)
-- Audit triggers are already in place; ensure any new mutations rely on them (no client-side audit writes).
+- Audit triggers are already in place; ensure any new mutations rely on them (no client-side audit writes); add missing audit coverage for org settings + tasks.
 - Session boot is Supabase-first; keep an eye on membership fetch failures and org selection persistence when switching orgs or reloading.
 - Run the new tasks/calendar migration and regenerate Supabase types to remove manual edits to `database.types.ts`.
+- Persist dog notes (currently UI-local only) and replace the sample document upload with real file selection.
 
 ## Next Steps (short-term)
 - Invites remain settings-only; add other invite surfaces only if the product needs them (reuse existing RPCs).
-- Finish storage UI (dog photos/documents) now that helpers and buckets exist; transport detail + dog detail now exercise document uploads.
+- Finish storage UI polish (download buttons, iconography refinements) and add transport document upload (currently list/open only).
 - Keep dependency audit list in sync; likely-unused today: `expo-haptics`, `expo-image`, `expo-font`, `expo-symbols`, `expo-system-ui`, `expo-web-browser`, `expo-constants`, `expo-linking`, `@tanstack/react-query-devtools`.

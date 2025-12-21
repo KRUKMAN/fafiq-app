@@ -76,6 +76,18 @@ const errorInfo = (err: unknown) => {
 
 type LogFields = Record<string, unknown>;
 
+// Lazy import Sentry to avoid issues if it's not configured
+let sentryModule: typeof import('@sentry/react-native') | null = null;
+const getSentry = () => {
+  if (sentryModule) return sentryModule;
+  try {
+    sentryModule = require('@sentry/react-native');
+    return sentryModule;
+  } catch {
+    return null;
+  }
+};
+
 const emit = (level: LogLevel, message: string, fields?: LogFields) => {
   if (!shouldLog(level)) return;
 
@@ -90,6 +102,40 @@ const emit = (level: LogLevel, message: string, fields?: LogFields) => {
     redacted && typeof redacted === 'object' && !Array.isArray(redacted)
       ? { ...base, ...(redacted as Record<string, unknown>) }
       : base;
+
+  // Forward to Sentry in production (warn/error levels)
+  if (!__DEV__ && (level === 'warn' || level === 'error')) {
+    const Sentry = getSentry();
+    if (Sentry) {
+      try {
+        // Add breadcrumb for warnings
+        if (level === 'warn') {
+          Sentry.addBreadcrumb({
+            message,
+            level: 'warning',
+            category: 'logger',
+            data: redacted as Record<string, unknown>,
+          });
+        }
+        // Capture errors
+        if (level === 'error' && fields?.err) {
+          const err = fields.err instanceof Error ? fields.err : new Error(String(fields.err));
+          Sentry.captureException(err, {
+            contexts: {
+              logger: {
+                message,
+                ...(redacted as Record<string, unknown>),
+              },
+            },
+          });
+        } else if (level === 'error') {
+          Sentry.captureMessage(message, 'error');
+        }
+      } catch {
+        // Silently fail if Sentry has issues
+      }
+    }
+  }
 
   if (__DEV__) {
     // Prefer readable dev output; keep structure as the last argument.

@@ -6,6 +6,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import 'react-native-reanimated';
 import '../global.css';
 
+// Initialize Sentry as early as possible
+import { initSentry } from '@/lib/sentry';
+initSentry();
+
 import { useAppReconciliation } from '@/hooks/useAppReconciliation';
 import { useNotificationSync } from '@/hooks/useNotificationSync';
 import { useColorScheme } from '@/hooks/use-color-scheme';

@@ -8,6 +8,7 @@ import { getQueryClient } from '@/lib/queryClient';
 import { acceptInvitesForCurrentUser } from '@/lib/data/invites';
 import { linkMyContactInOrg } from '@/lib/data/contacts';
 import { logger } from '@/lib/logger';
+import { setSentryUser, setSentryContext } from '@/lib/sentry';
 
 type User = {
   id: string;
@@ -148,6 +149,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       persistLastOrgId(null);
       getQueryClient().clear();
       void supabase?.auth.signOut();
+      // Clear Sentry user context
+      setSentryUser(null);
       return {
         ready: true,
         isAuthenticated: false,
@@ -183,6 +186,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       const valid = state.memberships.some((m) => m.org_id === orgId && m.active);
       if (!valid) return state;
       persistLastOrgId(orgId);
+      // Update Sentry org context
+      setSentryContext('org', { orgId });
       invalidateOrgScopedQueries();
       return { activeOrgId: orgId };
     }),
@@ -316,6 +321,12 @@ const bootstrapSupabaseSession = async (set: StoreSetter) => {
     ...currentUser,
     name: profileData?.full_name ?? currentUser.name,
   };
+
+  // Set Sentry user context
+  setSentryUser(currentUserWithProfile.id, currentUserWithProfile.email, currentUserWithProfile.name);
+  if (activeOrgId) {
+    setSentryContext('org', { orgId: activeOrgId });
+  }
 
   set({
     ready: true,

@@ -131,7 +131,7 @@ Example:
 
 ### 8) App-level correctness gaps adjacent to audit/logging
 These don't change the strategy, but they matter for production readiness:
-- "Upload document" flows are currently sample blobs (placeholder) in both dog and transport detail screens.
+- "Upload document" flow is currently a sample blob (placeholder) in dog detail; transport detail has list/open only (no upload yet).
 - Some mutations don't invalidate/refetch related queries (e.g., transport screen document delete doesn't invalidate
   `useDocuments`; contact edit doesn't refetch contacts).
 
@@ -158,8 +158,8 @@ Legend:
 | Create transport | `app/(tabs)/transports/index.tsx` -> `createTransport` | `INSERT transports` | `transports_insert` | No | should appear in dog timeline when linked to dog |
 | Update transport | `app/(tabs)/transports/index.tsx` -> `updateTransport` | `UPDATE transports` | `transports_update` | No | should be domain events (status changed, assigned, etc.) |
 | Soft delete transport | `app/(tabs)/transports/index.tsx` -> `softDeleteTransport` | `UPDATE transports (deleted_at=...)` | `transports_update` | No | should be `transport.canceled/archived` |
-| Create contact | `app/(tabs)/people/index.tsx` -> `createOrgContact` | `INSERT org_contacts` | `org_contacts_insert` | No | no contact timeline UI |
-| Edit contact | `components/people/PeopleDrawers.tsx` -> `updateOrgContact` | `UPDATE org_contacts` | `org_contacts_update` | No | missing query invalidation; no activity UI |
+| Create contact | `app/(tabs)/people/index.tsx` -> `createOrgContact` | `INSERT org_contacts` | `org_contacts_insert` | Yes | timeline exists; events are still generic row-change logs |
+| Edit contact | `components/people/PeopleDrawers.tsx` -> `updateOrgContact` | `UPDATE org_contacts` | `org_contacts_update` | Yes | timeline exists; events are still generic row-change logs |
 | Invite member | `app/(tabs)/settings/index.tsx` -> `inviteOrgMember` (RPC) | `INSERT/UPDATE org_invites` (+ maybe memberships) | `org_invites_insert/update` (+ memberships events) | No | should have explicit domain invite events |
 | Update member roles | `app/(tabs)/settings/index.tsx` -> `updateMembershipRoles` | `UPDATE memberships` | `memberships_update` | No | might also trigger `org_contacts_update` via sync |
 | Update org picklists | `app/(tabs)/settings/index.tsx` -> `updateOrgSettings` | `UPDATE orgs` | none | No | missing audit trigger for orgs/settings |

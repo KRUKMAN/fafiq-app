@@ -48,5 +48,5 @@ Make the calendar a maintainable projection that aggregates domain sources, supp
 2) Add `automation_rules` migration with future dog/foster rules that create tasks (not calendar rows); stub for future settings.
 3) Refactor `get_calendar_events` per aggregator design; regenerate types; update Zod schema to include reminders + `task` source type. **Done.**
 4) Update data hooks + notification sync to new shape. **Done** for source type parsing; revisit notification scheduling if task-specific logic needed.
-5) Implement calendar UI filters, event detail gate, and “Add Event” menu/modal; ensure dog/contact/stage filters and domain routing.
+5) Implement calendar UI filters, event detail gate, and “Add Event” menu/modal; ensure dog/contact/stage filters and domain routing. **Done.**
 6) Refresh docs/diagrams to match (data-flow + notification sync). **In progress.**

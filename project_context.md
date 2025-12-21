@@ -28,6 +28,6 @@ Every meaningful mutation must:
 - Supabase schema/RLS/audit triggers applied (per `docs/schema.md`/`docs/rls.md`); `database.types.ts` generated from DB.
 - Frontend is Supabase-first with mock/demo fallback; session store boots from Supabase (auth + memberships), persists `last_org_id`, supports org switch; password reset hook/UI exists on sign-in.
 - Dogs/Transports/Activity hooks are Supabase-backed with Zod parsing; mock data remains for demo mode.
-- Storage buckets/policies exist; helpers for dog photos/documents; uploads are exercised in transport detail and dog detail (documents).
+- Storage buckets/policies exist; helpers for dog photos/documents; dog detail exercises document uploads while transport detail lists/opens documents only (upload missing).
 - Invites/membership admin wired via RPC/view; Settings shows members + emails for admins; org selector present on list views.
-- Outstanding: wire dog photo UI, keep Zod/DB types in sync after migrations, expand audit-driven mutations as features land.
+- Outstanding: persist dog notes, replace sample document upload, add missing audit coverage (org settings/tasks), add transport document upload, keep Zod/DB types in sync after migrations, expand audit-driven mutations as features land.

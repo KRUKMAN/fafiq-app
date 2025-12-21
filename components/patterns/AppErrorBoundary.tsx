@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { logger } from '@/lib/logger';
+import { captureException } from '@/lib/sentry';
 import { Button } from '@/components/ui/Button';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 
@@ -22,6 +23,12 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     logger.error('Unhandled render error', { err: error, componentStack: info.componentStack });
+    // Capture to Sentry with React component stack
+    captureException(error, {
+      react: {
+        componentStack: info.componentStack,
+      },
+    });
   }
 
   private handleTryAgain = () => {
