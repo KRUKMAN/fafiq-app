@@ -164,28 +164,33 @@ create trigger audit_notes
 after insert or delete on public.notes
 for each row execute function public.audit_note();
 
--- Backfill dog_notes if present.
-insert into public.notes (
-  id,
-  org_id,
-  entity_type,
-  entity_id,
-  body,
-  created_at,
-  created_by_user_id,
-  created_by_membership_id
-)
-select
-  dn.id,
-  dn.org_id,
-  'dog',
-  dn.dog_id,
-  dn.body,
-  dn.created_at,
-  dn.created_by_user_id,
-  dn.created_by_membership_id
-from public.dog_notes dn
-on conflict (id) do nothing;
+do $$
+begin
+  if to_regclass('public.dog_notes') is not null then
+    insert into public.notes (
+      id,
+      org_id,
+      entity_type,
+      entity_id,
+      body,
+      created_at,
+      created_by_user_id,
+      created_by_membership_id
+    )
+    select
+      dn.id,
+      dn.org_id,
+      'dog',
+      dn.dog_id,
+      dn.body,
+      dn.created_at,
+      dn.created_by_user_id,
+      dn.created_by_membership_id
+    from public.dog_notes dn
+    on conflict (id) do nothing;
 
-drop trigger if exists audit_dog_notes on public.dog_notes;
-drop table if exists public.dog_notes;
+    drop trigger if exists audit_dog_notes on public.dog_notes;
+    drop table if exists public.dog_notes;
+  end if;
+end;
+$$;
