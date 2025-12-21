@@ -47,6 +47,7 @@ Naming conventions:
 
 Examples:
 - Dogs: `dog.created`, `dog.updated`, `dog.stage_changed`, `dog.assignment_changed`, `dog.archived`, `dog.restored`
+- Notes: `note.added`, `note.deleted`
 - Transports: `transport.created`, `transport.updated`, `transport.status_changed`, `transport.assignee_changed`, `transport.archived`, `transport.restored`
 - Documents: `document.uploaded`, `document.updated`, `document.deleted`
 - Photos: `photo.uploaded`, `photo.updated`, `photo.deleted`

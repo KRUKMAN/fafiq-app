@@ -115,10 +115,7 @@ function may still be executable unless explicitly revoked). That means clients 
 
 ### 5) Coverage gaps vs "everything meaningful must be audited"
 Missing or incomplete coverage today:
-- Org settings changes (`orgs.settings`) have no audit trigger; updates won't be recorded.
-- Tasks table has no audit trigger in migrations (`supabase/migrations/20260108_tasks_refactor.sql`).
-- Some "meaningful actions" are not persisted at all, so they cannot be audited:
-  - Dog notes are currently UI-local only (`app/(tabs)/dogs/[id].tsx` uses `setNotes`, no DB write).
+- Confirm audit trigger migration for `orgs` settings, `tasks`, and `notes` is applied in each environment.
 
 ### 6) Audit attribution fields exist but are not populated on most tables
 Many tables include `created_by_membership_id` / `updated_by_membership_id`, but (outside calendar workflows) they are not
@@ -131,9 +128,8 @@ Example:
 
 ### 8) App-level correctness gaps adjacent to audit/logging
 These don't change the strategy, but they matter for production readiness:
-- "Upload document" flow is currently a sample blob (placeholder) in dog detail; transport detail has list/open only (no upload yet).
-- Some mutations don't invalidate/refetch related queries (e.g., transport screen document delete doesn't invalidate
-  `useDocuments`; contact edit doesn't refetch contacts).
+- Document uploads now use a file picker in dog and transport detail views.
+- Some mutations don't invalidate/refetch related queries in older screens; re-check invalidation when adding new actions.
 
 ---
 
@@ -162,7 +158,7 @@ Legend:
 | Edit contact | `components/people/PeopleDrawers.tsx` -> `updateOrgContact` | `UPDATE org_contacts` | `org_contacts_update` | Yes | timeline exists; events are still generic row-change logs |
 | Invite member | `app/(tabs)/settings/index.tsx` -> `inviteOrgMember` (RPC) | `INSERT/UPDATE org_invites` (+ maybe memberships) | `org_invites_insert/update` (+ memberships events) | No | should have explicit domain invite events |
 | Update member roles | `app/(tabs)/settings/index.tsx` -> `updateMembershipRoles` | `UPDATE memberships` | `memberships_update` | No | might also trigger `org_contacts_update` via sync |
-| Update org picklists | `app/(tabs)/settings/index.tsx` -> `updateOrgSettings` | `UPDATE orgs` | none | No | missing audit trigger for orgs/settings |
+| Update org picklists | `app/(tabs)/settings/index.tsx` -> `updateOrgSettings` | `UPDATE orgs` | `orgs_update` | No | audit exists; no org timeline UI |
 | Download my data | `app/(tabs)/settings/index.tsx` -> `downloadMyData` (RPC) | none | none | N/A | OK (read action), but consider logging as security event |
 | Delete my account | `app/(tabs)/settings/index.tsx` -> `deleteMyAccount` (RPC) | `UPDATE profiles/memberships/org_contacts/auth.users` | memberships/org_contacts events only | No | should have explicit `account.deleted` security/audit event |
 
@@ -322,11 +318,9 @@ Validation:
 ### Phase 3 (3-7 days): Replace row-change logs with domain events (reduce noise, improve UX)
 
 1) Add missing audit coverage:
-[ ] Add audit for org settings changes (either:
-  - add an audit trigger on `orgs`, or
-  - route org settings updates through an RPC that logs `org.settings_updated`).
-[ ] Add audit trigger / RPC logging for `tasks` (once tasks CRUD is wired).
-[ ] Persist dog notes (new table + RLS + triggers/RPC) and log `dog.note_added`.
+[x] Add audit for org settings changes (audit trigger on `orgs`).
+[x] Add audit trigger / RPC logging for `tasks` (trigger in migration; ensure it is applied).
+[x] Persist notes (generic table + RLS + trigger) and log `note.added`.
 
 2) Improve semantics for soft deletes:
 [x] Replace "soft delete = update" ambiguity (dogs/transports):

@@ -9,7 +9,9 @@ This plan is aligned to `Fafik_System_Context.md` and cross-checked against the 
 - NativeWind v4 + metro config are in place; Expo Router shell + sidebar tabs are stable with org guards on list/detail/placeholder tabs.
 - Dogs/Transports/Activity hooks now fetch from Supabase when env/session is present (mock fallback remains); dog detail drawer has Financial/People & Housing/Chat mock tabs; transports include list + detail shells.
 - Org settings include membership list + email view + invite flow (email-based) with resend/cancel; invites auto-accept on session bootstrap. Email access uses admin RPC with non-admin fallback.
-- Storage buckets/policies for dog photos/documents are applied; dog photo upload + list (signed read URL) and dog document upload + list/open/delete (via `documents` table, with size/icon) are integrated. Transport detail lists/opens docs, but upload is still missing.
+- Storage buckets/policies for dog photos/documents are applied; dog photo upload + list (signed read URL) and dog/transport document upload + list/open/delete (via `documents` table, with size/icon) are integrated with file picker uploads.
+- Notes persist via `notes` with audit events (`note.added`/`note.deleted`) and entity linkage for dogs/transports/contacts.
+- Audit coverage expanded to `orgs` settings updates and `tasks` CRUD.
 - Calendar refactor staged: tasks table + org-scoped indexes/RLS added, legacy dog-stage calendar trigger removed, `get_calendar_events` aggregates tasks with reminders; Zod enum updated to include `task`.
 - Create/Edit Dog now write to Supabase (org-scoped), validate stage against org settings, and invalidate caches (Create redirects to new dog detail).
 - Dependency audit: Expo/Supabase libraries (haptics, image, fonts, symbols, system-ui, web-browser, Supabase client, Query Devtools) are present for upcoming Phase 2 wiring; prune after integration if unused.
@@ -275,7 +277,7 @@ planned | in_progress | done | mocked | blocked
 | Task | Status |
 |---|---|
 | dog-photos bucket | done (bucket + policies + path helpers) |
-| Upload integration | done (dog photos + dog documents end-to-end with list/open/delete; remaining polish: download buttons, iconography refinements; transport doc upload missing) |
+| Upload integration | done (dog photos + dog/transport documents end-to-end with list/open/delete; remaining polish: download buttons, iconography refinements) |
 | Optimistic updates | planned |
 
 ---
@@ -336,15 +338,9 @@ Definition of Done:
 - Storage works on web + mobile
 - App is production-ready
 
-## Verified outstanding items (audit findings)
-- Dog notes are UI-local only; no persistence or audit coverage yet.
-- Dog document upload uses a placeholder sample blob (real file picker upload still needed).
-- Org settings updates (`orgs.settings`) have no audit trigger (missing audit coverage).
-- Tasks table has no audit trigger (missing audit coverage).
-- Dog list "History" action deep-links to dog detail, not timeline.
-- Transport detail lacks document upload (list/open only).
-- Non-semantic classes remain in settings and parts of dog detail.
-- Calendar events parsing uses a loose cast to handle DB type drift; still a risk after migrations.
+## Verified outstanding items (post-implementation)
+- Storage UI polish: align file iconography + download/button labeling for consistency.
+- Phase 3/4 planned items remain (optimistic updates, offline indicators, automation rules, production telemetry).
 
 ---
 

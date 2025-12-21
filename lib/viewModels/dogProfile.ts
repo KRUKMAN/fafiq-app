@@ -5,6 +5,7 @@ export type DogProfileNote = {
   author: string;
   body: string;
   createdAt: string;
+  canDelete?: boolean;
 };
 
 export type DogProfileMedicalRecord = {

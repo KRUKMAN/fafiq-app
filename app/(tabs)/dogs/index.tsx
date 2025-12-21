@@ -126,7 +126,7 @@ export default function DogsListScreen() {
 
   const handleViewDogHistory = useCallback(
     (id: string) => {
-      router.push(`/dogs/${id}` as Href);
+      router.push(`/dogs/${id}?tab=Timeline` as Href);
     },
     [router]
   );

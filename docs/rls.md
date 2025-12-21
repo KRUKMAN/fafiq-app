@@ -39,12 +39,35 @@ as $$
       and role = any(m.roles)
   );
 $$;
+
+create or replace function public.is_entity_in_org(
+  p_org_id uuid,
+  p_entity_type text,
+  p_entity_id uuid
+)
+returns boolean
+language sql
+stable
+as $$
+  select case lower(p_entity_type)
+    when 'dog' then exists (
+      select 1 from public.dogs d where d.id = p_entity_id and d.org_id = p_org_id
+    )
+    when 'transport' then exists (
+      select 1 from public.transports t where t.id = p_entity_id and t.org_id = p_org_id
+    )
+    when 'contact' then exists (
+      select 1 from public.org_contacts c where c.id = p_entity_id and c.org_id = p_org_id
+    )
+    else false
+  end;
+$$;
 ```
 
 ## Table-level RLS (enabled)
 - `orgs`, `profiles`, `memberships`
 - `dogs`, `transports`, `medical_records`, `expenses`
-- `dog_photos`, `documents`
+- `dog_photos`, `documents`, `notes`
 - `activity_events`
 - `org_contacts`
 
@@ -61,9 +84,9 @@ $$;
 - Users can read their own memberships.
 - Admins can manage memberships.
 
-Org-scoped business tables (examples: `dogs`, `transports`, `medical_records`, `expenses`, `dog_photos`, `documents`, `org_contacts`)
+Org-scoped business tables (examples: `dogs`, `transports`, `medical_records`, `expenses`, `dog_photos`, `documents`, `notes`, `org_contacts`)
 - Members can read/insert/update within their org.
-- Deletes are admin-only in the current migrations.
+- Deletes are admin-only in the current migrations (notes allow creator delete).
 
 `activity_events`
 - Members can read within their org.

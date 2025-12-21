@@ -131,6 +131,24 @@ Rationale:
 - Canonical assignments use membership FKs (supports “assignment changes” audit events).
 - `extra_fields` is the extensibility outlet (no schema forks).
 
+### `notes` (generic notes)
+
+```sql
+create table public.notes (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.orgs(id) on delete cascade,
+  entity_type text not null,
+  entity_id uuid not null,
+  body text not null,
+  created_at timestamptz not null default now(),
+  created_by_user_id uuid references auth.users(id),
+  created_by_membership_id uuid references public.memberships(id)
+);
+
+create index notes_org_id_idx on public.notes(org_id);
+create index notes_entity_idx on public.notes(org_id, entity_type, entity_id, created_at desc);
+```
+
 ### `transports` (task, not a person)
 
 ```sql

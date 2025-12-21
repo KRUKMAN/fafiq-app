@@ -6,16 +6,21 @@ import { LAYOUT_STYLES } from '@/constants/layout';
 import { Drawer } from '@/components/patterns/Drawer';
 import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { TabBar } from '@/components/patterns/TabBar';
+import { NoteModal } from '@/components/dogs/NoteModal';
+import { NotesList, type NoteListItem } from '@/components/notes/NotesList';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
 import { updateOrgContact } from '@/lib/data/contacts';
+import { createNote, deleteNote } from '@/lib/data/notes';
 import { OrgContact } from '@/schemas/orgContact';
+import { useNotes } from '@/hooks/useNotes';
+import { useSessionStore } from '@/stores/sessionStore';
 
 import type { ContactDraft, MemberRow } from './types';
 
 const MEMBER_TABS = ['Overview', 'Contact', 'Timeline'] as const;
-const CONTACT_TABS = ['Overview', 'Timeline'] as const;
+const CONTACT_TABS = ['Overview', 'Notes', 'Timeline'] as const;
 
 export function MemberDetailDrawer({
   memberId,
@@ -112,19 +117,33 @@ export function ContactDetailDrawer({
   const [inviting, setInviting] = useState(false);
   const [linking, setLinking] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [linkUserId, setLinkUserId] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const queryClient = useQueryClient();
+    const [linkUserId, setLinkUserId] = useState('');
+    const [editing, setEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const queryClient = useQueryClient();
+    const supabaseReady = Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
+    const [noteModalOpen, setNoteModalOpen] = useState(false);
+    const [noteDraft, setNoteDraft] = useState('');
+    const [noteStatus, setNoteStatus] = useState<string | null>(null);
+    const { memberships, currentUser } = useSessionStore();
+    const activeMembership = useMemo(
+      () => memberships.find((m) => m.org_id === orgId && m.active) ?? null,
+      [memberships, orgId]
+    );
   const [draft, setDraft] = useState({
     display_name: '',
     email: '',
     phone: '',
     roles: [] as string[],
   });
-  const [editMessage, setEditMessage] = useState<string | null>(null);
+    const [editMessage, setEditMessage] = useState<string | null>(null);
 
-  const contact = useMemo(() => contacts.find((c) => c.id === contactId) ?? null, [contacts, contactId]);
+    const contact = useMemo(() => contacts.find((c) => c.id === contactId) ?? null, [contacts, contactId]);
+    const { data: contactNotes, isLoading: notesLoading, error: notesError } = useNotes(
+      supabaseReady ? orgId ?? undefined : undefined,
+      supabaseReady ? 'contact' : undefined,
+      supabaseReady ? contactId ?? undefined : undefined
+    );
 
   useEffect(() => {
     if (!contact) return;
@@ -146,8 +165,8 @@ export function ContactDetailDrawer({
     });
   };
 
-  const handleSave = async () => {
-    if (!contact || !orgId) return;
+    const handleSave = async () => {
+      if (!contact || !orgId) return;
     setSaving(true);
     setEditMessage(null);
     try {
@@ -167,8 +186,63 @@ export function ContactDetailDrawer({
       setEditMessage(e?.message ?? 'Unable to update contact');
     } finally {
       setSaving(false);
-    }
-  };
+      }
+    };
+
+    const notes = useMemo<NoteListItem[]>(() => {
+      if (!supabaseReady) return [];
+      return (contactNotes ?? []).map((note) => {
+        const isCreator =
+          (activeMembership && note.created_by_membership_id === activeMembership.id) ||
+          (currentUser && note.created_by_user_id === currentUser.id);
+        return {
+          id: note.id,
+          author: isCreator ? 'You' : note.created_by_membership_id ? 'Member' : 'Unknown',
+          body: note.body,
+          createdAt: note.created_at,
+          canDelete: Boolean(isCreator),
+        };
+      });
+    }, [activeMembership, contactNotes, currentUser, supabaseReady]);
+
+    const handleAddNote = async () => {
+      if (!noteDraft.trim()) return;
+      if (!supabaseReady || !orgId || !contactId) {
+        setNoteStatus('Supabase not configured; notes are disabled.');
+        return;
+      }
+      setNoteStatus(null);
+      try {
+        await createNote({
+          org_id: orgId,
+          entity_type: 'contact',
+          entity_id: contactId,
+          body: noteDraft.trim(),
+          created_by_user_id: currentUser?.id ?? null,
+          created_by_membership_id: activeMembership?.id ?? null,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['notes', orgId, 'contact', contactId] });
+        await queryClient.invalidateQueries({ queryKey: ['contact-timeline', orgId, contactId] });
+        setNoteDraft('');
+        setNoteModalOpen(false);
+        setNoteStatus('Note added.');
+      } catch (e: any) {
+        setNoteStatus(e?.message ?? 'Unable to add note');
+      }
+    };
+
+    const handleDeleteNote = async (noteId: string) => {
+      if (!noteId || !orgId || !contactId || !supabaseReady) return;
+      setNoteStatus(null);
+      try {
+        await deleteNote(orgId, noteId);
+        await queryClient.invalidateQueries({ queryKey: ['notes', orgId, 'contact', contactId] });
+        await queryClient.invalidateQueries({ queryKey: ['contact-timeline', orgId, contactId] });
+        setNoteStatus('Note deleted.');
+      } catch (e: any) {
+        setNoteStatus(e?.message ?? 'Unable to delete note');
+      }
+    };
 
   if (!contactId || !contact) return null;
 
@@ -220,132 +294,151 @@ export function ContactDetailDrawer({
 
           <TabBar tabs={CONTACT_TABS} active={activeTab} onChange={setActiveTab} className="mb-6" />
 
-          {activeTab === 'Timeline' ? (
-            orgId ? <EntityTimeline orgId={orgId} scope={{ kind: 'contact', contactId: contact.id }} scrollable={false} /> : null
-          ) : (
-            <>
+            {activeTab === 'Timeline' ? (
+              orgId ? <EntityTimeline orgId={orgId} scope={{ kind: 'contact', contactId: contact.id }} scrollable={false} /> : null
+            ) : activeTab === 'Notes' ? (
               <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
-                <Typography className="text-sm font-semibold text-gray-900">Details</Typography>
+                <NotesList
+                  notes={notes}
+                  onAddNote={() => setNoteModalOpen(true)}
+                  onDeleteNote={handleDeleteNote}
+                  noteStatus={noteStatus}
+                  notesLoading={notesLoading}
+                  notesError={notesError}
+                />
+              </View>
+            ) : (
+              <>
+                <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
+                  <Typography className="text-sm font-semibold text-gray-900">Details</Typography>
 
-                {editing ? (
-                  <View className="gap-3">
-                    <Input
-                      label="Display name"
-                      value={draft.display_name}
-                      onChangeText={(val) => setDraft((p) => ({ ...p, display_name: val }))}
-                      placeholder="Name"
-                    />
-                    <Input
-                      label="Email"
-                      value={draft.email}
-                      onChangeText={(val) => setDraft((p) => ({ ...p, email: val }))}
-                      placeholder="person@example.org"
-                    />
-                    <Input
-                      label="Phone"
-                      value={draft.phone}
-                      onChangeText={(val) => setDraft((p) => ({ ...p, phone: val }))}
-                      placeholder="+1 555 123 456"
-                    />
+                  {editing ? (
+                    <View className="gap-3">
+                      <Input
+                        label="Display name"
+                        value={draft.display_name}
+                        onChangeText={(val) => setDraft((p) => ({ ...p, display_name: val }))}
+                        placeholder="Name"
+                      />
+                      <Input
+                        label="Email"
+                        value={draft.email}
+                        onChangeText={(val) => setDraft((p) => ({ ...p, email: val }))}
+                        placeholder="person@example.org"
+                      />
+                      <Input
+                        label="Phone"
+                        value={draft.phone}
+                        onChangeText={(val) => setDraft((p) => ({ ...p, phone: val }))}
+                        placeholder="+1 555 123 456"
+                      />
 
-                    <View className="gap-2">
-                      <Typography className="text-sm font-semibold text-gray-900">Roles</Typography>
-                      <View className="flex-row flex-wrap gap-2">
-                        {['admin', 'volunteer', 'foster', 'transport'].map((role) => {
-                          const active = draft.roles.includes(role);
-                          return (
-                            <Pressable
-                              key={role}
-                              accessibilityRole="button"
-                              onPress={() => toggleRole(role)}
-                              className={`px-3 py-2 rounded-md border ${
-                                active ? 'bg-primary border-primary' : 'bg-white border-border'
-                              }`}>
-                              <Typography className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
-                                {role}
-                              </Typography>
-                            </Pressable>
-                          );
-                        })}
+                      <View className="gap-2">
+                        <Typography className="text-sm font-semibold text-gray-900">Roles</Typography>
+                        <View className="flex-row flex-wrap gap-2">
+                          {['admin', 'volunteer', 'foster', 'transport'].map((role) => {
+                            const active = draft.roles.includes(role);
+                            return (
+                              <Pressable
+                                key={role}
+                                accessibilityRole="button"
+                                onPress={() => toggleRole(role)}
+                                className={`px-3 py-2 rounded-md border ${
+                                  active ? 'bg-primary border-primary' : 'bg-white border-border'
+                                }`}>
+                                <Typography className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
+                                  {role}
+                                </Typography>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
                       </View>
                     </View>
-                  </View>
-                ) : (
-                  <>
-                    <DetailRow label="Kind" value={contact.kind} />
-                    <DetailRow label="Name" value={contact.display_name} />
-                    <DetailRow label="Email" value={(contact.email ?? '').toString() || '-'} />
-                    <DetailRow label="Phone" value={(contact.phone ?? '').toString() || '-'} />
-                    <DetailRow label="Roles" value={(contact.roles ?? []).join(', ') || '-'} />
-                    <DetailRow label="Linked user" value={contact.linked_user_id ?? '-'} />
-                  </>
-                )}
-              </View>
-
-              {status ? <Typography variant="caption" className="text-gray-600 mt-3">{status}</Typography> : null}
-
-              {canAdmin && orgId ? (
-                <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3 mt-4">
-                  <Typography className="text-sm font-semibold text-gray-900">Admin actions</Typography>
-
-                  <Button
-                    variant="primary"
-                    onPress={async () => {
-                      setInviting(true);
-                      setStatus(null);
-                      try {
-                        await onInvite(contact);
-                        setStatus('Invite sent (or membership added if user already exists).');
-                      } catch (e: any) {
-                        setStatus(e?.message ?? 'Invite failed');
-                      } finally {
-                        setInviting(false);
-                      }
-                    }}
-                    disabled={inviting || !contact.email}
-                    loading={inviting}>
-                    {contact.email ? 'Invite by email' : 'No email to invite'}
-                  </Button>
-
-                  {!contact.linked_user_id ? (
-                    <View className="gap-2">
-                      <Typography variant="caption" className="text-xs text-gray-600">
-                        Link this contact to a user_id (auth.users.id)
-                      </Typography>
-                      <TextInput
-                        value={linkUserId}
-                        onChangeText={setLinkUserId}
-                        placeholder="user uuid"
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-base"
-                      />
-                      <Button
-                        variant="primary"
-                        onPress={async () => {
-                          setLinking(true);
-                          setStatus(null);
-                          try {
-                            await onAdminLink(contact, linkUserId.trim());
-                            setStatus('Linked contact to user.');
-                            setLinkUserId('');
-                          } catch (e: any) {
-                            setStatus(e?.message ?? 'Link failed');
-                          } finally {
-                            setLinking(false);
-                          }
-                        }}
-                        disabled={linking || !linkUserId.trim()}
-                        loading={linking}>
-                        Link to user
-                      </Button>
-                    </View>
-                  ) : null}
+                  ) : (
+                    <>
+                      <DetailRow label="Kind" value={contact.kind} />
+                      <DetailRow label="Name" value={contact.display_name} />
+                      <DetailRow label="Email" value={(contact.email ?? '').toString() || '-'} />
+                      <DetailRow label="Phone" value={(contact.phone ?? '').toString() || '-'} />
+                      <DetailRow label="Roles" value={(contact.roles ?? []).join(', ') || '-'} />
+                      <DetailRow label="Linked user" value={contact.linked_user_id ?? '-'} />
+                    </>
+                  )}
                 </View>
-              ) : null}
-            </>
-          )}
+
+                {status ? <Typography variant="caption" className="text-gray-600 mt-3">{status}</Typography> : null}
+
+                {canAdmin && orgId ? (
+                  <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3 mt-4">
+                    <Typography className="text-sm font-semibold text-gray-900">Admin actions</Typography>
+
+                    <Button
+                      variant="primary"
+                      onPress={async () => {
+                        setInviting(true);
+                        setStatus(null);
+                        try {
+                          await onInvite(contact);
+                          setStatus('Invite sent (or membership added if user already exists).');
+                        } catch (e: any) {
+                          setStatus(e?.message ?? 'Invite failed');
+                        } finally {
+                          setInviting(false);
+                        }
+                      }}
+                      disabled={inviting || !contact.email}
+                      loading={inviting}>
+                      {contact.email ? 'Invite by email' : 'No email to invite'}
+                    </Button>
+
+                    {!contact.linked_user_id ? (
+                      <View className="gap-2">
+                        <Typography variant="caption" className="text-xs text-gray-600">
+                          Link this contact to a user_id (auth.users.id)
+                        </Typography>
+                        <TextInput
+                          value={linkUserId}
+                          onChangeText={setLinkUserId}
+                          placeholder="user uuid"
+                          className="border border-gray-300 rounded-lg px-3 py-2 text-base"
+                        />
+                        <Button
+                          variant="primary"
+                          onPress={async () => {
+                            setLinking(true);
+                            setStatus(null);
+                            try {
+                              await onAdminLink(contact, linkUserId.trim());
+                              setStatus('Linked contact to user.');
+                              setLinkUserId('');
+                            } catch (e: any) {
+                              setStatus(e?.message ?? 'Link failed');
+                            } finally {
+                              setLinking(false);
+                            }
+                          }}
+                          disabled={linking || !linkUserId.trim()}
+                          loading={linking}>
+                          Link to user
+                        </Button>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+              </>
+            )}
         </View>
-      </ScrollView>
-    </Drawer>
+        </ScrollView>
+        {noteModalOpen ? (
+          <NoteModal
+            draft={noteDraft}
+            onChangeDraft={setNoteDraft}
+            onClose={() => setNoteModalOpen(false)}
+            onSave={handleAddNote}
+          />
+        ) : null}
+      </Drawer>
   );
 }
 

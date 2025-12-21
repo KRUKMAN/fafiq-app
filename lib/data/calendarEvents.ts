@@ -143,8 +143,7 @@ export const fetchCalendarEvents = async (params: FetchCalendarEventsParams): Pr
     return normalizeList(mockEvents);
   }
 
-  // Database types may lag behind migrations; keep the cast contained here.
-  const { data, error } = await (supabase as any).rpc('get_calendar_events', {
+  const { data, error } = await supabase.rpc('get_calendar_events', {
     p_org_id: params.orgId,
     p_start: startIso,
     p_end: endIso,
@@ -193,7 +192,7 @@ export const createCalendarEvent = async (input: NewCalendarEventInput): Promise
 
   const { reminders = [], ...eventInput } = input;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('calendar_events')
     .insert({
       org_id: eventInput.org_id,

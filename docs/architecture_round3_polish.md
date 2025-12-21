@@ -138,7 +138,6 @@ Rationale:
 ---
 
 ## Known Remaining Debt (Intentionally Not Fully Addressed Here)
-- `app/(tabs)/settings/index.tsx` and parts of `app/(tabs)/dogs/[id].tsx` still contain `bg-white`, `text-gray-*`, and other non-semantic classes.
 - `constants/theme.ts` is legacy Expo template coloring and is not currently driving the NativeWind semantic system (keep, but avoid expanding unless intentionally re-integrated).
 - Strict-mode spacing rules are only partially enforced; remaining “micro sizes” and a few arbitrary values are still present in domain components.
 

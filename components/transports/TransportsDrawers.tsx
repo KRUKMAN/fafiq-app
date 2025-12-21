@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/react-query';
+import * as DocumentPicker from 'expo-document-picker';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { z } from 'zod';
@@ -6,13 +8,19 @@ import { LAYOUT_STYLES } from '@/constants/layout';
 import { Drawer } from '@/components/patterns/Drawer';
 import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { TabBar } from '@/components/patterns/TabBar';
+import { NoteModal } from '@/components/dogs/NoteModal';
+import { NotesList, type NoteListItem } from '@/components/notes/NotesList';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Typography } from '@/components/ui/Typography';
+import { createDocumentRecord } from '@/lib/data/documents';
+import { createNote, deleteNote } from '@/lib/data/notes';
 import { updateTransport } from '@/lib/data/transports';
 import { Transport } from '@/schemas/transport';
 import { useDocuments } from '@/hooks/useDocuments';
-import { createSignedReadUrl, formatBytes, getObjectMetadata } from '@/lib/data/storage';
+import { useNotes } from '@/hooks/useNotes';
+import { createSignedReadUrl, formatBytes, getObjectMetadata, uploadDocument } from '@/lib/data/storage';
+import { useSessionStore } from '@/stores/sessionStore';
 import * as Linking from 'expo-linking';
 
 export const TRANSPORT_STATUS_OPTIONS = ['Requested', 'Scheduled', 'In Progress', 'Done', 'Canceled'] as const;
@@ -380,10 +388,25 @@ export function TransportDetailDrawer({
     notes: '',
   });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [docUploading, setDocUploading] = useState(false);
+  const queryClient = useQueryClient();
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteStatus, setNoteStatus] = useState<string | null>(null);
+  const { memberships, currentUser } = useSessionStore();
+  const activeMembership = useMemo(
+    () => memberships.find((m) => m.org_id === orgId && m.active) ?? null,
+    [memberships, orgId]
+  );
   const { data: documents, isLoading: docsLoading, error: docsError } = useDocuments(
     orgId ?? undefined,
     'transport',
     transportId ?? undefined
+  );
+  const { data: transportNotes, isLoading: notesLoading, error: notesError } = useNotes(
+    supabaseReady ? orgId ?? undefined : undefined,
+    supabaseReady ? 'transport' : undefined,
+    supabaseReady ? transportId ?? undefined : undefined
   );
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [sizes, setSizes] = useState<Record<string, number | null>>({});
@@ -428,6 +451,22 @@ export function TransportDetailDrawer({
     void loadSizes();
   }, [documents]);
 
+  const notes = useMemo<NoteListItem[]>(() => {
+    if (!supabaseReady) return [];
+    return (transportNotes ?? []).map((note) => {
+      const isCreator =
+        (activeMembership && note.created_by_membership_id === activeMembership.id) ||
+        (currentUser && note.created_by_user_id === currentUser.id);
+      return {
+        id: note.id,
+        author: isCreator ? 'You' : note.created_by_membership_id ? 'Member' : 'Unknown',
+        body: note.body,
+        createdAt: note.created_at,
+        canDelete: Boolean(isCreator),
+      };
+    });
+  }, [activeMembership, currentUser, supabaseReady, transportNotes]);
+
   const iconForMime = (mime?: string | null, name?: string | null) => {
     const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? '';
     const m = (mime ?? '').toLowerCase();
@@ -456,6 +495,45 @@ export function TransportDetailDrawer({
       setStatusMessage(e?.message ?? 'Unable to save transport');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!noteDraft.trim()) return;
+    if (!supabaseReady || !orgId || !transportId) {
+      setNoteStatus('Supabase not configured; notes are disabled.');
+      return;
+    }
+    setNoteStatus(null);
+    try {
+      await createNote({
+        org_id: orgId,
+        entity_type: 'transport',
+        entity_id: transportId,
+        body: noteDraft.trim(),
+        created_by_user_id: currentUser?.id ?? null,
+        created_by_membership_id: activeMembership?.id ?? null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['notes', orgId, 'transport', transportId] });
+      await queryClient.invalidateQueries({ queryKey: ['transport-timeline', orgId, transportId] });
+      setNoteDraft('');
+      setNoteModalOpen(false);
+      setNoteStatus('Note added.');
+    } catch (e: any) {
+      setNoteStatus(e?.message ?? 'Unable to add note');
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!noteId || !orgId || !transportId || !supabaseReady) return;
+    setNoteStatus(null);
+    try {
+      await deleteNote(orgId, noteId);
+      await queryClient.invalidateQueries({ queryKey: ['notes', orgId, 'transport', transportId] });
+      await queryClient.invalidateQueries({ queryKey: ['transport-timeline', orgId, transportId] });
+      setNoteStatus('Note deleted.');
+    } catch (e: any) {
+      setNoteStatus(e?.message ?? 'Unable to delete note');
     }
   };
 
@@ -532,8 +610,64 @@ export function TransportDetailDrawer({
                   <KeyValueCard label="To" value={transport.to_location || 'Unknown'} />
                   <KeyValueCard label="Assigned" value={transport.assigned_membership_id || 'Unassigned'} />
                   <KeyValueCard label="Dog" value={transport.dog_id || 'Unlinked'} />
-                  <View className="w-full bg-white border border-border rounded-lg shadow-sm p-3 gap-2">
-                    <Typography className="text-sm font-semibold text-gray-900">Documents</Typography>
+                    <View className="w-full bg-white border border-border rounded-lg shadow-sm p-3 gap-2">
+                      <View className="flex-row items-center justify-between">
+                        <Typography className="text-sm font-semibold text-gray-900">Documents</Typography>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={!supabaseReady || !orgId || !transportId || docUploading}
+                          loading={docUploading}
+                          onPress={async () => {
+                            if (!supabaseReady || !orgId || !transportId) return;
+                            setDocUploading(true);
+                            setStatusMessage(null);
+                            try {
+                              const result = await DocumentPicker.getDocumentAsync({
+                                type: '*/*',
+                                copyToCacheDirectory: true,
+                                multiple: false,
+                              });
+                              if (result.canceled || !result.assets?.length) {
+                                setStatusMessage('Canceled.');
+                                return;
+                              }
+
+                              const asset = result.assets[0];
+                              const resp = await fetch(asset.uri);
+                              const blob = await resp.blob();
+                              const filename = (asset.name ?? `transport-${Date.now()}`).replace(/\s+/g, '-');
+                              const contentType = asset.mimeType ?? blob.type ?? 'application/octet-stream';
+
+                              const { path } = await uploadDocument(orgId, 'transport', transportId, {
+                                file: blob,
+                                filename,
+                                contentType,
+                              });
+                              await createDocumentRecord({
+                                org_id: orgId,
+                                entity_type: 'transport',
+                                entity_id: transportId,
+                                storage_path: path,
+                                filename,
+                                mime_type: contentType,
+                              });
+                              await queryClient.invalidateQueries({
+                                queryKey: ['documents', orgId, 'transport', transportId],
+                              });
+                              await queryClient.invalidateQueries({
+                                queryKey: ['transport-timeline', orgId, transportId],
+                              });
+                              setStatusMessage(`Uploaded and recorded (${filename})`);
+                            } catch (e: any) {
+                              setStatusMessage(e?.message ?? 'Upload failed');
+                            } finally {
+                              setDocUploading(false);
+                            }
+                          }}>
+                          Upload
+                        </Button>
+                      </View>
                     {!supabaseReady ? (
                       <Typography variant="caption" color="muted">Supabase not configured.</Typography>
                     ) : docsLoading ? (
@@ -586,14 +720,18 @@ export function TransportDetailDrawer({
             </View>
           ) : null}
 
-          {activeTab === 'Notes' ? (
-            <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
-              <Typography className="text-sm font-semibold text-gray-900">Notes</Typography>
-              <Typography className="text-sm text-gray-700 leading-relaxed">
-                {transport.notes?.trim() ? transport.notes : 'No notes added yet.'}
-              </Typography>
-            </View>
-          ) : null}
+            {activeTab === 'Notes' ? (
+              <View className="bg-white border border-border rounded-lg shadow-sm p-4 gap-3">
+                <NotesList
+                  notes={notes}
+                  onAddNote={() => setNoteModalOpen(true)}
+                  onDeleteNote={handleDeleteNote}
+                  noteStatus={noteStatus}
+                  notesLoading={notesLoading}
+                  notesError={notesError}
+                />
+              </View>
+            ) : null}
 
           {activeTab === 'Timeline' ? (
             <EntityTimeline orgId={transport.org_id} scope={{ kind: 'transport', transportId: transport.id }} scrollable={false} />
@@ -605,10 +743,18 @@ export function TransportDetailDrawer({
             </Button>
           </View>
         </View>
-      </ScrollView>
-    </Drawer>
-  );
-}
+        </ScrollView>
+        {noteModalOpen ? (
+          <NoteModal
+            draft={noteDraft}
+            onChangeDraft={setNoteDraft}
+            onClose={() => setNoteModalOpen(false)}
+            onSave={handleAddNote}
+          />
+        ) : null}
+      </Drawer>
+    );
+  }
 
 export function TransporterDetailDrawer({
   memberId,

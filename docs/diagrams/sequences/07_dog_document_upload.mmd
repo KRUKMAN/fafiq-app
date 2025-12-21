@@ -8,7 +8,7 @@ sequenceDiagram
   User->>App: open dog detail (Documents tab)
   App->>Session: bootstrap (auth + memberships, org selection)
   Note over Session: Uses last_org_id + active membership
-  User->>App: press "Upload sample document"
+  User->>App: press "Upload document"
   App->>Storage: uploadDocument(org_id, "dog", dog_id, file)
   Storage-->>App: path/key stored in bucket
   App->>DB: insert public.documents (org_id, entity_type, entity_id, storage_path, filename, mime_type)

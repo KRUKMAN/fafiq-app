@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { NoteModal } from '@/components/dogs/NoteModal';
+import { NotesList, type NoteListItem } from '@/components/notes/NotesList';
 import { Drawer } from '@/components/patterns/Drawer';
 import { EntityTimeline } from '@/components/patterns/EntityTimeline';
 import { ScreenGuard } from '@/components/patterns/ScreenGuard';
@@ -29,10 +31,12 @@ import { LAYOUT_STYLES } from '@/constants/layout';
 import { UI_COLORS } from '@/constants/uiColors';
 import { useDocuments } from '@/hooks/useDocuments';
 import { useDog } from '@/hooks/useDog';
+import { useNotes } from '@/hooks/useNotes';
 import { useDogPhotos } from '@/hooks/useDogPhotos';
 import { useOrgContacts } from '@/hooks/useOrgContacts';
 import { createDocumentRecord, deleteDocumentRecord } from '@/lib/data/documents';
 import { updateDog } from '@/lib/data/dogs';
+import { createNote, deleteNote } from '@/lib/data/notes';
 import {
     addDogPhotoRecord,
     createSignedReadUrl,
@@ -45,19 +49,19 @@ import { formatDateOnly, formatTimestampShort } from '@/lib/formatters/dates';
 import {
     type DogProfileView,
     type DogProfileFileItem as FileItem,
-    type DogProfileMedicalRecord as MedicalRecord,
-    type DogProfileNote as Note,
-    toDogProfileView,
+  type DogProfileMedicalRecord as MedicalRecord,
+  toDogProfileView,
 } from '@/lib/viewModels/dogProfile';
 import { useSessionStore } from '@/stores/sessionStore';
 import { TABS, useUIStore } from '@/stores/uiStore';
 
 export default function DogDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const dogId = Array.isArray(id) ? id[0] : id;
+  const tabParam = Array.isArray(tab) ? tab[0] : tab;
   const router = useRouter();
 
-  const { activeOrgId, ready, memberships, bootstrap } = useSessionStore();
+  const { activeOrgId, ready, memberships, bootstrap, currentUser } = useSessionStore();
   const { activeTab, setActiveTab } = useUIStore();
   const queryClient = useQueryClient();
   const supabaseReady = Boolean(process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
@@ -69,14 +73,27 @@ export default function DogDetailScreen() {
   }, [ready, bootstrap]);
 
   useEffect(() => {
-    setActiveTab('Overview');
-  }, [dogId, setActiveTab]);
+    if (tabParam && TABS.includes(tabParam as any)) {
+      setActiveTab(tabParam as (typeof TABS)[number]);
+    } else {
+      setActiveTab('Overview');
+    }
+  }, [dogId, setActiveTab, tabParam]);
 
   const { data, isLoading } = useDog(activeOrgId ?? undefined, dogId ?? undefined);
   const { data: orgContacts } = useOrgContacts(activeOrgId ?? undefined);
   const dog = useMemo(() => (data ? toDogProfileView(data) : null), [data]);
+  const activeMembership = useMemo(
+    () => memberships.find((m) => m.org_id === activeOrgId && m.active) ?? null,
+    [memberships, activeOrgId]
+  );
   const { data: dogPhotos } = useDogPhotos(
     supabaseReady ? activeOrgId ?? undefined : undefined,
+    supabaseReady ? (dogId ?? undefined) : undefined
+  );
+  const { data: entityNotes, isLoading: notesLoading, error: notesError } = useNotes(
+    supabaseReady ? activeOrgId ?? undefined : undefined,
+    supabaseReady ? 'dog' : undefined,
     supabaseReady ? (dogId ?? undefined) : undefined
   );
   const primaryPhotoPath = dogPhotos?.[0]?.storage_path ?? null;
@@ -92,9 +109,10 @@ export default function DogDetailScreen() {
         photoUrl: primaryPhotoUrl ?? dog.photoUrl,
       }
     : null;
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [localNotes, setLocalNotes] = useState<NoteListItem[]>([]);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
+  const [noteStatus, setNoteStatus] = useState<string | null>(null);
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -130,7 +148,9 @@ export default function DogDetailScreen() {
 
   useEffect(() => {
     if (dog) {
-      setNotes(dog.notes ?? []);
+      if (!supabaseReady) {
+        setLocalNotes(dog.notes ?? []);
+      }
       setDogDraft({
         name: dog.name,
         stage: dog.stage,
@@ -149,19 +169,78 @@ export default function DogDetailScreen() {
       setEditing(false);
       setSaveError(null);
     }
-  }, [dog]);
+  }, [dog, supabaseReady]);
 
-  const handleAddNote = () => {
+  const notes = useMemo<NoteListItem[]>(() => {
+    if (!supabaseReady) {
+      return localNotes.map((note) => ({ ...note, canDelete: true }));
+    }
+    return (entityNotes ?? []).map((note) => {
+      const isCreator =
+        (activeMembership && note.created_by_membership_id === activeMembership.id) ||
+        (currentUser && note.created_by_user_id === currentUser.id);
+      return {
+        id: note.id,
+        author: isCreator ? 'You' : note.created_by_membership_id ? 'Member' : 'Unknown',
+        body: note.body,
+        createdAt: note.created_at,
+        canDelete: Boolean(isCreator),
+      };
+    });
+  }, [activeMembership, currentUser, entityNotes, localNotes, supabaseReady]);
+
+  const handleAddNote = async () => {
     if (!noteDraft.trim()) return;
-    const newNote: Note = {
-      id: `note_${Date.now()}`,
-      author: 'You',
-      body: noteDraft.trim(),
-      createdAt: new Date().toISOString(),
-    };
-    setNotes((prev) => [newNote, ...prev]);
-    setNoteDraft('');
-    setNoteModalOpen(false);
+    setNoteStatus(null);
+    if (!supabaseReady || !activeOrgId || !dogId) {
+      const newNote: NoteListItem = {
+        id: `note_${Date.now()}`,
+        author: 'You',
+        body: noteDraft.trim(),
+        createdAt: new Date().toISOString(),
+      };
+      setLocalNotes((prev) => [newNote, ...prev]);
+      setNoteDraft('');
+      setNoteModalOpen(false);
+      return;
+    }
+
+    try {
+      await createNote({
+        org_id: activeOrgId,
+        entity_type: 'dog',
+        entity_id: dogId,
+        body: noteDraft.trim(),
+        created_by_user_id: currentUser?.id ?? null,
+        created_by_membership_id: activeMembership?.id ?? null,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['notes', activeOrgId, 'dog', dogId] });
+      await queryClient.invalidateQueries({ queryKey: ['dog-timeline', activeOrgId, dogId] });
+      setNoteDraft('');
+      setNoteModalOpen(false);
+      setNoteStatus('Note added.');
+    } catch (e: any) {
+      setNoteStatus(e?.message ?? 'Unable to add note');
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    setNoteStatus(null);
+    if (!noteId) return;
+    if (!supabaseReady || !activeOrgId) {
+      setLocalNotes((prev) => prev.filter((note) => note.id !== noteId));
+      setNoteStatus('Note deleted.');
+      return;
+    }
+
+    try {
+      await deleteNote(activeOrgId, noteId);
+      await queryClient.invalidateQueries({ queryKey: ['notes', activeOrgId, 'dog', dogId] });
+      await queryClient.invalidateQueries({ queryKey: ['dog-timeline', activeOrgId, dogId] });
+      setNoteStatus('Note deleted.');
+    } catch (e: any) {
+      setNoteStatus(e?.message ?? 'Unable to delete note');
+    }
   };
 
   const handleUploadPhoto = async () => {
@@ -341,10 +420,10 @@ export default function DogDetailScreen() {
         isLoading={isLoading || !dog}
         loadingLabel="Loading dog profile...">
         {!dog ? null : (
-          <View className="flex-1 bg-white">
+          <View className="flex-1 bg-card">
             {editing && (
-              <View className="bg-amber-50 border-b border-amber-200 px-4 py-2">
-                <Typography variant="caption" className="text-xs text-amber-800">
+              <View className="bg-surface border-b border-warning px-4 py-2">
+                <Typography variant="caption" className="text-xs text-warning">
                   Editing dog details. Save or cancel to exit edit mode.
                 </Typography>
               </View>
@@ -386,18 +465,22 @@ export default function DogDetailScreen() {
 
                 {saveError ? <Typography variant="caption" color="error" className="mb-2">{saveError}</Typography> : null}
 
-                {renderTab(
-                  activeTab,
-                  dog,
-                  activeOrgId,
-                  supabaseReady,
-                  memberships,
-                  notes,
-                  () => setNoteModalOpen(true),
-                  editing,
-                  dogDraft,
-                  setDogDraft
-                )}
+                  {renderTab(
+                    activeTab,
+                    dog,
+                    activeOrgId,
+                    supabaseReady,
+                    memberships,
+                    notes,
+                    () => setNoteModalOpen(true),
+                    handleDeleteNote,
+                    editing,
+                    dogDraft,
+                    setDogDraft,
+                    noteStatus,
+                    notesLoading,
+                    notesError
+                  )}
               </View>
             </ScrollView>
           </View>
@@ -419,8 +502,8 @@ export default function DogDetailScreen() {
         animationType="fade"
         onRequestClose={() => setAssignFosterOpen(false)}>
         <View className="flex-1 bg-black/40 justify-center items-center px-4">
-          <View className="w-full max-w-md bg-white rounded-lg p-4 border border-border">
-            <Typography variant="h3" className="text-base font-semibold text-gray-900 mb-1">
+          <View className="w-full max-w-md bg-card rounded-lg p-4 border border-border">
+            <Typography variant="h3" className="text-base font-semibold text-foreground mb-1">
               Assign foster
             </Typography>
             <Typography variant="caption" color="muted" className="mb-3">
@@ -432,11 +515,11 @@ export default function DogDetailScreen() {
                 accessibilityRole="button"
                 onPress={() => setFosterContactIdDraft('')}
                 className={`px-3 py-2 rounded-md border ${
-                  !fosterContactIdDraft ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                  !fosterContactIdDraft ? 'bg-primary border-primary' : 'bg-card border-border'
                 }`}>
                 <Typography
                   variant="bodySmall"
-                  className={`text-xs font-semibold ${!fosterContactIdDraft ? 'text-white' : 'text-gray-800'}`}>
+                  className={`text-xs font-semibold ${!fosterContactIdDraft ? 'text-white' : 'text-foreground'}`}>
                   Unassigned
                 </Typography>
               </Pressable>
@@ -449,11 +532,11 @@ export default function DogDetailScreen() {
                     accessibilityRole="button"
                     onPress={() => setFosterContactIdDraft(opt.id)}
                     className={`px-3 py-2 rounded-md border ${
-                      active ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                      active ? 'bg-primary border-primary' : 'bg-card border-border'
                     }`}>
                     <Typography
                       variant="bodySmall"
-                      className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
+                      className={`text-xs font-semibold ${active ? 'text-white' : 'text-foreground'}`}>
                       {opt.name}
                     </Typography>
                   </Pressable>
@@ -493,8 +576,9 @@ const renderTab = (
   activeOrgId: string | null,
   supabaseReady: boolean,
   memberships: { id: string; org_id: string; roles: string[]; active: boolean }[],
-  notes: Note[],
-  onAddNote: () => void,
+    notes: NoteListItem[],
+    onAddNote: () => void,
+    onDeleteNote: (noteId: string) => Promise<void>,
   editing: boolean,
   dogDraft: {
     name: string;
@@ -527,7 +611,10 @@ const renderTab = (
         intake_date: string;
       };
     }>
-  >
+  >,
+  noteStatus: string | null,
+  notesLoading: boolean,
+  notesError: unknown
 ) => {
   switch (tab) {
     case 'Overview':
@@ -536,9 +623,13 @@ const renderTab = (
           dog={dog}
           notes={notes}
           onAddNote={onAddNote}
+          onDeleteNote={onDeleteNote}
           editing={editing}
           dogDraft={dogDraft}
           setDogDraft={setDogDraft}
+          noteStatus={noteStatus}
+          notesLoading={notesLoading}
+          notesError={notesError}
         />
       );
     case 'Timeline':
@@ -565,25 +656,25 @@ const TopBar = ({
   dog: DogProfileView;
   onClose: () => void;
 }) => (
-  <View className="bg-white border-b border-border px-4 md:px-8 py-3 gap-3">
+  <View className="bg-card border-b border-border px-4 md:px-8 py-3 gap-3">
     <View className="flex-row items-center justify-between">
       <Typography variant="body" color="muted" className="text-sm font-medium">
         Dog Detail:{' '}
-        <Typography variant="body" className="text-gray-900 font-semibold">
+        <Typography variant="body" className="text-foreground font-semibold">
           {dog.name.toUpperCase()} {dog.internalId ? `(${dog.internalId})` : ''}
         </Typography>
       </Typography>
 
       <View className="flex-row items-center gap-3">
-        <View className="w-9 h-9 rounded-full bg-gray-200 items-center justify-center border border-gray-300">
-          <Typography variant="caption" className="text-[11px] font-bold text-gray-600">
+        <View className="w-9 h-9 rounded-full bg-surface items-center justify-center border border-border">
+          <Typography variant="caption" className="text-[11px] font-bold text-muted">
             AD
           </Typography>
         </View>
         <Pressable
           accessibilityRole="button"
           onPress={onClose}
-          className="w-9 h-9 items-center justify-center border border-border rounded-md bg-white">
+          className="w-9 h-9 items-center justify-center border border-border rounded-md bg-card">
           <X size={18} color={UI_COLORS.muted} />
         </Pressable>
       </View>
@@ -627,23 +718,23 @@ const DogHeader = ({
       {dog.photoUrl ? (
         <Image
           source={{ uri: dog.photoUrl }}
-          className="w-24 h-24 rounded-lg bg-gray-200 border border-border"
+          className="w-24 h-24 rounded-lg bg-surface border border-border"
         />
       ) : (
-        <View className="w-24 h-24 rounded-lg bg-gray-200 border border-border items-center justify-center">
+        <View className="w-24 h-24 rounded-lg bg-surface border border-border items-center justify-center">
           <Typography variant="caption" color="muted">No photo</Typography>
         </View>
       )}
       <View className="justify-center">
-        <Typography variant="h1" className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
+        <Typography variant="h1" className="text-3xl font-bold text-foreground tracking-tight mb-1">
           {dog.name}
         </Typography>
         <Typography variant="body" color="muted" className="text-sm font-mono mb-3">
           Internal ID: {dog.internalId || '-'}
         </Typography>
-        <View className="flex-row items-center gap-2 bg-white border border-border py-1.5 px-3 rounded-full self-start">
+        <View className="flex-row items-center gap-2 bg-card border border-border py-1.5 px-3 rounded-full self-start">
           <HomeIcon size={14} color={UI_COLORS.foreground} />
-          <Typography variant="body" className="text-[13px] font-semibold text-gray-900">
+          <Typography variant="body" className="text-[13px] font-semibold text-foreground">
             {dog.stage}
           </Typography>
         </View>
@@ -707,15 +798,15 @@ const KeyMetric = ({
   label: string;
   value: string | number;
 }) => (
-  <View className="flex-1 min-w-[180px] flex-row items-center gap-3 bg-white border border-border rounded-lg p-3 shadow-sm">
-    <View className="w-9 h-9 items-center justify-center bg-surface rounded-md border border-gray-100">
+  <View className="flex-1 min-w-[180px] flex-row items-center gap-3 bg-card border border-border rounded-lg p-3 shadow-sm">
+    <View className="w-9 h-9 items-center justify-center bg-surface rounded-md border border-border">
       <Icon size={16} color={UI_COLORS.mutedForeground} />
     </View>
     <View className="flex-1">
-      <Typography variant="label" className="text-[11px] font-bold text-gray-400 tracking-[0.08em] uppercase">
+      <Typography variant="label" className="text-[11px] font-bold text-muted-foreground tracking-[0.08em] uppercase">
         {label}
       </Typography>
-      <Typography variant="body" className="text-[13px] font-semibold text-gray-900">
+      <Typography variant="body" className="text-[13px] font-semibold text-foreground">
         {value}
       </Typography>
     </View>
@@ -726,13 +817,18 @@ const OverviewTab = ({
   dog,
   notes,
   onAddNote,
+  onDeleteNote,
   editing,
   dogDraft,
   setDogDraft,
+  noteStatus,
+  notesLoading,
+  notesError,
 }: {
   dog: DogProfileView;
-  notes: Note[];
+  notes: NoteListItem[];
   onAddNote: () => void;
+  onDeleteNote: (noteId: string) => Promise<void>;
   editing: boolean;
   dogDraft: {
     name: string;
@@ -766,6 +862,9 @@ const OverviewTab = ({
       };
     }>
   >;
+  noteStatus: string | null;
+  notesLoading: boolean;
+  notesError: unknown;
 }) => {
   const viewDog = editing
     ? {
@@ -893,7 +992,7 @@ const OverviewTab = ({
                 placeholder="e.g. 2 years"
               />
               <View className="gap-1">
-                <Typography variant="label" className="text-xs font-semibold text-gray-500 uppercase tracking-[0.08em]">
+                <Typography variant="label" className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.08em]">
                   Sex
                 </Typography>
                 <View className="flex-row flex-wrap gap-2">
@@ -907,11 +1006,11 @@ const OverviewTab = ({
                           setDogDraft((p) => ({ ...p, attributes: { ...p.attributes, sex } }))
                         }
                         className={`px-3 py-2 rounded-md border ${
-                          active ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                          active ? 'bg-primary border-primary' : 'bg-card border-border'
                         }`}>
                         <Typography
                           variant="bodySmall"
-                          className={`text-xs font-semibold ${active ? 'text-white' : 'text-gray-800'}`}>
+                          className={`text-xs font-semibold ${active ? 'text-white' : 'text-foreground'}`}>
                           {sex}
                         </Typography>
                       </Pressable>
@@ -923,11 +1022,11 @@ const OverviewTab = ({
                       setDogDraft((p) => ({ ...p, attributes: { ...p.attributes, sex: '' } }))
                     }
                     className={`px-3 py-2 rounded-md border ${
-                      !dogDraft.attributes.sex ? 'bg-gray-900 border-gray-900' : 'bg-white border-border'
+                      !dogDraft.attributes.sex ? 'bg-primary border-primary' : 'bg-card border-border'
                     }`}>
                     <Typography
                       variant="bodySmall"
-                      className={`text-xs font-semibold ${!dogDraft.attributes.sex ? 'text-white' : 'text-gray-800'}`}>
+                      className={`text-xs font-semibold ${!dogDraft.attributes.sex ? 'text-white' : 'text-foreground'}`}>
                       Unknown
                     </Typography>
                   </Pressable>
@@ -959,7 +1058,7 @@ const OverviewTab = ({
               />
             </View>
           ) : (
-            <View className="flex-col divide-y divide-gray-50">
+            <View className="flex-col divide-y divide-border">
               <SummaryRow label="Age" value={attributes.age ?? '-'} />
               <SummaryRow label="Sex" value={attributes.sex ?? '-'} />
               <SummaryRow label="Size" value={attributes.size ?? '-'} />
@@ -969,9 +1068,16 @@ const OverviewTab = ({
           )}
         </Card>
 
-        <Card title="Notes">
-          <NotesList notes={notes} onAddNote={onAddNote} />
-        </Card>
+          <Card title="Notes">
+            <NotesList
+              notes={notes}
+              onAddNote={onAddNote}
+              onDeleteNote={onDeleteNote}
+              noteStatus={noteStatus}
+              notesLoading={notesLoading}
+              notesError={notesError}
+            />
+          </Card>
 
         <Card title="Alerts">
           <View className="gap-2">
@@ -981,11 +1087,9 @@ const OverviewTab = ({
               alerts.map((alert, idx) => (
                 <View
                   key={idx}
-                  className={`flex-row gap-3 p-3 rounded-md items-center border ${
-                    alert.type === 'error'
-                      ? 'bg-red-50 border-red-100'
-                      : 'bg-amber-50 border-amber-100'
-                  }`}>
+                    className={`flex-row gap-3 p-3 rounded-md items-center border ${
+                      alert.type === 'error' ? 'bg-destructive border-destructive' : 'bg-warning border-warning'
+                    }`}>
                   {alert.type === 'error' ? (
                     <AlertCircle size={16} color={UI_COLORS.destructive} />
                   ) : (
@@ -993,9 +1097,9 @@ const OverviewTab = ({
                   )}
                   <Typography
                     variant="body"
-                    className={`text-[13px] font-medium ${
-                      alert.type === 'error' ? 'text-red-700' : 'text-amber-700'
-                    }`}>
+                      className={`text-[13px] font-medium ${
+                        alert.type === 'error' ? 'text-white' : 'text-foreground'
+                      }`}>
                     {alert.message}
                   </Typography>
                 </View>
@@ -1020,17 +1124,17 @@ const MedicalTab = ({ history }: { history: MedicalRecord[] }) => {
   return (
     <View className="gap-3">
       {history.map((record) => (
-          <View key={record.id} className="bg-white border border-border rounded-lg p-4 shadow-sm">
+          <View key={record.id} className="bg-card border border-border rounded-lg p-4 shadow-sm">
             <View className="flex-row justify-between items-center mb-1">
-              <Typography variant="body" className="text-sm font-semibold text-gray-900">
+              <Typography variant="body" className="text-sm font-semibold text-foreground">
                 {record.title}
               </Typography>
               <Typography variant="caption" color="muted">{formatDateOnly(record.date)}</Typography>
             </View>
-          <Typography variant="bodySmall" className="text-xs font-medium text-gray-600 mb-2">
+          <Typography variant="bodySmall" className="text-xs font-medium text-muted mb-2">
             {record.status}
           </Typography>
-          {record.notes ? <Typography variant="body" className="text-sm text-gray-700">{record.notes}</Typography> : null}
+          {record.notes ? <Typography variant="body" className="text-sm text-foreground">{record.notes}</Typography> : null}
           {record.doctor ? (
             <Typography variant="caption" color="muted" className="mt-2">
               Doctor: {record.doctor}
@@ -1116,49 +1220,63 @@ const FilesTab = ({
   return (
     <View className="gap-3">
       <View className="flex-row items-center justify-between">
-        <Typography variant="body" className="text-sm font-semibold text-gray-900">
+        <Typography variant="body" className="text-sm font-semibold text-foreground">
           Files
         </Typography>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={uploading || !orgId || !supabaseReady}
-          loading={uploading}
-          onPress={async () => {
-            if (!orgId || !supabaseReady) return;
-            setUploading(true);
-            setStatus(null);
-            try {
-              const blob = new Blob(['Dog document'], { type: 'text/plain' });
-              const filename = `dog-${Date.now()}.txt`;
-              const { path } = await uploadDocument(orgId, 'dog', dogId, {
-                file: blob,
-                filename,
-                contentType: 'text/plain',
-              });
-              await createDocumentRecord({
-                org_id: orgId,
-                entity_type: 'dog',
-                entity_id: dogId,
-                storage_path: path,
-                filename,
-                mime_type: 'text/plain',
-              });
-              await queryClient.invalidateQueries({ queryKey: ['documents', orgId, 'dog', dogId] });
-              await queryClient.invalidateQueries({ queryKey: ['dog-timeline', orgId, dogId] });
-              setStatus(`Uploaded and recorded (${filename})`);
-            } catch (e: any) {
-              setStatus(e?.message ?? 'Upload failed');
-            } finally {
-              setUploading(false);
-            }
-          }}>
-          Upload sample document
-        </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={uploading || !orgId || !supabaseReady}
+            loading={uploading}
+            onPress={async () => {
+              if (!orgId || !supabaseReady) return;
+              setUploading(true);
+              setStatus(null);
+              try {
+                const result = await DocumentPicker.getDocumentAsync({
+                  type: '*/*',
+                  copyToCacheDirectory: true,
+                  multiple: false,
+                });
+                if (result.canceled || !result.assets?.length) {
+                  setStatus('Canceled.');
+                  return;
+                }
+
+                const asset = result.assets[0];
+                const resp = await fetch(asset.uri);
+                const blob = await resp.blob();
+                const filename = (asset.name ?? `dog-${Date.now()}`).replace(/\s+/g, '-');
+                const contentType = asset.mimeType ?? blob.type ?? 'application/octet-stream';
+
+                const { path } = await uploadDocument(orgId, 'dog', dogId, {
+                  file: blob,
+                  filename,
+                  contentType,
+                });
+                await createDocumentRecord({
+                  org_id: orgId,
+                  entity_type: 'dog',
+                  entity_id: dogId,
+                  storage_path: path,
+                  filename,
+                  mime_type: contentType,
+                });
+                await queryClient.invalidateQueries({ queryKey: ['documents', orgId, 'dog', dogId] });
+                await queryClient.invalidateQueries({ queryKey: ['dog-timeline', orgId, dogId] });
+                setStatus(`Uploaded and recorded (${filename})`);
+              } catch (e: any) {
+                setStatus(e?.message ?? 'Upload failed');
+              } finally {
+                setUploading(false);
+              }
+            }}>
+            Upload document
+          </Button>
       </View>
       {status ? <Typography variant="caption" color="muted">{status}</Typography> : null}
       {error ? (
-        <Typography variant="caption" className="text-red-600">
+        <Typography variant="caption" className="text-destructive">
           {String((error as any)?.message ?? error)}
         </Typography>
       ) : null}
@@ -1174,9 +1292,9 @@ const FilesTab = ({
         files.map((file) => (
           <View
             key={file.id}
-            className="flex-row items-center justify-between bg-white border border-border rounded-lg p-3 shadow-sm">
+            className="flex-row items-center justify-between bg-card border border-border rounded-lg p-3 shadow-sm">
             <View>
-              <Typography variant="body" className="text-sm font-semibold text-gray-900">
+              <Typography variant="body" className="text-sm font-semibold text-foreground">
                 {file.name}
               </Typography>
               <Typography variant="caption" color="muted">
@@ -1318,11 +1436,11 @@ const CheckRow = ({ label, checked }: { label: string; checked: boolean }) => (
   <View className="flex-row items-center gap-3">
     <View
       className={`w-5 h-5 border rounded items-center justify-center ${
-        checked ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-300'
+        checked ? 'bg-primary border-primary' : 'bg-card border-border'
       }`}>
       {checked ? <Check size={12} color={UI_COLORS.white} /> : null}
     </View>
-    <Typography variant="body" className={`text-sm ${checked ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+    <Typography variant="body" className={`text-sm ${checked ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
       {label}
     </Typography>
   </View>
@@ -1331,7 +1449,7 @@ const CheckRow = ({ label, checked }: { label: string; checked: boolean }) => (
 const SummaryRow = ({ label, value }: { label: string; value: string }) => (
   <View className="flex-row justify-between py-2.5">
     <Typography variant="body" color="muted">{label}</Typography>
-    <Typography variant="body" className="text-sm font-medium text-gray-900">{value}</Typography>
+    <Typography variant="body" className="text-sm font-medium text-foreground">{value}</Typography>
   </View>
 );
 
@@ -1347,29 +1465,6 @@ const InputRow = ({
   placeholder?: string;
 }) => (
   <Input label={label} value={value} onChangeText={onChangeText} placeholder={placeholder} />
-);
-
-const NotesList = ({ notes, onAddNote }: { notes: Note[]; onAddNote: () => void }) => (
-  <View className="gap-3">
-    <Button variant="outline" size="sm" onPress={onAddNote} className="self-start">
-      Add note
-    </Button>
-    {notes.length === 0 ? (
-      <Typography variant="body" color="muted">No notes yet.</Typography>
-    ) : (
-      notes.map((note) => (
-        <View key={note.id} className="border border-border rounded-md p-3 bg-surface">
-          <View className="flex-row justify-between items-center mb-1">
-            <Typography variant="body" className="text-sm font-semibold text-gray-900">
-              {note.author}
-            </Typography>
-            <Typography variant="caption" color="muted">{formatTimestampShort(note.createdAt)}</Typography>
-          </View>
-          <Typography variant="body" className="text-sm text-gray-700">{note.body}</Typography>
-        </View>
-      ))
-    )}
-  </View>
 );
 
 const PlaceholderTab = ({ label }: { label: string }) => (

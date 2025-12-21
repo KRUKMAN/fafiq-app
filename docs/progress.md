@@ -29,16 +29,16 @@ Reference: `docs/implementation_plan.md`
 - Round 3 deep polish (UI + architecture): introduced semantic tokens `bg-background/bg-card/text-foreground` (+ status colors), centralized copy in `constants/strings.ts`, standardized inline feedback with `components/ui/StatusMessage.tsx` (no toasts), extracted `lib/pagination.ts` and `lib/viewModels/dogProfile.ts`, and replaced RowActionsMenu overlay hack with a `Modal`-based implementation; lint clean.
 - Calendar/tasks refactor staged: added `tasks` table + org-scoped indexes/RLS, removed legacy `handle_calendar_workflows` trigger/function, cleaned `system_task` artifacts, updated `get_calendar_events` to surface tasks with inline reminders, refreshed Zod enum/docs/diagrams.
 - UX review and spacing standardization: fixed TabBar alignment (wrapped ScrollView in View container to prevent vertical misalignment), standardized spacing across detail views (`mb-6` for TabBar, `py-8` for timeline empty states, `mt-4` for load more buttons), removed unwired button and unnecessary spacers from Dog detail view, ensured all timeline components have consistent formatting across Dogs/Transports/People views; updated `docs/ui_system.md` and `docs/architecture_round3_polish.md` with spacing standards.
+- Persisted notes in `notes` with audit logging (dog/transport/contact), replaced sample dog document upload with real file picker, added transport document upload, and added audit triggers for org settings + tasks.
 
 
 ## Watch-outs / Next Steps
 - Compare regenerated `database.types.ts` with Zod and resolve any drift after recent migrations. (Done; keep checking after future migrations.)
-- Audit triggers are already in place; ensure any new mutations rely on them (no client-side audit writes); add missing audit coverage for org settings + tasks.
+- Audit triggers are already in place; ensure any new mutations rely on them (no client-side audit writes).
 - Session boot is Supabase-first; keep an eye on membership fetch failures and org selection persistence when switching orgs or reloading.
 - Run the new tasks/calendar migration and regenerate Supabase types to remove manual edits to `database.types.ts`.
-- Persist dog notes (currently UI-local only) and replace the sample document upload with real file selection.
 
 ## Next Steps (short-term)
 - Invites remain settings-only; add other invite surfaces only if the product needs them (reuse existing RPCs).
-- Finish storage UI polish (download buttons, iconography refinements) and add transport document upload (currently list/open only).
+- Finish storage UI polish (download buttons, iconography refinements).
 - Keep dependency audit list in sync; likely-unused today: `expo-haptics`, `expo-image`, `expo-font`, `expo-symbols`, `expo-system-ui`, `expo-web-browser`, `expo-constants`, `expo-linking`, `@tanstack/react-query-devtools`.

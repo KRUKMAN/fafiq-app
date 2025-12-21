@@ -8,7 +8,7 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Row click: navigate to `/dogs/:id` (dog detail drawer route)
 - Edit: navigate to `/dogs/:id/edit` (edit screen)
 - Delete: `softDeleteDog(orgId, dogId)` -> invalidates `['dogs', orgId]` (prefix match)
-- History: currently same as row click (no Timeline deep-link yet; TODO)
+- History: deep-links to dog detail with Timeline tab selected.
 
 ### Dog create (`app/(tabs)/dogs/create.tsx`)
 - Create: `createDog({ org_id, ... })` -> invalidates `['dogs', orgId]` -> redirects to `/dogs/:id`
@@ -20,9 +20,10 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Edit: enables inline edit mode (Overview tab)
 - Save: `updateDog(orgId, dogId, updates)` -> invalidates `['dog', orgId, dogId]` + `['dogs']` (prefix match)
 - Cancel: resets draft (no write)
-- Add note: currently local-only (`setNotes`) (no DB write/audit yet; TODO)
+- Add note: `createNote` (`INSERT notes`) -> invalidates `['notes', orgId, 'dog', dogId]` + `['dog-timeline', orgId, dogId]`
+- Delete note: `deleteNote` (`DELETE notes`) -> invalidates `['notes', orgId, 'dog', dogId]` + `['dog-timeline', orgId, dogId]`
 - Upload photo: image picker -> `uploadDogPhoto` + `addDogPhotoRecord` -> invalidates `['dog-photos', orgId, dogId]` + `['dog', orgId, dogId]` + `['dogs', orgId]`
-- Upload document: currently uploads a sample text blob -> `uploadDocument` + `createDocumentRecord` -> invalidates `['documents', orgId, 'dog', dogId]` (+ dog timeline)
+- Upload document: document picker -> `uploadDocument` + `createDocumentRecord` -> invalidates `['documents', orgId, 'dog', dogId]` (+ dog timeline)
 - Open/download document: signed URL (documents bucket) -> external viewer
 - Delete document: `deleteDocumentRecord(orgId, documentId)` (admin per RLS) with inline confirm -> invalidates `['documents', orgId, 'dog', dogId]` (+ dog timeline)
 - Assign foster: `updateDog(... foster_contact_id ...)` (also mirrors `extra_fields.foster_name` for now)
@@ -44,6 +45,7 @@ Purpose: ensure every visible button has a compatible handler + backend function
 - Save: `updateTransport` -> invalidates `['transports', orgId]`
 - Cancel: resets draft
 - Documents: list + open via signed URL (read-only; upload lives in transport detail screen)
+- Notes: `createNote` / `deleteNote` (`notes` table) -> invalidates `['notes', orgId, 'transport', transportId]` + `['transport-timeline', orgId, transportId]`
 - Timeline: `EntityTimeline(kind='transport')` -> audit RPC `get_transport_timeline(p_org_id, p_transport_id)` + schedule RPC `get_calendar_events(p_link_type='transport', p_link_id)`; includes **Load more activity** (increments audit limit by 200)
 
 ### Transport detail screen (`app/(tabs)/transports/[id].tsx`)
@@ -62,6 +64,7 @@ Purpose: ensure every visible button has a compatible handler + backend function
 ### Contact detail drawer (`app/(tabs)/people/index.tsx`)
 - Edit (admin): `updateOrgContact(orgId, contactId, updates)`
 - Save/Cancel: draft semantics; save invalidates `['org-contacts', orgId]` and `['contact-timeline', orgId, contactId]`
+- Notes: `createNote` / `deleteNote` (`notes` table) -> invalidates `['notes', orgId, 'contact', contactId]` + `['contact-timeline', orgId, contactId]`
 - Timeline: `EntityTimeline(kind='contact')` -> audit RPC `get_contact_timeline(p_org_id, p_contact_id)` + schedule RPC `get_calendar_events(p_contact_id)`; includes **Load more activity** (increments audit limit by 200)
 
 ## Settings
